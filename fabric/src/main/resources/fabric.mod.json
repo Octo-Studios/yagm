@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "authors": [
+    "${mod_authors}"
+  ],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/notenoughrecipebook",
+    "sources": "https://github.com/SSKirillSS/yagm"
+  },
+  "license": "All Rights Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "it.hurts.sskirillss.yagm.fabric.YAGMFabric"
+    ]
+  },
+  "mixins": [
+    "yagm.mixins.json",
+    "yagm-common.mixins.json"
+  ],
+  "depends": {
+    "fabric": "*",
+    "minecraft": ">=1.20"
+  }
+}
