@@ -5,27 +5,27 @@ issueTrackerURL = "https://github.com/Octo-Studios/yagm/issues"
 
 
 [[mods]]
-modId = "${mod_id}"
-version = "${mod_version}"
-displayName = "${mod_name}"
-authors = "${mod_authors}"
+modId = "yagm"
+version = "0.1"
+displayName = "Yet Another Gravestone Mod"
+authors = "SSKirillSS"
 logoFile = "logo.png"
 
-[[dependencies.${mod_id}]]
+[[dependencies.yagm]]
 modId = "neoforge"
 type = "required"
 versionRange = "[21.0,)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.${mod_id}]]
+[[dependencies.yagm]]
 modId = "minecraft"
 type = "required"
 versionRange = "[1.21,)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.${mod_id}]]
+[[dependencies.yagm]]
 modId = "architectury"
 type = "required"
 versionRange = "[13.0.8,)"
