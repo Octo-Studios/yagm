@@ -6,7 +6,6 @@ import net.neoforged.fml.common.Mod;
 @Mod(YAGMCommon.MODID)
 public class YAGMNeoForge {
     public YAGMNeoForge() {
-
-
+        YAGMCommon.init();
     }
 }
