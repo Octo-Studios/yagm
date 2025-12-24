@@ -2,7 +2,7 @@ package it.hurts.sskirillss.yagm.events;
 
 import dev.architectury.event.EventResult;
 import it.hurts.sskirillss.yagm.YAGMCommon;
-import it.hurts.sskirillss.yagm.api.events.ServerEvent;
+import it.hurts.sskirillss.yagm.api.events.IServerEvent;
 import it.hurts.sskirillss.yagm.blocks.gravestones.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.data.GraveDataManager;
 import it.hurts.sskirillss.yagm.register.BlockRegistry;
@@ -34,7 +34,7 @@ public class GraveStoneEvent {
         serverLevel.getServer().execute(() -> placeGrave(serverLevel, gravePos, graveState, player, graveData));
     }
 
-    private static void placeGrave(ServerLevel level, BlockPos pos, BlockState state, ServerPlayer player, CompoundTag graveData) {
+    public static void placeGrave(ServerLevel level, BlockPos pos, BlockState state, ServerPlayer player, CompoundTag graveData) {
         if (!GraveStoneHelper.placeGraveStone(level, pos, state)) return;
 
         YAGMCommon.LOGGER.warn("[AsyncTask] Grave stone placed successfully at " + pos);
@@ -55,7 +55,7 @@ public class GraveStoneEvent {
         level.setBlockEntity(graveEntity);
 
 
-        EventResult result = ServerEvent.ON_GRAVE_PLACED.invoker().onGravePlaced(level, pos, graveEntity, player);
+        EventResult result = IServerEvent.ON_GRAVE_PLACED.invoker().onGravePlaced(level, pos, state, player, graveData);
 
         if (result.interruptsFurtherEvaluation()) {
             level.removeBlock(pos, false);
