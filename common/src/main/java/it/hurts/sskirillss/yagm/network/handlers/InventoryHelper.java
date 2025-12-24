@@ -3,7 +3,7 @@ package it.hurts.sskirillss.yagm.network.handlers;
 
 import dev.architectury.event.EventResult;
 import it.hurts.sskirillss.yagm.YAGMCommon;
-import it.hurts.sskirillss.yagm.api.events.ServerEvent;
+import it.hurts.sskirillss.yagm.api.events.IServerEvent;
 import it.hurts.sskirillss.yagm.utils.ItemUtils;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
@@ -30,7 +30,7 @@ public class InventoryHelper {
         CompoundTag graveData = savePlayerInventory(player);
 
         //Event
-        EventResult result = ServerEvent.ON_PLAYER_DEATH.invoker().onPlayerDeath(player, graveData);
+        EventResult result = IServerEvent.ON_PLAYER_DEATH.invoker().onPlayerDeath(player, graveData);
 
         if (result.interruptsFurtherEvaluation()) {
             YAGMCommon.LOGGER.info("Player death event interrupted for: " + player.getUUID());
