@@ -1,13 +1,18 @@
 package it.hurts.sskirillss.yagm.blocks.gravestones;
 
+
+import it.hurts.sskirillss.yagm.api.provider.IGravestoneTitlesProvider;
+import it.hurts.sskirillss.yagm.client.titles.renderer.GravestoneTitles;
 import it.hurts.sskirillss.yagm.data.GraveDataManager;
 import it.hurts.sskirillss.yagm.network.handlers.InventoryHelper;
 import it.hurts.sskirillss.yagm.register.EntityRegistry;
 import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,6 +21,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,7 +30,9 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
-public class GraveStoneBlockEntity extends BlockEntity {
+public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTitlesProvider {
+
+    private static final String TAG_TITLES = "Titles";
 
     @Getter
     private UUID ownerUUID;
@@ -32,20 +40,42 @@ public class GraveStoneBlockEntity extends BlockEntity {
     @Getter
     private UUID graveId;
     @Getter
+    @Setter
     private long deathTime;
     private CompoundTag inventoryData;
     private NonNullList<ItemStack> playerMainSlots;
     private NonNullList<ItemStack> playerArmorSlots;
     private NonNullList<ItemStack> playerOffHandSlots;
 
+
+    @Getter
+    @Setter
+    private GravestoneTitles gravestoneTitles;
+
+
+    @Getter
+    private Component deathCause;
+
+    @Getter
+    @Setter
+    private String testament;
+
     public GraveStoneBlockEntity(BlockPos pos, BlockState state) {
         super(EntityRegistry.GRAVE_STONE.get(), pos, state);
         this.graveId = UUID.randomUUID();
         this.deathTime = System.currentTimeMillis();
+        this.gravestoneTitles = GravestoneTitles.create();
+    }
+
+
+    protected GraveStoneBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+        super(type, pos, state);
+        this.graveId = UUID.randomUUID();
+        this.deathTime = System.currentTimeMillis();
+        this.gravestoneTitles = GravestoneTitles.create();
     }
 
     public void loadGraveData(CompoundTag data) {
-
         if (data.hasUUID("PlayerUuid")) {
             this.ownerUUID = data.getUUID("PlayerUuid");
         }
@@ -70,12 +100,58 @@ public class GraveStoneBlockEntity extends BlockEntity {
             this.deathTime = data.getLong("DeathTime");
         }
 
+        if (data.contains("DeathCause")) {
+            try {
+                this.deathCause = Component.Serializer.fromJson(data.getString("DeathCause"), null);
+            } catch (Exception e) {
+                this.deathCause = Component.literal(data.getString("DeathCause"));
+            }
+        }
+
+        if (data.contains("Testament")) {
+            this.testament = data.getString("Testament");
+        }
+
+        updateTitles();
         this.setChanged();
 
         if (level != null && !level.isClientSide()) {
             level.setBlockEntity(this);
         }
+    }
 
+
+    public void initializeGrave(UUID playerUUID, String playerName, long deathTime, Component deathCause, @Nullable String testament) {
+        this.ownerUUID = playerUUID;
+        this.ownerName = playerName;
+        this.deathTime = deathTime;
+        this.deathCause = deathCause;
+        this.testament = testament;
+
+        updateTitles();
+
+        this.setChanged();
+        syncToClient();
+    }
+
+
+    public void setDeathCause(Component deathCause) {
+        this.deathCause = deathCause;
+        updateTitles();
+        this.setChanged();
+    }
+
+
+
+    protected void updateTitles() {
+        this.gravestoneTitles = GravestoneTitles.forDeath(getOwnerName(), deathTime, deathCause != null ? deathCause : Component.literal("Unknown"), testament);
+    }
+
+
+    protected void syncToClient() {
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
     }
 
     public void interact(Player player) {
@@ -100,23 +176,16 @@ public class GraveStoneBlockEntity extends BlockEntity {
         }
     }
 
-
     private void copyItems(NonNullList<ItemStack> source, NonNullList<ItemStack> target) {
-        IntStream.range(0, Math.min(source.size(), target.size()))
-                .forEach(i -> target.set(i, source.get(i).copy()));
+        IntStream.range(0, Math.min(source.size(), target.size())).forEach(i -> target.set(i, source.get(i).copy()));
     }
 
     private NonNullList<ItemStack> getOrThrowInventory(NonNullList<ItemStack> cached, Supplier<NonNullList<ItemStack>> supplier) {
         return cached != null ? cached : supplier.get();
     }
 
-
     public void giveInventoryToPlayer(ServerPlayer player) {
         if (player == null) return;
-
-        if (inventoryData == null || inventoryData.isEmpty()) {
-            // Try to restore from transient storage even if inventoryData is empty
-        }
 
         if (level instanceof ServerLevel serverLevel) {
             GraveDataManager graveDataManager = GraveDataManager.get(serverLevel);
@@ -151,7 +220,6 @@ public class GraveStoneBlockEntity extends BlockEntity {
                 if (inventoryData != null && !inventoryData.isEmpty()) {
                     InventoryHelper.setInventory(player, inventoryData);
                     player.getInventory().setChanged();
-                    restored = true;
                 }
             }
         } else {
@@ -161,10 +229,8 @@ public class GraveStoneBlockEntity extends BlockEntity {
             }
         }
 
-
         this.inventoryData = new CompoundTag();
         this.setChanged();
-
 
         if (level instanceof ServerLevel serverLevel && graveId != null) {
             GraveDataManager manager = GraveDataManager.get(serverLevel);
@@ -184,25 +250,20 @@ public class GraveStoneBlockEntity extends BlockEntity {
         }
     }
 
-
     private void clearTransientInventories() {
         this.playerMainSlots = null;
         this.playerArmorSlots = null;
         this.playerOffHandSlots = null;
     }
 
-
     public void dropItems(Level level, BlockPos pos) {
-
         if (inventoryData == null || inventoryData.isEmpty()) return;
 
         NonNullList<ItemStack> items = InventoryHelper.getAllItemsFromNBT(level.registryAccess(), inventoryData);
 
-        int droppedCount = 0;
         for (ItemStack item : items) {
             if (!item.isEmpty()) {
                 Containers.dropItemStack(level, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, item);
-                droppedCount++;
             }
         }
 
@@ -227,12 +288,7 @@ public class GraveStoneBlockEntity extends BlockEntity {
     }
 
     public String getOwnerName() {
-        return ownerName != null ? ownerName : "Unknown Name";
-    }
-
-    public void setDeathTime(long deathTime) {
-        this.deathTime = deathTime;
-        this.setChanged();
+        return ownerName != null ? ownerName : "Unknown";
     }
 
     public boolean hasOwner() {
@@ -255,11 +311,24 @@ public class GraveStoneBlockEntity extends BlockEntity {
         if (inventoryData != null) {
             tag.put("InventoryData", inventoryData);
         }
+
+        if (deathCause != null) {
+            tag.putString("DeathCause", Component.Serializer.toJson(deathCause, provider));
+        }
+
+        if (testament != null && !testament.isEmpty()) {
+            tag.putString("Testament", testament);
+        }
+
+        if (gravestoneTitles != null) {
+            tag.put(TAG_TITLES, gravestoneTitles.save());
+        }
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+
         if (tag.hasUUID("OwnerUUID")) {
             this.ownerUUID = tag.getUUID("OwnerUUID");
         }
@@ -269,6 +338,25 @@ public class GraveStoneBlockEntity extends BlockEntity {
 
         if (tag.contains("InventoryData", 10)) {
             this.inventoryData = tag.getCompound("InventoryData").copy();
+        }
+
+        if (tag.contains("DeathCause")) {
+            try {
+                this.deathCause = Component.Serializer.fromJson(tag.getString("DeathCause"), registries);
+            } catch (Exception e) {
+                this.deathCause = Component.literal("Unknown");
+            }
+        }
+
+
+        if (tag.contains("Testament")) {
+            this.testament = tag.getString("Testament");
+        }
+
+        if (tag.contains(TAG_TITLES)) {
+            this.gravestoneTitles = GravestoneTitles.load(tag.getCompound(TAG_TITLES));
+        } else {
+            updateTitles();
         }
     }
 
@@ -284,7 +372,6 @@ public class GraveStoneBlockEntity extends BlockEntity {
     public ClientboundBlockEntityDataPacket getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
     }
-
 
     public void setTransientInventory(
             NonNullList<ItemStack> main,
@@ -302,7 +389,6 @@ public class GraveStoneBlockEntity extends BlockEntity {
         }
         NonNullList<ItemStack> copy = NonNullList.withSize(source.size(), ItemStack.EMPTY);
         IntStream.range(0, source.size()).forEach(i -> copy.set(i, source.get(i).copy()));
-
         return copy;
     }
 }

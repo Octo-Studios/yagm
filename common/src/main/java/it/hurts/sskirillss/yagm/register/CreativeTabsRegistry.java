@@ -14,11 +14,11 @@ public class CreativeTabsRegistry {
 
     public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(MODID, Registries.CREATIVE_MODE_TAB);
 
-    public static final RegistrySupplier<CreativeModeTab> YAGM_TAB = TABS.register("yamg", () -> CreativeTabRegistry.create(
-                    Component.translatable("categorie.yagm.main"),
-                    () -> new ItemStack(ItemsRegistry.GRAVE_STONE_ITEM.get())
-            )
-    );
+    public static final RegistrySupplier<CreativeModeTab> YAGM_TAB = TABS.register("yamg", () -> CreativeTabRegistry.create(Component.translatable("categorie.yagm.main"),
+            () -> new ItemStack(
+                    ItemsRegistry.GRAVE_STONE_ITEM.get()
+
+            )));
 
 
     public static void init() {
