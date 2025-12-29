@@ -1,4 +1,4 @@
-package it.hurts.sskirillss.yagm.api.events;
+package it.hurts.sskirillss.yagm.api.events.providers;
 
 import dev.architectury.event.Event;
 import dev.architectury.event.EventFactory;
@@ -22,6 +22,7 @@ public interface IServerEvent {
     /**
      * Called BEFORE placing the grave.
      * Return EventResult.interruptFalse() to cancel.
+     *
      */
     Event<OnGravePlacing> ON_GRAVE_PLACING = EventFactory.createEventResult();
 
