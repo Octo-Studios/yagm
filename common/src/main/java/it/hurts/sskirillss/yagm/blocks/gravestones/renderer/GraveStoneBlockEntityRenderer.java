@@ -1,0 +1,47 @@
+package it.hurts.sskirillss.yagm.blocks.gravestones.renderer;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import it.hurts.sskirillss.yagm.blocks.gravestones.GraveStoneBlockEntity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+
+
+public class GraveStoneBlockEntityRenderer implements BlockEntityRenderer<GraveStoneBlockEntity> {
+    private final Font font;
+
+    public GraveStoneBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
+        this.font = context.getFont();
+    }
+
+    @Override
+    public void render(GraveStoneBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {
+        String ownerName = blockEntity.getOwnerName();
+        if (ownerName == null || ownerName.isEmpty() || ownerName.equals("Unknown")) {
+            return;
+        }
+
+        float textHeight = blockEntity.getTextHeight();
+        int textColor = blockEntity.getTextColor();
+
+        poseStack.pushPose();
+
+        poseStack.translate(0.5D, textHeight, 0.5D);
+        poseStack.mulPose(Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
+        poseStack.scale(0.025F, -0.025F, 0.025F);
+
+        int textWidth = font.width(ownerName);
+        float x = -textWidth / 2.0F;
+
+        font.drawInBatch(ownerName, x, 0F, textColor, false, poseStack.last().pose(), buffer, Font.DisplayMode.SEE_THROUGH, 0x20000000, 0xF000F0);
+
+        poseStack.popPose();
+    }
+
+    @Override
+    public boolean shouldRenderOffScreen(GraveStoneBlockEntity blockEntity) {
+        return true;
+    }
+}

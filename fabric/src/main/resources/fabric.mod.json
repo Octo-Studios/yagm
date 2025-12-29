@@ -8,13 +8,16 @@
   ],
   "contact": {
     "homepage": "https://www.curseforge.com/minecraft/mc-mods/notenoughrecipebook",
-    "sources": "https://github.com/SSKirillSS/yagm"
+    "sources": ""
   },
   "license": "MIT",
   "environment": "*",
   "entrypoints": {
     "main": [
       "it.hurts.sskirillss.yagm.fabric.YAGMFabric"
+    ],
+    "client": [
+      "it.hurts.sskirillss.yagm.fabric.client.YAGMFabricClient"
     ]
   },
   "mixins": [

@@ -2,6 +2,7 @@ plugins {
     id "architectury-plugin" version "3.4-SNAPSHOT"
     id "dev.architectury.loom" version "1.9-SNAPSHOT" apply false
     id "com.github.johnrengelman.shadow" version "8.1.1" apply false
+    id "io.freefair.lombok" version "8.4"
 }
 
 architectury {
@@ -17,6 +18,7 @@ subprojects {
     apply plugin: "java"
     apply plugin: "architectury-plugin"
     apply plugin: "dev.architectury.loom"
+    apply plugin: "io.freefair.lombok"
     apply plugin: "maven-publish"
 
     archivesBaseName = rootProject.mod_id
@@ -61,9 +63,5 @@ subprojects {
         withSourcesJar()
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
-    }
-
-    assemble {
-        dependsOn(collectJars)
     }
 }
