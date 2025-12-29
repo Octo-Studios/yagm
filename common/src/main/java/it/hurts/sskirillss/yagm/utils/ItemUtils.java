@@ -9,19 +9,19 @@ import net.minecraft.world.item.ItemStack;
 
 public class ItemUtils {
 
+
     public static void saveInventory(HolderLookup.Provider provider, CompoundTag compound, String key, NonNullList<ItemStack> inventory) {
         ListTag listTag = new ListTag();
-        
+
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack stack = inventory.get(i);
             if (!stack.isEmpty()) {
-                CompoundTag itemTag = new CompoundTag();
-                stack.save(provider, itemTag);
+                CompoundTag itemTag = (CompoundTag) stack.save(provider);
                 itemTag.putByte("Slot", (byte) i);
                 listTag.add(itemTag);
             }
         }
-        
+
         if (!listTag.isEmpty()) {
             compound.put(key, listTag);
         }
