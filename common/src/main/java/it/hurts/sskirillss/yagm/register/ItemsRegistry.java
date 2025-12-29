@@ -32,7 +32,7 @@ public final class ItemsRegistry {
     public static <I extends Item> @NotNull RegistrySupplier<I> item(String name, Item.Properties properties, Function<Item.Properties, I> itemFunc) {
         ResourceLocation id = id(name);
         ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, id);
-        Item.Properties propsWithId = properties.arch$tab(CreativeTabsRegistry.YAGM_TAB);
+        Item.Properties propsWithId = properties.arch$tab(CreativeTabsRegistry.YAGM);
         return ITEMS.register(id, () -> itemFunc.apply(propsWithId));
     }
 
@@ -43,12 +43,16 @@ public final class ItemsRegistry {
     public static <B extends Block> RegistrySupplier<BlockItem> blockItem(String name, RegistrySupplier<B> block, Item.Properties properties) {
         ResourceLocation id = id(name);
         ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, id);
-        Item.Properties propsWithId = properties.arch$tab(CreativeTabsRegistry.YAGM_TAB);
+        Item.Properties propsWithId = properties.arch$tab(CreativeTabsRegistry.YAGM);
         return ITEMS.register(id, () -> new BlockItem(block.get(), propsWithId));
     }
 
 
-    public static final RegistrySupplier<BlockItem> GRAVE_STONE_ITEM = blockItem("grave_stone", BlockRegistry.GRAVE_STONE);
+    public static final RegistrySupplier<BlockItem> OLD_WOODEN_CROSS = blockItem("old_wooden_cross", BlockRegistry.GRAVESTONE_LEVEL_1);
+    public static final RegistrySupplier<BlockItem> WOODEN_CROSS = blockItem("wooden_cross", BlockRegistry.GRAVESTONE_LEVEL_2);
+    public static final RegistrySupplier<BlockItem> STONE_TOMBSTONE = blockItem("stone_tombstone", BlockRegistry.GRAVESTONE_LEVEL_3);
+    public static final RegistrySupplier<BlockItem> INLAID_STONE_TOMBSTONE = blockItem("inlaid_stone_tombstone", BlockRegistry.GRAVESTONE_LEVEL_4);
+    public static final RegistrySupplier<BlockItem> GRANITE_TOMBSTONE = blockItem("granite_tombstone", BlockRegistry.GRAVESTONE_LEVEL_5);
 
     public static void init() {
          ITEMS.register();
