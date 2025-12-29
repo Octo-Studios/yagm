@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.blocks.gravestones;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -13,21 +14,34 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+
+
 public class GraveStoneBlock extends Block implements EntityBlock {
+
+    public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
     public GraveStoneBlock(Properties properties) {
         super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
 
     @Override
@@ -40,6 +54,17 @@ public class GraveStoneBlock extends Block implements EntityBlock {
         }
         return InteractionResult.SUCCESS;
     }
+
+    private static final VoxelShape SHAPE_NS = Block.box(2, 0, 6, 14, 12, 10);
+    private static final VoxelShape SHAPE_EW = Block.box(6, 0, 2, 10, 12, 14);
+
+
+    @Override
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        Direction facing = state.getValue(FACING);
+        return (facing == Direction.EAST || facing == Direction.WEST) ? SHAPE_EW : SHAPE_NS;
+    }
+
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
@@ -74,7 +99,6 @@ public class GraveStoneBlock extends Block implements EntityBlock {
     }
 
 
-
     @Override
     public @NotNull BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
@@ -86,6 +110,17 @@ public class GraveStoneBlock extends Block implements EntityBlock {
 
         super.playerWillDestroy(level, pos, state, player);
         return state;
+    }
+
+    @Override
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return getShape(state, level, pos, context);
+    }
+
+
+    @Override
+    protected RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 
     @Override
@@ -105,5 +140,16 @@ public class GraveStoneBlock extends Block implements EntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new GraveStoneBlockEntity(pos, state);
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(FACING);
+    }
+
+    @Nullable
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
     }
 }
