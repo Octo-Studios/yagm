@@ -15,6 +15,9 @@
   "entrypoints": {
     "main": [
       "it.hurts.sskirillss.yagm.fabric.YAGMFabric"
+    ],
+    "client": [
+      "it.hurts.sskirillss.yagm.fabric.client.YAGMFabricClient"
     ]
   },
   "mixins": [
