@@ -3,10 +3,11 @@ package it.hurts.sskirillss.yagm.client.titles.render.type;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.Nameable;
 
 @Getter
 @RequiredArgsConstructor
-public enum GravestoneTitleType {
+public enum GravestoneTitleType implements Nameable {
     WHO_DIED(0, "title.yagm.who_died", 0xFFFFFF, 1.0f),
     WHEN_DIED(1, "title.yagm.when_died", 0xAAAAAA, 0.75f),
     DEATH_CAUSE(2, "title.yagm.death_cause", 0xFF6666, 0.75f),
@@ -16,6 +17,11 @@ public enum GravestoneTitleType {
     private final String translationKey;
     private final int defaultColor;
     private final float scale;
+
+    @Override
+    public Component getName() {
+        return Component.translatable("title.yagm." + translationKey);
+    }
 
     public Component getDisplayName() {
         return Component.translatable(translationKey);
