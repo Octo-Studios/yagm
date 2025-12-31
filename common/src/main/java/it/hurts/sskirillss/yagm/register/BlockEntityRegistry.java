@@ -19,8 +19,7 @@ public class BlockEntityRegistry {
                             BlockRegistry.GRAVESTONE_LEVEL_1.get(),
                             BlockRegistry.GRAVESTONE_LEVEL_2.get(),
                             BlockRegistry.GRAVESTONE_LEVEL_3.get(),
-                            BlockRegistry.GRAVESTONE_LEVEL_4.get(),
-                            BlockRegistry.GRAVESTONE_LEVEL_5.get()
+                            BlockRegistry.GRAVESTONE_LEVEL_4.get()
                     ).build(null)
             );
 
