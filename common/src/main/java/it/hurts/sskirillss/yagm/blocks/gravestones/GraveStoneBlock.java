@@ -34,7 +34,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 
-
 public class GraveStoneBlock extends Block implements EntityBlock {
 
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;

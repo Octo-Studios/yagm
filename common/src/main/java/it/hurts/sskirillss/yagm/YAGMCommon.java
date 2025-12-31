@@ -17,7 +17,7 @@ public class YAGMCommon {
         EntityRegistry.init();
         ItemsRegistry.init();
         EventRegistry.init();
-        CreativeTabsRegistry.register();
+        CreativeTabsRegistry.init();
         LifecycleEvent.SERVER_STARTED.register(ItemValuator::initialize);
         LifecycleEvent.SERVER_STOPPING.register(server -> ItemValuator.shutdown());
     }
