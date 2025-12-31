@@ -114,7 +114,6 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
         GraveStoneLevels level = graveData.getGraveLevel();
         String owner = null;
         Long time = null;
-        Component cause = null;
         String will = null;
 
         if (level != null) {
@@ -124,14 +123,11 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
             if (level.hasFeature(GraveStoneLevels.GraveFeature.DEATH_TIME)) {
                 time = graveData.getDeathTime();
             }
-            if (level.hasFeature(GraveStoneLevels.GraveFeature.DEATH_CAUSE)) {
-                cause = graveData.getDeathCause();
-            }
             if (level.hasFeature(GraveStoneLevels.GraveFeature.TESTAMENT)) {
                 will = graveData.getTestament();
             }
         }
-        this.gravestoneTitles = GravestoneTitles.forDeathWithLevel(owner, time, cause, will);
+        this.gravestoneTitles = GravestoneTitles.forDeathWithLevel(owner, time, will);
     }
 
     @Override
