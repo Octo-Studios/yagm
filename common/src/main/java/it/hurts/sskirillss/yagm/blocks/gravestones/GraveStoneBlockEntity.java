@@ -60,7 +60,6 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
             case GRAVESTONE_LEVEL_2 -> 1.4F;
             case GRAVESTONE_LEVEL_3 -> 2.1F;
             case GRAVESTONE_LEVEL_4 -> 1.6F;
-            case GRAVESTONE_LEVEL_5 -> 1.8F;
         };
     }
 
@@ -70,7 +69,6 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
             case GRAVESTONE_LEVEL_2 -> 0xFFFFFFFF;
             case GRAVESTONE_LEVEL_3 -> 0xFFFFFFFF;
             case GRAVESTONE_LEVEL_4 -> 0xFFFFFFFF;
-            case GRAVESTONE_LEVEL_5 -> 0xFFFFFFFF;
         };
     }
 

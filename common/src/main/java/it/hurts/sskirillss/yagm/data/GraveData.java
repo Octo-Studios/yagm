@@ -134,7 +134,6 @@ public class GraveData {
             case GRAVESTONE_LEVEL_2 -> 1.2F;
             case GRAVESTONE_LEVEL_3 -> 1.4F;
             case GRAVESTONE_LEVEL_4 -> 1.6F;
-            case GRAVESTONE_LEVEL_5 -> 1.8F;
         };
     }
 
@@ -144,7 +143,6 @@ public class GraveData {
             case GRAVESTONE_LEVEL_2 -> 0xFFFFFFFF;
             case GRAVESTONE_LEVEL_3 -> 0xFF55FF55;
             case GRAVESTONE_LEVEL_4 -> 0xFF5555FF;
-            case GRAVESTONE_LEVEL_5 -> 0xFFFFAA00;
         };
     }
 }
