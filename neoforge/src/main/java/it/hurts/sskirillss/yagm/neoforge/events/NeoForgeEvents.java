@@ -9,6 +9,7 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 @EventBusSubscriber
 public class NeoForgeEvents {
 
+
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
         ItemValuator.initialize(event.getServer());

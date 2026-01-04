@@ -1,20 +1,20 @@
 package it.hurts.sskirillss.yagm.events;
 
 import dev.architectury.event.EventResult;
-import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.api.events.providers.IServerEvent;
+import it.hurts.sskirillss.yagm.blocks.gravestones.FallingGraveEntity;
 import it.hurts.sskirillss.yagm.blocks.gravestones.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.client.titles.entity.GraveTitleEntity;
 import it.hurts.sskirillss.yagm.client.titles.render.component.GravestoneTitle;
 import it.hurts.sskirillss.yagm.client.titles.renderer.GravestoneTitles;
 import it.hurts.sskirillss.yagm.data.GraveDataManager;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
-import it.hurts.sskirillss.yagm.register.BlockRegistry;
 import it.hurts.sskirillss.yagm.register.EntityRegistry;
 import it.hurts.sskirillss.yagm.utils.GraveStoneHelper;
 import it.hurts.sskirillss.yagm.utils.ItemUtils;
 import it.hurts.sskirillss.yagm.utils.ItemValuator;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -23,10 +23,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.Vec3;
+
 import java.util.UUID;
 
 public class GraveStoneEvent {
@@ -35,19 +35,34 @@ public class GraveStoneEvent {
         Level level = player.level();
         if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) return;
         if (!(level instanceof ServerLevel serverLevel)) return;
+
         GraveStoneLevels graveLevel = calculateGraveLevel(player, graveData);
-        BlockPos gravePos = GraveStoneHelper.getGraveStoneBlockPosition(level, player.blockPosition());
 
-        Block graveBlock = BlockRegistry.getBlockForLevel(graveLevel);
+        Vec3 deathPos = player.position().add(0, 1, 0);
 
-        BlockState graveState = graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, player.getDirection().getOpposite());
+        double angle = level.random.nextDouble() * Math.PI * 2;
+        double distance = 2.0 + level.random.nextDouble() * 2.0;
+        double speed = 0.3 + level.random.nextDouble() * 0.2;
 
-        serverLevel.getServer().execute(() -> placeGrave(serverLevel, gravePos, graveState, player, graveData, graveLevel));
+        Vec3 velocity = new Vec3(Math.cos(angle) * speed, 0.5 + level.random.nextDouble() * 0.3, Math.sin(angle) * speed);
+
+        Direction facing = player.getDirection().getOpposite();
+
+        UUID graveId = graveData.hasUUID("Id") ? graveData.getUUID("Id") : UUID.randomUUID();
+        graveData.putUUID("Id", graveId);
+
+        GraveDataManager manager = GraveDataManager.get(serverLevel);
+        manager.addGrave(player.getUUID(), graveData);
+
+        serverLevel.getServer().execute(() -> {
+            FallingGraveEntity fallingGrave = FallingGraveEntity.create(serverLevel, deathPos, velocity, graveData, graveLevel, player.getUUID(), player.getName().getString(), facing);
+            serverLevel.addFreshEntity(fallingGrave);
+        });
     }
 
     private static GraveStoneLevels calculateGraveLevel(ServerPlayer player, CompoundTag graveData) {
         if (!ItemValuator.isAvailable()) {
-            return GraveStoneLevels.GRAVESTONE_LEVEL_2;
+            return GraveStoneLevels.GRAVESTONE_LEVEL_1;
         }
 
         NonNullList<ItemStack> mainList = NonNullList.withSize(36, ItemStack.EMPTY);
