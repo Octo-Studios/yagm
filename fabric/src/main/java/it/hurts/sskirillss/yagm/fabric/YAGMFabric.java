@@ -9,11 +9,7 @@ public class YAGMFabric implements ModInitializer {
     @Override
     public void onInitialize() {
         YAGMCommon.init();
-        System.out.println("[YAGM] ========== YAGM FABRIC INIT ==========");
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            System.out.println("[YAGM] SERVER STARTED - initializing ItemValuator");
-            ItemValuator.initialize(server);
-        });
+        ServerLifecycleEvents.SERVER_STARTED.register(ItemValuator::initialize);
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> ItemValuator.shutdown());
     }
 
