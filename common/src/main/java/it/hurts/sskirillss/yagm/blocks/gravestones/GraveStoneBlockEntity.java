@@ -6,7 +6,7 @@ import it.hurts.sskirillss.yagm.data.GraveData;
 import it.hurts.sskirillss.yagm.data.GraveDataManager;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.network.handlers.InventoryHelper;
-import it.hurts.sskirillss.yagm.register.BlockRegistry;
+import it.hurts.sskirillss.yagm.register.BlockEntityRegistry;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -42,7 +42,7 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
     private GravestoneTitles gravestoneTitles;
 
     public GraveStoneBlockEntity(BlockPos pos, BlockState state) {
-        super(BlockRegistry.GRAVE_STONE_BE.get(), pos, state);
+        super(BlockEntityRegistry.GRAVE_STONE.get(), pos, state);
         this.gravestoneTitles = GravestoneTitles.create();
     }
 
