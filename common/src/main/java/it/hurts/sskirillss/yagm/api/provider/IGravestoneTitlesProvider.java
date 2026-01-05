@@ -2,8 +2,9 @@ package it.hurts.sskirillss.yagm.api.provider;
 
 import it.hurts.sskirillss.yagm.client.titles.renderer.GravestoneTitles;
 import net.minecraft.core.Direction;
+import org.jetbrains.annotations.ApiStatus;
 
-
+@ApiStatus.Internal
 public interface IGravestoneTitlesProvider {
 
     GravestoneTitles getGravestoneTitles();

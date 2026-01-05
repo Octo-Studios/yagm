@@ -35,7 +35,7 @@ public class GravestoneTitles {
     }
 
 
-    public static GravestoneTitles forDeathWithLevel(@Nullable String owner, @Nullable Long deathTime, @Nullable Component deathCause, @Nullable String testament) {
+    public static GravestoneTitles forDeathWithLevel(@Nullable String owner, @Nullable Long deathTime, @Nullable String testament) {
         GravestoneTitles t = new GravestoneTitles();
 
         if (owner != null && !owner.isEmpty()) {
@@ -45,10 +45,6 @@ public class GravestoneTitles {
         if (deathTime != null && deathTime > 0) {
             String formattedDate = Instant.ofEpochMilli(deathTime).atZone(ZoneId.systemDefault()).format(DATE_FORMATTER);
             t.setTitle(GravestoneTitle.of(GravestoneTitleType.WHEN_DIED, formattedDate));
-        }
-
-        if (deathCause != null && !deathCause.getString().isEmpty()) {
-            t.setTitle(GravestoneTitle.of(GravestoneTitleType.DEATH_CAUSE, deathCause));
         }
 
         if (testament != null && !testament.isEmpty()) {

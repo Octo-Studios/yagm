@@ -29,7 +29,7 @@ public class ItemValuator {
     private final List<Recipe<?>> allRecipes;
     private final List<BiFunction<ItemStack, Double, Double>> customAdjusters = new ArrayList<>();
 
-    private static final double[] LEVEL_THRESHOLDS = {0, 100, 500, 2000, 10000};
+    private static final double[] LEVEL_THRESHOLDS = {0, 100, 500, 4000};
 
     public static void initialize(MinecraftServer server) {
         server.submit(() -> {

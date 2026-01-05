@@ -33,21 +33,8 @@ public final class BlockRegistry {
     public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_4 = BLOCKS.register("grave_tier_4", () -> new GraveStoneBlock(
             BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
 
-    public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_5 = BLOCKS.register("grave_tier_5", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
-
-
-    public static final RegistrySupplier<BlockEntityType<GraveStoneBlockEntity>> GRAVE_STONE_BE =
-            BLOCK_ENTITIES.register("grave_stone", () ->
-                    BlockEntityType.Builder.of(
-                            GraveStoneBlockEntity::new,
-                            GRAVESTONE_LEVEL_1.get(),
-                            GRAVESTONE_LEVEL_2.get(),
-                            GRAVESTONE_LEVEL_3.get(),
-                            GRAVESTONE_LEVEL_4.get(),
-                            GRAVESTONE_LEVEL_5.get()
-                    ).build(null)
-            );
+//    public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_5 = BLOCKS.register("grave_tier_5", () -> new GraveStoneBlock(
+//            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
 
     private static final Map<GraveStoneLevels, RegistrySupplier<Block>> LEVEL_TO_BLOCK = new EnumMap<>(GraveStoneLevels.class);
 
@@ -57,7 +44,6 @@ public final class BlockRegistry {
         LEVEL_TO_BLOCK.put(GraveStoneLevels.GRAVESTONE_LEVEL_2, GRAVESTONE_LEVEL_2);
         LEVEL_TO_BLOCK.put(GraveStoneLevels.GRAVESTONE_LEVEL_3, GRAVESTONE_LEVEL_3);
         LEVEL_TO_BLOCK.put(GraveStoneLevels.GRAVESTONE_LEVEL_4, GRAVESTONE_LEVEL_4);
-        LEVEL_TO_BLOCK.put(GraveStoneLevels.GRAVESTONE_LEVEL_5, GRAVESTONE_LEVEL_5);
     }
 
     public static Block getBlockForLevel(GraveStoneLevels level) {

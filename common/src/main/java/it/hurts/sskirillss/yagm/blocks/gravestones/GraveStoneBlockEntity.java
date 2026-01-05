@@ -6,7 +6,7 @@ import it.hurts.sskirillss.yagm.data.GraveData;
 import it.hurts.sskirillss.yagm.data.GraveDataManager;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.network.handlers.InventoryHelper;
-import it.hurts.sskirillss.yagm.register.BlockRegistry;
+import it.hurts.sskirillss.yagm.register.BlockEntityRegistry;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -42,7 +42,7 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
     private GravestoneTitles gravestoneTitles;
 
     public GraveStoneBlockEntity(BlockPos pos, BlockState state) {
-        super(BlockRegistry.GRAVE_STONE_BE.get(), pos, state);
+        super(BlockEntityRegistry.GRAVE_STONE.get(), pos, state);
         this.gravestoneTitles = GravestoneTitles.create();
     }
 
@@ -60,7 +60,6 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
             case GRAVESTONE_LEVEL_2 -> 1.4F;
             case GRAVESTONE_LEVEL_3 -> 2.1F;
             case GRAVESTONE_LEVEL_4 -> 1.6F;
-            case GRAVESTONE_LEVEL_5 -> 1.8F;
         };
     }
 
@@ -70,7 +69,6 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
             case GRAVESTONE_LEVEL_2 -> 0xFFFFFFFF;
             case GRAVESTONE_LEVEL_3 -> 0xFFFFFFFF;
             case GRAVESTONE_LEVEL_4 -> 0xFFFFFFFF;
-            case GRAVESTONE_LEVEL_5 -> 0xFFFFFFFF;
         };
     }
 
@@ -116,7 +114,6 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
         GraveStoneLevels level = graveData.getGraveLevel();
         String owner = null;
         Long time = null;
-        Component cause = null;
         String will = null;
 
         if (level != null) {
@@ -126,14 +123,11 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
             if (level.hasFeature(GraveStoneLevels.GraveFeature.DEATH_TIME)) {
                 time = graveData.getDeathTime();
             }
-            if (level.hasFeature(GraveStoneLevels.GraveFeature.DEATH_CAUSE)) {
-                cause = graveData.getDeathCause();
-            }
             if (level.hasFeature(GraveStoneLevels.GraveFeature.TESTAMENT)) {
                 will = graveData.getTestament();
             }
         }
-        this.gravestoneTitles = GravestoneTitles.forDeathWithLevel(owner, time, cause, will);
+        this.gravestoneTitles = GravestoneTitles.forDeathWithLevel(owner, time, will);
     }
 
     @Override
