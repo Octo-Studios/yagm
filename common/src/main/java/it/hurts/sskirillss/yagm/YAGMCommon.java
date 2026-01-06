@@ -1,8 +1,8 @@
 package it.hurts.sskirillss.yagm;
 
 import dev.architectury.event.events.common.LifecycleEvent;
+import it.hurts.sskirillss.yagm.api.item_valuator.ItemValuator;
 import it.hurts.sskirillss.yagm.register.*;
-import it.hurts.sskirillss.yagm.utils.ItemValuator;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
