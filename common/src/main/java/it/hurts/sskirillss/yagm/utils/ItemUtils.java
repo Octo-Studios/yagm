@@ -44,41 +44,5 @@ public class ItemUtils {
             }
         }
     }
-
-    public static NonNullList<ItemStack> readItemList(HolderLookup.Provider provider, CompoundTag compound, String key) {
-        NonNullList<ItemStack> items = NonNullList.create();
-        
-        if (!compound.contains(key, Tag.TAG_LIST)) {
-            return items;
-        }
-        
-        ListTag listTag = compound.getList(key, Tag.TAG_COMPOUND);
-        
-        for (int i = 0; i < listTag.size(); i++) {
-            CompoundTag itemTag = listTag.getCompound(i);
-            ItemStack stack = ItemStack.parse(provider, itemTag).orElse(ItemStack.EMPTY);
-            if (!stack.isEmpty()) {
-                items.add(stack);
-            }
-        }
-        
-        return items;
-    }
-
-    public static void saveItemList(HolderLookup.Provider provider, CompoundTag compound, String key, NonNullList<ItemStack> items) {
-        ListTag listTag = new ListTag();
-        
-        for (ItemStack stack : items) {
-            if (!stack.isEmpty()) {
-                CompoundTag itemTag = new CompoundTag();
-                stack.save(provider, itemTag);
-                listTag.add(itemTag);
-            }
-        }
-        
-        if (!listTag.isEmpty()) {
-            compound.put(key, listTag);
-        }
-    }
 }
 
