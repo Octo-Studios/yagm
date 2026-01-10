@@ -61,6 +61,7 @@ public abstract class AbstractItemValuator {
                 .collect(Collectors.toList());
     }
 
+    @SuppressWarnings("all")
     protected void computeBaseValues() {
         Set<Item> craftedItems = allRecipes.stream()
                 .map(r -> r.getResultItem(server.registryAccess()))
@@ -169,6 +170,7 @@ public abstract class AbstractItemValuator {
                 .min();
     }
 
+    @SuppressWarnings("all")
     protected void fillMissingValues() {
         Registry<Item> registry = getItemRegistry();
 
