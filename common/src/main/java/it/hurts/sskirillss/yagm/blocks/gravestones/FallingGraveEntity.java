@@ -3,6 +3,7 @@ package it.hurts.sskirillss.yagm.blocks.gravestones;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.register.BlockRegistry;
 import it.hurts.sskirillss.yagm.register.EntityRegistry;
+import it.hurts.sskirillss.yagm.structures.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.utils.GraveStoneHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -53,9 +54,7 @@ public class FallingGraveEntity extends Entity {
         entity.ownerUUID = ownerUUID;
         entity.ownerName = ownerName;
         entity.facing = facing;
-
         entity.rotationSpeed = 15f + level.random.nextFloat() * 10f;
-
         entity.entityData.set(DATA_LEVEL, graveLevel.ordinal());
         entity.entityData.set(DATA_ROTATION, 0f);
 
@@ -93,14 +92,10 @@ public class FallingGraveEntity extends Entity {
 
     private void placeGrave() {
         if (!(level() instanceof ServerLevel serverLevel)) return;
-
         BlockPos landingPos = blockPosition();
         BlockPos gravePos = GraveStoneHelper.getGraveStoneBlockPosition(level(), landingPos);
-
         Block graveBlock = BlockRegistry.getBlockForLevel(graveLevel);
-        BlockState graveState = graveBlock.defaultBlockState()
-                .setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
-
+        BlockState graveState = graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
         if (GraveStoneHelper.placeGraveStone(level(), gravePos, graveState)) {
             if (level().getBlockEntity(gravePos) instanceof GraveStoneBlockEntity graveEntity) {
                 if (graveData != null) {
@@ -108,7 +103,10 @@ public class FallingGraveEntity extends Entity {
                 }
                 graveEntity.initializeGrave(ownerUUID, ownerName, System.currentTimeMillis(), null, null, graveLevel);
             }
+
+            CemeteryManager.getInstance().addGrave(level().dimension(), gravePos);
         }
+
 
         discard();
     }

@@ -8,6 +8,7 @@ import java.util.Set;
 
 
 @Getter
+@SuppressWarnings("deprecation")
 public enum GraveStoneLevels implements StringRepresentable {
 
     GRAVESTONE_LEVEL_1(EnumSet.noneOf(GraveFeature.class)),
