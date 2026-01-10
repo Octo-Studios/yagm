@@ -3,6 +3,7 @@ package it.hurts.sskirillss.yagm;
 import dev.architectury.event.events.common.LifecycleEvent;
 import it.hurts.sskirillss.yagm.api.item_valuator.ItemValuator;
 import it.hurts.sskirillss.yagm.register.*;
+import it.hurts.sskirillss.yagm.test.CemeteryTestLogger;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +19,10 @@ public class YAGMCommon {
         ItemsRegistry.init();
         EventRegistry.init();
         CreativeTabsRegistry.init();
-        LifecycleEvent.SERVER_STARTED.register(ItemValuator::initialize);
+        LifecycleEvent.SERVER_STARTED.register(server -> {
+            ItemValuator.initialize(server);
+            CemeteryTestLogger.init(server);
+        });
         LifecycleEvent.SERVER_STOPPING.register(server -> ItemValuator.shutdown());
     }
 
