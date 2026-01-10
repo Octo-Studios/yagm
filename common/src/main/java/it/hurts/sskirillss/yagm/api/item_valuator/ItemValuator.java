@@ -20,7 +20,7 @@ import net.minecraft.world.level.storage.LevelResource;
 
 import java.nio.file.Path;
 
-
+@SuppressWarnings("all")
 public class ItemValuator extends AbstractItemValuator {
 
     @Getter

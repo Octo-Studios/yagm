@@ -36,7 +36,9 @@ public final class ValueProviderRegistry {
      * Gets the value of an item from all providers
      */
     public static OptionalDouble getValue(ItemStack stack) {
-        if (stack.isEmpty()) return OptionalDouble.of(0);
+        if (stack.isEmpty()) {
+            return OptionalDouble.of(0);
+        }
 
         ensureSorted();
 

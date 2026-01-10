@@ -19,6 +19,7 @@ import java.util.Map;
 
 @Getter
 @Setter
+@SuppressWarnings("all")
 public class ValuatorConfig {
 
     private static final Gson GSON = new GsonBuilder()
