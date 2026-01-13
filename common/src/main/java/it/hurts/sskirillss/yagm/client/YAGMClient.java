@@ -1,12 +1,10 @@
 package it.hurts.sskirillss.yagm.client;
 
-import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.registry.client.level.entity.EntityRendererRegistry;
 import dev.architectury.registry.client.rendering.BlockEntityRendererRegistry;
 import dev.architectury.registry.client.rendering.RenderTypeRegistry;
 import it.hurts.sskirillss.yagm.blocks.gravestones.renderer.FallingGraveEntityRenderer;
 import it.hurts.sskirillss.yagm.blocks.gravestones.renderer.GraveStoneBlockEntityRenderer;
-import it.hurts.sskirillss.yagm.client.titles.renderer.GraveTitleEntityRenderer;
 import it.hurts.sskirillss.yagm.register.BlockEntityRegistry;
 import it.hurts.sskirillss.yagm.register.BlockRegistry;
 import it.hurts.sskirillss.yagm.register.EntityRegistry;
@@ -35,7 +33,6 @@ public class YAGMClient {
     }
 
     private static void registerEntityRenderers() {
-        EntityRendererRegistry.register(EntityRegistry.GRAVE_TITLE, GraveTitleEntityRenderer::new);
         EntityRendererRegistry.register(EntityRegistry.FALLING_GRAVE, FallingGraveEntityRenderer::new);
     }
 }

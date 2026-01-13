@@ -9,8 +9,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 
 public class BlockEntityRegistry {
 
-    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
-            DeferredRegister.create(YAGMCommon.MODID, Registries.BLOCK_ENTITY_TYPE);
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(YAGMCommon.MODID, Registries.BLOCK_ENTITY_TYPE);
 
     public static final RegistrySupplier<BlockEntityType<GraveStoneBlockEntity>> GRAVE_STONE =
             BLOCK_ENTITIES.register("grave_stone", () ->
