@@ -20,12 +20,14 @@ public class YAGMCommon {
         ItemsRegistry.init();
         EventRegistry.init();
         CreativeTabsRegistry.init();
+        DefaultVariantsRegistry.registerAll();
         LifecycleEvent.SERVER_STARTED.register(server -> {
             ItemValuator.initialize(server);
             CemeteryTestLogger.init(server);
         });
         LifecycleEvent.SERVER_STOPPING.register(server -> ItemValuator.shutdown());
         YAGMCompat.init();
+
     }
 
     public static ResourceLocation id(String name) {
