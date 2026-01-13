@@ -11,39 +11,39 @@ import java.util.Map;
 public interface IAccessoryHandler {
 
     /**
-     * Проверяет, загружен ли мод аксессуаров.
+     * Checks if the accessory mod is loaded.
      */
     boolean isModLoaded();
 
     /**
-     * Получает название мода (для логов).
+     * Gets the mod name (for logs).
      */
     String getModName();
 
     /**
-     * Собирает все предметы из слотов аксессуаров игрока.
-     * Вызывается при смерти игрока ПЕРЕД очисткой инвентаря.
+     * Collects all items from the player's accessory slots.
+     * Called when the player dies BEFORE clearing the inventory.
      *
-     * @param player игрок
-     * @return карта: ключ слота -> предмет (например "ring/0", "necklace/cosmetic/1")
+     * @param player
+     * @return map: slot key -> item (e.g. "ring/0", "necklace/cosmetic/1")
      */
     Map<String, ItemStack> collectAccessories(ServerPlayer player);
 
     /**
-     * Очищает все слоты аксессуаров игрока.
-     * Вызывается после сбора предметов.
+     * Clears all player accessory slots.
+     * Called after collecting items.
      *
-     * @param player игрок
+     * @param player
      */
     void clearAccessories(ServerPlayer player);
 
     /**
-     * Восстанавливает предметы в слоты аксессуаров.
-     * Если оригинальный слот занят — предмет идёт в инвентарь или дропается.
+     * Restores items to accessory slots.
+     * If the original slot is occupied, the item goes to inventory or is dropped.
      *
-     * @param player игрок
-     * @param accessories карта: ключ слота -> предмет
-     * @param dropIfFull если true — дропать предметы которые не влезли
+     * @param player
+     * @param accessories map: slot key -> item
+     * @param dropIfFull if true, drop items that didn't fit
      */
     void restoreAccessories(ServerPlayer player, Map<String, ItemStack> accessories, boolean dropIfFull);
 
@@ -57,16 +57,16 @@ public interface IAccessoryHandler {
     CompoundTag saveToNBT(Map<String, ItemStack> accessories, RegistryAccess registryAccess);
 
     /**
-     * Загружает аксессуары из NBT тега.
+     * Loads accessories from an NBT tag.
      *
-     * @param tag NBT тег
-     * @param registryAccess доступ к реестрам
-     * @return карта: ключ слота -> предмет
+     * @param tag NBT tag
+     * @param registryAccess registry access
+     * @return map: slot key -> item
      */
     Map<String, ItemStack> loadFromNBT(CompoundTag tag, RegistryAccess registryAccess);
 
     /**
-     * Преобразует карту аксессуаров в плоский список (для подсчёта стоимости и т.д.)
+     * Converts the accessory map into a flat list (for cost calculations, etc.)
      */
     default NonNullList<ItemStack> toList(Map<String, ItemStack> accessories) {
         NonNullList<ItemStack> list = NonNullList.create();
@@ -84,9 +84,9 @@ public interface IAccessoryHandler {
     boolean canEquipAsAccessory(ServerPlayer player, ItemStack stack);
 
     /**
-     * Пытается экипировать предмет в первый подходящий свободный слот.
+     *Attempts to equip an item into the first available available slot.
      *
-     * @return true если успешно экипирован
+     * @return true if successfully equipped
      */
     boolean tryEquipAccessory(ServerPlayer player, ItemStack stack);
 }
