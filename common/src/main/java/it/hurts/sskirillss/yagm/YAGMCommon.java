@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm;
 
 import dev.architectury.event.events.common.LifecycleEvent;
+import it.hurts.sskirillss.yagm.api.compat.YAGMCompat;
 import it.hurts.sskirillss.yagm.api.item_valuator.ItemValuator;
 import it.hurts.sskirillss.yagm.register.*;
 import it.hurts.sskirillss.yagm.test.CemeteryTestLogger;
@@ -19,11 +20,14 @@ public class YAGMCommon {
         ItemsRegistry.init();
         EventRegistry.init();
         CreativeTabsRegistry.init();
+        DefaultVariantsRegistry.registerAll();
         LifecycleEvent.SERVER_STARTED.register(server -> {
             ItemValuator.initialize(server);
             CemeteryTestLogger.init(server);
         });
         LifecycleEvent.SERVER_STOPPING.register(server -> ItemValuator.shutdown());
+        YAGMCompat.init();
+
     }
 
     public static ResourceLocation id(String name) {

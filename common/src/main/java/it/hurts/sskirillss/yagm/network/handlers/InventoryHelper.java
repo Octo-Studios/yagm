@@ -3,6 +3,7 @@ package it.hurts.sskirillss.yagm.network.handlers;
 
 import dev.architectury.event.EventResult;
 import it.hurts.sskirillss.yagm.YAGMCommon;
+import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.events.providers.IServerEvent;
 import it.hurts.sskirillss.yagm.utils.ItemUtils;
 import net.minecraft.core.BlockPos;
@@ -16,6 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -40,6 +42,11 @@ public class InventoryHelper {
             YAGMCommon.LOGGER.info("Player death event interrupted for: " + player.getUUID());
             return;
         }
+
+        if (AccessoryManager.hasAnyHandler()) {
+            AccessoryManager.clearAllAccessories(player);
+        }
+        
         player.getInventory().clearContent();
     }
 
@@ -63,6 +70,15 @@ public class InventoryHelper {
         ItemUtils.saveInventory(player.registryAccess(), nbt, "MainInventory", inventory.items);
         ItemUtils.saveInventory(player.registryAccess(), nbt, "ArmorInventory", inventory.armor);
         ItemUtils.saveInventory(player.registryAccess(), nbt, "OffhandInventory", inventory.offhand);
+
+
+        if (AccessoryManager.hasAnyHandler() && player instanceof ServerPlayer serverPlayer) {
+            Map<String, Map<String, ItemStack>> allAccessories = AccessoryManager.collectAllAccessories(serverPlayer);
+            CompoundTag accessoriesNBT = AccessoryManager.saveAllToNBT(allAccessories, player.registryAccess());
+            if (!accessoriesNBT.isEmpty()) {
+                nbt.put("Accessories", accessoriesNBT);
+            }
+        }
 
         nbt.putDouble("PosX", player.getX());
         nbt.putDouble("PosY", player.getY());
@@ -150,7 +166,7 @@ public class InventoryHelper {
         }
     }
 
-    public static void restoreFromNBT(ServerPlayer player, CompoundTag data) {
+    public static void restoreFromNBT(ServerPlayer player, CompoundTag data, boolean restoreAccessories) {
         NonNullList<ItemStack> mainItems = NonNullList.withSize(36, ItemStack.EMPTY);
         NonNullList<ItemStack> armorItems = NonNullList.withSize(4, ItemStack.EMPTY);
         NonNullList<ItemStack> offhandItems = NonNullList.withSize(1, ItemStack.EMPTY);
@@ -162,6 +178,14 @@ public class InventoryHelper {
         restoreInventory(player.getInventory().items, mainItems, player);
         restoreInventory(player.getInventory().armor, armorItems, player);
         restoreInventory(player.getInventory().offhand, offhandItems, player);
+
+        if (restoreAccessories && AccessoryManager.hasAnyHandler() && data.contains("Accessories", 10)) {
+            CompoundTag accessoriesNBT = data.getCompound("Accessories");
+            Map<String, Map<String, ItemStack>> allAccessories = AccessoryManager.loadAllFromNBT(accessoriesNBT, player.registryAccess());
+            AccessoryManager.restoreAllAccessories(player, allAccessories, true);
+        } else {
+            throw new RuntimeException();
+        }
     }
 
     public static void giveOrDropItem(ServerPlayer player, ItemStack stack) {

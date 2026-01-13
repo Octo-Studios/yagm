@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
@@ -26,6 +27,7 @@ public class GraveData {
     private Component deathCause;
     private String testament;
     private GraveStoneLevels graveLevel = GraveStoneLevels.GRAVESTONE_LEVEL_1;
+    private ResourceLocation variantId;
 
     public GraveData() {
         this.graveId = UUID.randomUUID();
@@ -66,6 +68,10 @@ public class GraveData {
                     GraveStoneLevels.GRAVESTONE_LEVEL_1
             );
         }
+
+        if (tag.contains("VariantId")) {
+            this.variantId = ResourceLocation.tryParse(tag.getString("VariantId"));
+        }
     }
 
     public void saveToTag(CompoundTag tag) {
@@ -89,6 +95,10 @@ public class GraveData {
         }
 
         tag.putString("GraveLevel", graveLevel.getSerializedName());
+
+        if (variantId != null) {
+            tag.putString("VariantId", variantId.toString());
+        }
     }
 
     public void loadFromGraveData(CompoundTag data) {
@@ -111,6 +121,10 @@ public class GraveData {
 
         if (data.contains("Testament")) {
             this.testament = data.getString("Testament");
+        }
+
+        if (data.contains("VariantId")) {
+            this.variantId = ResourceLocation.tryParse(data.getString("VariantId"));
         }
     }
 

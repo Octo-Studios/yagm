@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "yagm:block/hot_grave_tier_2" },
+    "facing=south": { "model": "yagm:block/hot_grave_tier_2", "y": 180 },
+    "facing=east": { "model": "yagm:block/hot_grave_tier_2", "y": 90 },
+    "facing=west": { "model": "yagm:block/hot_grave_tier_2", "y": 270 }
+  }
+}

@@ -1,6 +1,10 @@
 package it.hurts.sskirillss.yagm.blocks.gravestones;
 
+import it.hurts.sskirillss.yagm.YAGMCommon;
+import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
+import it.hurts.sskirillss.yagm.api.events.providers.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.provider.IGravestoneTitlesProvider;
+import it.hurts.sskirillss.yagm.api.variant.context.registry.GraveVariantRegistry;
 import it.hurts.sskirillss.yagm.client.titles.renderer.GravestoneTitles;
 import it.hurts.sskirillss.yagm.data.GraveData;
 import it.hurts.sskirillss.yagm.data.GraveDataManager;
@@ -15,6 +19,7 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
@@ -26,6 +31,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.UUID;
 
 
@@ -54,6 +60,28 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
         return graveData.getGraveLevel();
     }
 
+    @Nullable
+    public IGraveVariant getVariant() {
+        ResourceLocation variantId = graveData.getVariantId();
+        if (variantId != null) {
+            IGraveVariant variant = GraveVariantRegistry.get(variantId);
+            if (variant != null) {
+                return variant;
+            }
+        }
+        return GraveVariantRegistry.getDefaultVariant();
+    }
+
+    public void setVariant(IGraveVariant variant) {
+        if (variant != null) {
+            graveData.setVariantId(variant.getId());
+        } else {
+            graveData.setVariantId(null);
+        }
+        setChanged();
+        syncToClient();
+    }
+
     public float getTextHeight() {
         return switch (graveData.getGraveLevel()) {
             case GRAVESTONE_LEVEL_1 -> 1.4F;
@@ -64,6 +92,10 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
     }
 
     public int getTextColor() {
+        IGraveVariant variant = getVariant();
+        if (variant != null) {
+            return variant.getTextColor();
+        }
         return switch (graveData.getGraveLevel()) {
             case GRAVESTONE_LEVEL_1 -> 0xFFFFFFFF;
             case GRAVESTONE_LEVEL_2 -> 0xFFFFFFFF;
@@ -91,6 +123,9 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
         }
         if (data.contains("OffhandInventory")) {
             this.inventoryData.put("OffhandInventory", data.get("OffhandInventory"));
+        }
+        if (data.contains("Accessories")) {
+            this.inventoryData.put("Accessories", data.get("Accessories"));
         }
 
         updateTitles();
@@ -234,12 +269,21 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
     public void giveInventoryToPlayer(ServerPlayer player) {
         if (player == null) return;
 
-        boolean inventoryGiven = false;
         UUID graveId = graveData.getGraveId();
+        boolean inventoryGiven = false;
+
 
         if (level instanceof ServerLevel serverLevel) {
             GraveDataManager graveDataManager = GraveDataManager.get(serverLevel);
             boolean restored = false;
+
+            boolean accessoriesRestored = false;
+            if (AccessoryManager.hasAnyHandler() && inventoryData != null && inventoryData.contains("Accessories", 10)) {
+                CompoundTag accessoriesNBT = inventoryData.getCompound("Accessories");
+                Map<String, Map<String, ItemStack>> allAccessories = AccessoryManager.loadAllFromNBT(accessoriesNBT, player.serverLevel().registryAccess());
+                AccessoryManager.restoreAllAccessories(player, allAccessories, true);
+                accessoriesRestored = true;
+            }
 
             if (graveId != null) {
                 NonNullList<ItemStack> main = InventoryHelper.getOrThrowInventory(this.playerMainSlots, () -> graveDataManager.getTransientMain(graveId));
@@ -266,14 +310,14 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
                     inventoryGiven = true;
                 }
             }
-
+                
             if (!restored && inventoryData != null && !inventoryData.isEmpty()) {
-                InventoryHelper.restoreFromNBT(player, inventoryData);
+                InventoryHelper.restoreFromNBT(player, inventoryData, false);
                 player.getInventory().setChanged();
                 inventoryGiven = true;
             }
         } else if (inventoryData != null && !inventoryData.isEmpty()) {
-            InventoryHelper.restoreFromNBT(player, inventoryData);
+            InventoryHelper.restoreFromNBT(player, inventoryData, true);
             player.getInventory().setChanged();
             inventoryGiven = true;
         }
@@ -313,6 +357,21 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
                     Containers.dropItemStack(level, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, item);
                 }
             }
+
+            if (AccessoryManager.hasAnyHandler() && inventoryData.contains("Accessories", 10)) {
+                CompoundTag accessoriesNBT = inventoryData.getCompound("Accessories");
+                Map<String, Map<String, ItemStack>> allAccessories = AccessoryManager.loadAllFromNBT(accessoriesNBT, level.registryAccess());
+                
+                for (Map<String, ItemStack> handlerAccessories : allAccessories.values()) {
+                    for (ItemStack accessory : handlerAccessories.values()) {
+                        if (!accessory.isEmpty()) {
+                            hasItems = true;
+                            Containers.dropItemStack(level, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, accessory);
+                        }
+                    }
+                }
+            }
+            
             this.inventoryData = new CompoundTag();
         }
 

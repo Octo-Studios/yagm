@@ -1,5 +1,7 @@
 package it.hurts.sskirillss.yagm.blocks.gravestones;
 
+import it.hurts.sskirillss.yagm.api.events.providers.IGraveVariant;
+import it.hurts.sskirillss.yagm.api.variant.context.registry.GraveVariantRegistry;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.register.BlockRegistry;
 import it.hurts.sskirillss.yagm.register.EntityRegistry;
@@ -11,6 +13,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -21,20 +24,23 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
 public class FallingGraveEntity extends Entity {
 
     private static final EntityDataAccessor<Integer> DATA_LEVEL = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.INT);
-
     private static final EntityDataAccessor<Float> DATA_ROTATION = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<String> DATA_VARIANT = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.STRING);
 
     private CompoundTag graveData;
     private UUID ownerUUID;
     private String ownerName;
     private GraveStoneLevels graveLevel = GraveStoneLevels.GRAVESTONE_LEVEL_1;
     private Direction facing = Direction.NORTH;
+    @Nullable
+    private ResourceLocation variantId;
 
     private float rotationSpeed;
     private int lifetime = 0;
@@ -55,6 +61,15 @@ public class FallingGraveEntity extends Entity {
         entity.ownerName = ownerName;
         entity.facing = facing;
         entity.rotationSpeed = 15f + level.random.nextFloat() * 10f;
+
+        BlockPos blockPos = BlockPos.containing(position);
+        IGraveVariant variant = GraveVariantRegistry.getFor(level, blockPos);
+        if (variant != null) {
+            entity.variantId = variant.getId();
+            graveData.putString("VariantId", variant.getId().toString());
+            entity.entityData.set(DATA_VARIANT, variant.getId().toString());
+        }
+
         entity.entityData.set(DATA_LEVEL, graveLevel.ordinal());
         entity.entityData.set(DATA_ROTATION, 0f);
 
@@ -65,6 +80,7 @@ public class FallingGraveEntity extends Entity {
     protected void defineSynchedData(SynchedEntityData.@NotNull Builder builder) {
         builder.define(DATA_LEVEL, 0);
         builder.define(DATA_ROTATION, 0f);
+        builder.define(DATA_VARIANT, "");
     }
 
     @Override
@@ -91,22 +107,30 @@ public class FallingGraveEntity extends Entity {
     }
 
     private void placeGrave() {
-        if (!(level() instanceof ServerLevel serverLevel)) return;
+        if (!(level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+
         BlockPos landingPos = blockPosition();
         BlockPos gravePos = GraveStoneHelper.getGraveStoneBlockPosition(level(), landingPos);
         Block graveBlock = BlockRegistry.getBlockForLevel(graveLevel);
         BlockState graveState = graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
+
         if (GraveStoneHelper.placeGraveStone(level(), gravePos, graveState)) {
             if (level().getBlockEntity(gravePos) instanceof GraveStoneBlockEntity graveEntity) {
                 if (graveData != null) {
                     graveEntity.loadGraveData(graveData);
                 }
                 graveEntity.initializeGrave(ownerUUID, ownerName, System.currentTimeMillis(), null, null, graveLevel);
+
+                if (variantId != null) {
+                    graveEntity.getGraveData().setVariantId(variantId);
+                }
             }
 
             CemeteryManager.getInstance().addGrave(level().dimension(), gravePos);
         }
-
 
         discard();
     }
@@ -132,6 +156,24 @@ public class FallingGraveEntity extends Entity {
         return GraveStoneLevels.GRAVESTONE_LEVEL_1;
     }
 
+    @Nullable
+    public ResourceLocation getVariantId() {
+        String variantStr = entityData.get(DATA_VARIANT);
+        if (variantStr != null && !variantStr.isEmpty()) {
+            return ResourceLocation.tryParse(variantStr);
+        }
+        return variantId;
+    }
+
+    @Nullable
+    public IGraveVariant getVariant() {
+        ResourceLocation id = getVariantId();
+        if (id != null) {
+            return GraveVariantRegistry.get(id);
+        }
+        return GraveVariantRegistry.getDefaultVariant();
+    }
+
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         if (tag.contains("GraveData")) {
@@ -148,6 +190,11 @@ public class FallingGraveEntity extends Entity {
         this.facing = Direction.from2DDataValue(tag.getInt("Facing"));
         this.rotationSpeed = tag.getFloat("RotationSpeed");
         this.lifetime = tag.getInt("Lifetime");
+
+        if (tag.contains("VariantId")) {
+            this.variantId = ResourceLocation.tryParse(tag.getString("VariantId"));
+            entityData.set(DATA_VARIANT, tag.getString("VariantId"));
+        }
 
         entityData.set(DATA_LEVEL, graveLevel.ordinal());
         entityData.set(DATA_ROTATION, tag.getFloat("Rotation"));
@@ -169,6 +216,10 @@ public class FallingGraveEntity extends Entity {
         tag.putFloat("RotationSpeed", rotationSpeed);
         tag.putInt("Lifetime", lifetime);
         tag.putFloat("Rotation", entityData.get(DATA_ROTATION));
+
+        if (variantId != null) {
+            tag.putString("VariantId", variantId.toString());
+        }
     }
 
     @Override
@@ -180,5 +231,4 @@ public class FallingGraveEntity extends Entity {
     public boolean isPushable() {
         return false;
     }
-
 }

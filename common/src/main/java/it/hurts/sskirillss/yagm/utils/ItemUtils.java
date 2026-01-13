@@ -38,7 +38,7 @@ public class ItemUtils {
             CompoundTag itemTag = listTag.getCompound(i);
             int slot = itemTag.getByte("Slot") & 255;
             
-            if (slot >= 0 && slot < inventory.size()) {
+            if (slot < inventory.size()) {
                 ItemStack stack = ItemStack.parseOptional(provider, itemTag);
                 inventory.set(slot, stack);
             }

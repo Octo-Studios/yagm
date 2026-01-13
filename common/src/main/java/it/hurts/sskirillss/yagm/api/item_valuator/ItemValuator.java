@@ -96,9 +96,7 @@ public class ItemValuator extends AbstractItemValuator {
         return determineLevel(value, levelDeterminer);
     }
 
-    /**
-     * Grave level indicator with hardcoded thresholds
-     */
+
     private static class GraveLevelDeterminer implements ILevelDeterminer<GraveStoneLevels> {
 
         @Override

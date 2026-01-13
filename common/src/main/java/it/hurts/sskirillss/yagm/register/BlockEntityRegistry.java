@@ -9,8 +9,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 
 public class BlockEntityRegistry {
 
-    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
-            DeferredRegister.create(YAGMCommon.MODID, Registries.BLOCK_ENTITY_TYPE);
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(YAGMCommon.MODID, Registries.BLOCK_ENTITY_TYPE);
 
     public static final RegistrySupplier<BlockEntityType<GraveStoneBlockEntity>> GRAVE_STONE =
             BLOCK_ENTITIES.register("grave_stone", () ->
@@ -19,7 +18,21 @@ public class BlockEntityRegistry {
                             BlockRegistry.GRAVESTONE_LEVEL_1.get(),
                             BlockRegistry.GRAVESTONE_LEVEL_2.get(),
                             BlockRegistry.GRAVESTONE_LEVEL_3.get(),
-                            BlockRegistry.GRAVESTONE_LEVEL_4.get()
+                            BlockRegistry.GRAVESTONE_LEVEL_4.get(),
+                            BlockRegistry.HOT_GRAVESTONE_1.get(),
+                            BlockRegistry.HOT_GRAVESTONE_2.get(),
+                            BlockRegistry.HOT_GRAVESTONE_3.get(),
+                            BlockRegistry.HOT_GRAVESTONE_4.get(),
+                            BlockRegistry.COLD_GRAVESTONE_1.get(),
+                            BlockRegistry.COLD_GRAVESTONE_2.get(),
+                            BlockRegistry.COLD_GRAVESTONE_3.get(),
+                            BlockRegistry.COLD_GRAVESTONE_4.get(),
+                            BlockRegistry.NETHER_GRAVESTONE_1.get(),
+                            BlockRegistry.NETHER_GRAVESTONE_2.get(),
+                            BlockRegistry.NETHER_GRAVESTONE_3.get(),
+                            BlockRegistry.NETHER_GRAVESTONE_4.get(),
+                            BlockRegistry.TROPICS_GRAVESTONE_1.get(),
+                            BlockRegistry.TROPICS_GRAVESTONE_2.get()
                     ).build(null)
             );
 

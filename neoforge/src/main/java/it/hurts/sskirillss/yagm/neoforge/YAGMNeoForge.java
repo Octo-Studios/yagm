@@ -1,20 +1,14 @@
 package it.hurts.sskirillss.yagm.neoforge;
 
 import it.hurts.sskirillss.yagm.YAGMCommon;
-import it.hurts.sskirillss.yagm.client.YAGMClient;
-import it.hurts.sskirillss.yagm.events.GraveStoneEvent;
+import it.hurts.sskirillss.yagm.neoforge.compat.NeoForgeCompatImpl;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.neoforge.common.NeoForge;
 
 @Mod(YAGMCommon.MODID)
 public class YAGMNeoForge {
-    public YAGMNeoForge() {
+    public YAGMNeoForge(IEventBus modBus) {
+        NeoForgeCompatImpl.registerDataComponents(modBus);
         YAGMCommon.init();
     }
-
 }
-

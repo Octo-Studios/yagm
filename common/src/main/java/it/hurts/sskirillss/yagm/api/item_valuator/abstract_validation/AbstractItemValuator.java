@@ -87,8 +87,13 @@ public abstract class AbstractItemValuator {
 
     protected double computeBaseValue(Item item) {
         ItemStack stack = new ItemStack(item);
-        double value = config.getDefaultValue();
 
+        OptionalDouble providerValue = ValueProviderRegistry.getValue(stack);
+        if (providerValue.isPresent()) {
+            return providerValue.getAsDouble();
+        }
+
+        double value = config.getDefaultValue();
         value *= (1 + stack.getRarity().ordinal() * config.getRarityMultiplier());
 
         return ValueProviderRegistry.applyModifiers(stack, value);
@@ -102,7 +107,7 @@ public abstract class AbstractItemValuator {
 
             for (Recipe<?> recipe : allRecipes) {
                 ItemStack result = recipe.getResultItem(server.registryAccess());
-                if (result == null || result.isEmpty()) continue;
+                if (result.isEmpty()) continue;
 
                 Item resultItem = result.getItem();
                 if (valueCache.containsKey(resultItem)) continue;
@@ -201,6 +206,12 @@ public abstract class AbstractItemValuator {
 
     public double getStackValue(ItemStack stack) {
         if (stack.isEmpty()) return 0;
+
+        OptionalDouble providerValue = ValueProviderRegistry.getValue(stack);
+        if (providerValue.isPresent()) {
+            return providerValue.getAsDouble() * stack.getCount();
+        }
+
         return getValue(stack.getItem()) * stack.getCount();
     }
 

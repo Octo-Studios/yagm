@@ -28,6 +28,9 @@ dependencies {
     modImplementation "dev.architectury:architectury-neoforge:${architectury_version}"
     common(project(path: ":common", configuration: "namedElements")) { transitive = false }
     shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive = false }
+
+    runtimeOnly files("${rootProject.projectDir}/libs/curios-neoforge-9.5.1+1.21.1.jar")
+    compileOnly files("${rootProject.projectDir}/libs/curios-neoforge-9.5.1+1.21.1-api.jar")
 }
 
 def resourceTargets = ['META-INF/mods.toml', 'pack.mcmeta']
