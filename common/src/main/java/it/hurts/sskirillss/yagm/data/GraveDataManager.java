@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.ItemStack;
@@ -35,15 +36,15 @@ public class GraveDataManager extends SavedData {
 
         if (main != null) {
             NonNullList<ItemStack> dest = transientMain.get(graveId);
-            for (int i = 0; i < main.size(); i++) dest.set(i, main.get(i).copy());
+            IntStream.range(0, main.size()).forEach(i -> dest.set(i, main.get(i).copy()));
         }
         if (armor != null) {
             NonNullList<ItemStack> dest = transientArmor.get(graveId);
-            for (int i = 0; i < armor.size(); i++) dest.set(i, armor.get(i).copy());
+            IntStream.range(0, armor.size()).forEach(i -> dest.set(i, armor.get(i).copy()));
         }
         if (offhand != null) {
             NonNullList<ItemStack> dest = transientOffhand.get(graveId);
-            for (int i = 0; i < offhand.size(); i++) dest.set(i, offhand.get(i).copy());
+            IntStream.range(0, offhand.size()).forEach(i -> dest.set(i, offhand.get(i).copy()));
         }
     }
 
