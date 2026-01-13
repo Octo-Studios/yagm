@@ -21,7 +21,6 @@ public class GraveTitleEntityRenderer extends EntityRenderer<GraveTitleEntity> {
 
     @Override
     public void render(GraveTitleEntity entity, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
-
         Component text = entity.getText();
         if (text == null || text.getString().isEmpty()) {
             return;
