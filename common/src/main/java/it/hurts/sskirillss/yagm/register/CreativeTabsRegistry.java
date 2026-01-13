@@ -18,7 +18,7 @@ public class CreativeTabsRegistry {
             "yagm",
             () -> CreativeTabRegistry.create(
                     Component.translatable("categorie.yagm.main"),
-                    () -> new ItemStack(ItemsRegistry.GRANITE_TOMBSTONE.get())
+                    () -> new ItemStack(ItemsRegistry.GRAVESTONE_TIER_3.get())
             )
     );
 

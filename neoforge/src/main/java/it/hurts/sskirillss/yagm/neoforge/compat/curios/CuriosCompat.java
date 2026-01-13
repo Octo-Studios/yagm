@@ -48,23 +48,19 @@ public class CuriosCompat implements IAccessoryHandler {
     public Map<String, ItemStack> collectAccessories(ServerPlayer player) {
         Map<String, ItemStack> accessories = new HashMap<>();
 
-        YAGMCommon.LOGGER.info("[Curios] Collecting accessories for player: {}", player.getName().getString());
-        
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosInventory(player);
         if (curiosOpt.isEmpty()) {
-            YAGMCommon.LOGGER.warn("[Curios] No Curios inventory found for player!");
             return accessories;
         }
 
         ICuriosItemHandler curiosHandler = curiosOpt.get();
         Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
-        YAGMCommon.LOGGER.info("[Curios] Found {} slot types", curios.size());
 
         for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
             String slotType = entry.getKey();
             ICurioStacksHandler stacksHandler = entry.getValue();
 
-            // Collect regular slots
+
             IDynamicStackHandler stacks = stacksHandler.getStacks();
             for (int i = 0; i < stacks.getSlots(); i++) {
                 ItemStack stack = stacks.getStackInSlot(i);
@@ -196,8 +192,7 @@ public class CuriosCompat implements IAccessoryHandler {
                                 slotData.slotType(), slotIndex);
                         }
                     } else {
-                        YAGMCommon.LOGGER.warn("[Curios] Invalid slot index: {} for slot type {}",
-                            slotIndex, slotData.slotType());
+                        YAGMCommon.LOGGER.warn("[Curios] Invalid slot index: {} for slot type {}", slotIndex, slotData.slotType());
                     }
                 } else {
                     YAGMCommon.LOGGER.warn("[Curios] No stacks handler for slot type: {}", slotData.slotType());

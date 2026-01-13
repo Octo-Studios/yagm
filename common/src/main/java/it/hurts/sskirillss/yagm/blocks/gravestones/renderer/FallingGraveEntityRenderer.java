@@ -46,14 +46,12 @@ public class FallingGraveEntityRenderer extends EntityRenderer<FallingGraveEntit
         GraveStoneLevels level = entity.getGraveLevel();
         IGraveVariant variant = entity.getVariant();
         IGraveVariant defaultVariant = GraveVariantRegistry.getDefaultVariant();
-        
-        // Check if we have a non-default variant
+
         boolean useVariantModel = variant != null && variant != defaultVariant;
         
         if (useVariantModel) {
-            // Render the variant model
             ResourceLocation modelLocation = variant.getModel(level.getLevel());
-            ModelResourceLocation modelResLoc = new ModelResourceLocation(modelLocation, "standalone");
+            ModelResourceLocation modelResLoc = new ModelResourceLocation(modelLocation, "");
             
             BakedModel model = blockRenderer.getBlockModelShaper().getModelManager().getModel(modelResLoc);
             BakedModel missingModel = blockRenderer.getBlockModelShaper().getModelManager().getMissingModel();
@@ -63,11 +61,9 @@ public class FallingGraveEntityRenderer extends EntityRenderer<FallingGraveEntit
                 VertexConsumer vertexConsumer = buffer.getBuffer(RenderType.cutout());
                 blockRenderer.getModelRenderer().renderModel(poseStack.last(), vertexConsumer, state, model, 1.0f, 1.0f, 1.0f, packedLight, OverlayTexture.NO_OVERLAY);
             } else {
-                // Fallback to default block if model is missing
                 renderDefaultBlock(level, poseStack, buffer, packedLight);
             }
         } else {
-            // Render the default block
             renderDefaultBlock(level, poseStack, buffer, packedLight);
         }
 
