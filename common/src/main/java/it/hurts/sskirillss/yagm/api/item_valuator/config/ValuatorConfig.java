@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Getter
 @Setter
@@ -124,18 +125,10 @@ public class ValuatorConfig {
     }
 
     private void applyData(@NotNull ConfigData data) {
-        if (data.levelThresholds != null) {
-            this.levelThresholds = data.levelThresholds;
-        }
-        if (data.defaultValue != null) {
-            this.defaultValue = data.defaultValue;
-        }
-        if (data.rarityMultiplier != null) {
-            this.rarityMultiplier = data.rarityMultiplier;
-        }
-        if (data.exportValues != null) {
-            this.exportValues = data.exportValues;
-        }
+        this.levelThresholds = Objects.requireNonNullElse(data.levelThresholds, this.levelThresholds);
+        this.defaultValue = Objects.requireNonNullElse(data.defaultValue, this.defaultValue);
+        this.rarityMultiplier = Objects.requireNonNullElse(data.rarityMultiplier, this.rarityMultiplier);
+        this.exportValues = Objects.requireNonNullElse(data.exportValues, this.exportValues);
     }
 
     private ConfigData toData() {
