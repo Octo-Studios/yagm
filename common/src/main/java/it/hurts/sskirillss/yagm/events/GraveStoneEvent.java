@@ -26,13 +26,12 @@ public class GraveStoneEvent {
 
         GraveStoneLevels graveLevel = calculateGraveLevel(player, graveData);
 
-        Vec3 deathPos = player.position().add(0, 1, 0);
+        Vec3 deathPos = player.position().add(0, 0.5, 0);
 
         double angle = level.random.nextDouble() * Math.PI * 2;
-        double distance = 2.0 + level.random.nextDouble() * 2.0;
-        double speed = 0.3 + level.random.nextDouble() * 0.2;
+        double speed = 0.4 + level.random.nextDouble() * 0.2;
 
-        Vec3 velocity = new Vec3(Math.cos(angle) * speed, 0.5 + level.random.nextDouble() * 0.3, Math.sin(angle) * speed);
+        Vec3 velocity = new Vec3(Math.cos(angle) * speed, 0.15 + level.random.nextDouble() * 0.1, Math.sin(angle) * speed);
 
         Direction facing = player.getDirection().getOpposite();
 

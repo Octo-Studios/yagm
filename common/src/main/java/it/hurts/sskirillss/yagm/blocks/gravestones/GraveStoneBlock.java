@@ -38,10 +38,23 @@ public class GraveStoneBlock extends Block implements EntityBlock {
 
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
-    public GraveStoneBlock(Properties properties) {
+    private final VoxelShape shapeNS;
+    private final VoxelShape shapeEW;
+
+    private static final VoxelShape SHAPE_NS = Block.box(2, 0, 6, 14, 12, 10);
+    private static final VoxelShape SHAPE_EW = Block.box(6, 0, 2, 10, 12, 14);
+
+    public GraveStoneBlock(Properties properties, VoxelShape shapeNS, VoxelShape shapeEW) {
         super(properties);
+        this.shapeNS = shapeNS;
+        this.shapeEW = shapeEW;
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
+
+    public GraveStoneBlock(Properties properties) {
+        this(properties, Block.box(2, 0, 6, 14, 16, 10), Block.box(6, 0, 2, 10, 16, 14));
+    }
+
 
     @Override
     public @NotNull InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
@@ -54,17 +67,17 @@ public class GraveStoneBlock extends Block implements EntityBlock {
         return InteractionResult.SUCCESS;
     }
 
-    private static final VoxelShape SHAPE_NS = Block.box(2, 0, 6, 14, 12, 10);
-    private static final VoxelShape SHAPE_EW = Block.box(6, 0, 2, 10, 12, 14);
-
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         Direction facing = state.getValue(FACING);
-        return (facing == Direction.EAST || facing == Direction.WEST) ? SHAPE_EW : SHAPE_NS;
+        return (facing == Direction.EAST || facing == Direction.WEST) ? shapeEW : shapeNS;
     }
 
-
+    @Override
+    public @NotNull VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return getShape(state, level, pos, context);
+    }
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
@@ -110,12 +123,6 @@ public class GraveStoneBlock extends Block implements EntityBlock {
         super.playerWillDestroy(level, pos, state, player);
         return state;
     }
-
-    @Override
-    public @NotNull VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return getShape(state, level, pos, context);
-    }
-
 
     @Override
     protected @NotNull RenderShape getRenderShape(BlockState state) {
