@@ -21,14 +21,4 @@ public abstract class AbstractGraveVariant implements IGraveVariant {
     public AbstractGraveVariant(String modId, String name, String displayName, int priority) {
         this(ResourceLocation.fromNamespaceAndPath(modId, name), displayName, priority);
     }
-
-    @Override
-    public ResourceLocation getTexture(int graveLevel) {
-        return ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "textures/block/grave_tier_" + graveLevel + "_" + id.getPath() + ".png");
-    }
-
-    @Override
-    public ResourceLocation getModel(int graveLevel) {
-        return ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "block/grave_tier_" + graveLevel + "_" + id.getPath());
-    }
 }
