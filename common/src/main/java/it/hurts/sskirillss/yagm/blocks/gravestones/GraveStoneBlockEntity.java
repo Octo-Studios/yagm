@@ -1,6 +1,5 @@
 package it.hurts.sskirillss.yagm.blocks.gravestones;
 
-import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.events.providers.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.provider.IGravestoneTitlesProvider;
@@ -87,7 +86,7 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
             case GRAVESTONE_LEVEL_1 -> 1.4F;
             case GRAVESTONE_LEVEL_2 -> 1.4F;
             case GRAVESTONE_LEVEL_3 -> 2.1F;
-            case GRAVESTONE_LEVEL_4 -> 1.6F;
+            case GRAVESTONE_LEVEL_4 -> 2.9F;
         };
     }
 
