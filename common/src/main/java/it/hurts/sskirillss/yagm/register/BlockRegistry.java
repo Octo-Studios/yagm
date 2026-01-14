@@ -8,6 +8,7 @@ import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLeve
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -18,65 +19,75 @@ public final class BlockRegistry {
 
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(YAGMCommon.MODID, Registries.BLOCK);
 
+    private static final VoxelShape TIER_1_NS = Block.box(2, 0, 6, 14, 16, 10);
+    private static final VoxelShape TIER_1_EW = Block.box(6, 0, 2, 10, 16, 14);
+
+    private static final VoxelShape TIER_2_NS = Block.box(2, 0, 6, 14, 16, 10);
+    private static final VoxelShape TIER_2_EW = Block.box(6, 0, 2, 10, 16, 14);
+
+    private static final VoxelShape TIER_3_NS = Block.box(1, 0, 2, 15, 28, 15);
+    private static final VoxelShape TIER_3_EW = Block.box(2, 0, 1, 15, 28, 15);
+
+    private static final VoxelShape TIER_4_NS = Block.box(1, 0, 1, 15, 32, 15);
+    private static final VoxelShape TIER_4_EW = Block.box(1, 0, 1, 15, 32, 15);
+
+
     public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_1 = BLOCKS.register("grave_tier_1", () -> new GraveStoneBlock(
-         BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_1_NS, TIER_1_EW));
 
     public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_2 = BLOCKS.register("grave_tier_2", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_2_NS, TIER_2_EW));
 
     public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_3 = BLOCKS.register("grave_tier_3", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_3_NS, TIER_3_EW));
 
     public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_4 = BLOCKS.register("grave_tier_4", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_4_NS, TIER_4_EW));
 
 
     //SKINS
     public static final RegistrySupplier<Block> COLD_GRAVESTONE_1 = BLOCKS.register("cold_grave_tier_1", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_1_NS, TIER_1_EW));
 
     public static final RegistrySupplier<Block> COLD_GRAVESTONE_2 = BLOCKS.register("cold_grave_tier_2", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_2_NS, TIER_2_EW));
 
     public static final RegistrySupplier<Block> COLD_GRAVESTONE_3 = BLOCKS.register("cold_grave_tier_3", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_3_NS, TIER_3_EW));
 
     public static final RegistrySupplier<Block> COLD_GRAVESTONE_4 = BLOCKS.register("cold_grave_tier_4", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_4_NS, TIER_4_EW));
 
     public static final RegistrySupplier<Block> HOT_GRAVESTONE_1 = BLOCKS.register("hot_grave_tier_1", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_1_NS, TIER_1_EW));
 
     public static final RegistrySupplier<Block> HOT_GRAVESTONE_2 = BLOCKS.register("hot_grave_tier_2", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_2_NS, TIER_2_EW));
 
     public static final RegistrySupplier<Block> HOT_GRAVESTONE_3 = BLOCKS.register("hot_grave_tier_3", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_3_NS, TIER_3_EW));
 
     public static final RegistrySupplier<Block> HOT_GRAVESTONE_4 = BLOCKS.register("hot_grave_tier_4", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_4_NS, TIER_4_EW));
 
     public static final RegistrySupplier<Block> NETHER_GRAVESTONE_1 = BLOCKS.register("nether_grave_tier_1", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_1_NS, TIER_1_EW));
 
     public static final RegistrySupplier<Block> NETHER_GRAVESTONE_2 = BLOCKS.register("nether_grave_tier_2", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_2_NS, TIER_2_EW));
 
     public static final RegistrySupplier<Block> NETHER_GRAVESTONE_3 = BLOCKS.register("nether_grave_tier_3", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_3_NS, TIER_3_EW));
 
     public static final RegistrySupplier<Block> NETHER_GRAVESTONE_4 = BLOCKS.register("nether_grave_tier_4", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_4_NS, TIER_4_EW));
 
     public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_1 = BLOCKS.register("tropics_grave_tier_1", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_1_NS, TIER_1_EW));
 
     public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_2 = BLOCKS.register("tropics_grave_tier_2", () -> new GraveStoneBlock(
-            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_2_NS, TIER_2_EW));
 
-
-//    public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_5 = BLOCKS.register("grave_tier_5", () -> new GraveStoneBlock(
-//            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops()));
 
     private static final Map<GraveStoneLevels, RegistrySupplier<Block>> default_blocks = new EnumMap<>(GraveStoneLevels.class);
     private static final Map<GraveStoneLevels, RegistrySupplier<Block>> coldBlocks = new EnumMap<>(GraveStoneLevels.class);
@@ -93,7 +104,6 @@ public final class BlockRegistry {
         default_blocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_4, GRAVESTONE_LEVEL_4);
 
         // Cold variant
-
         coldBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_1, COLD_GRAVESTONE_1);
         coldBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_2, COLD_GRAVESTONE_2);
         coldBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_3, COLD_GRAVESTONE_3);
