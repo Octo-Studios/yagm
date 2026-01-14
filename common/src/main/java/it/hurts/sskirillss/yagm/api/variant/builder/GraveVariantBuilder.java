@@ -25,8 +25,6 @@ public class GraveVariantBuilder {
     private final List<Predicate<GraveVariantContext>> conditions = new ArrayList<>();
     private int textColor = 0xFFFFFFFF;
     private float textHeightOffset = 0f;
-    private String texturePattern;
-    private String modelPattern;
 
     public static GraveVariantBuilder create(ResourceLocation id) {
         return new GraveVariantBuilder(id);
@@ -106,24 +104,13 @@ public class GraveVariantBuilder {
         return this;
     }
 
-    public GraveVariantBuilder texturePattern(String pattern) {
-        this.texturePattern = pattern;
-        return this;
-    }
-
-    public GraveVariantBuilder modelPattern(String pattern) {
-        this.modelPattern = pattern;
-        return this;
-    }
-
     public IGraveVariant build() {
         String name = displayName != null ? displayName : id.getPath();
 
         return new BuiltGraveVariant(
                 id, name, priority,
                 List.copyOf(conditions),
-                textColor, textHeightOffset,
-                texturePattern, modelPattern
+                textColor, textHeightOffset
         );
     }
 
@@ -139,16 +126,12 @@ public class GraveVariantBuilder {
         private final List<Predicate<GraveVariantContext>> conditions;
         private final int textColor;
         private final float textHeightOffset;
-        private final String texturePattern;
-        private final String modelPattern;
 
-        BuiltGraveVariant(ResourceLocation id, String displayName, int priority, List<Predicate<GraveVariantContext>> conditions, int textColor, float textHeightOffset, String texturePattern, String modelPattern) {
+        BuiltGraveVariant(ResourceLocation id, String displayName, int priority, List<Predicate<GraveVariantContext>> conditions, int textColor, float textHeightOffset) {
             super(id, displayName, priority);
             this.conditions = conditions;
             this.textColor = textColor;
             this.textHeightOffset = textHeightOffset;
-            this.texturePattern = texturePattern;
-            this.modelPattern = modelPattern;
         }
 
         @Override
@@ -165,22 +148,6 @@ public class GraveVariantBuilder {
         @Override
         public float getTextHeightOffset() {
             return textHeightOffset;
-        }
-
-        @Override
-        public ResourceLocation getTexture(int graveLevel) {
-            if (texturePattern != null) {
-                return ResourceLocation.fromNamespaceAndPath(id.getNamespace(), texturePattern.replace("{level}", String.valueOf(graveLevel)));
-            }
-            return super.getTexture(graveLevel);
-        }
-
-        @Override
-        public ResourceLocation getModel(int graveLevel) {
-            if (modelPattern != null) {
-                return ResourceLocation.fromNamespaceAndPath(id.getNamespace(), modelPattern.replace("{level}", String.valueOf(graveLevel)));
-            }
-            return super.getModel(graveLevel);
         }
     }
 }

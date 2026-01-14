@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.client.titles.entity;
 
+import it.hurts.sskirillss.yagm.blocks.gravestones.GraveStoneBlockEntity;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.core.BlockPos;
@@ -57,7 +58,7 @@ public class GraveTitleEntity extends Entity {
         super.tick();
 
         if (!level().isClientSide() && linkedGravePos != null) {
-            if (!(level().getBlockEntity(linkedGravePos) instanceof it.hurts.sskirillss.yagm.blocks.gravestones.GraveStoneBlockEntity)) {
+            if (!(level().getBlockEntity(linkedGravePos) instanceof GraveStoneBlockEntity)) {
                 this.discard();
             }
         }
