@@ -114,7 +114,9 @@ public class FallingGraveEntity extends Entity {
 
         BlockPos landingPos = blockPosition();
         BlockPos gravePos = GraveStoneHelper.getGraveStoneBlockPosition(level(), landingPos);
-        Block graveBlock = BlockRegistry.getBlockForLevel(graveLevel);
+
+        String variantStr = variantId != null ? variantId.toString() : null;
+        Block graveBlock = BlockRegistry.getBlockForVariant(variantStr, graveLevel);
         BlockState graveState = graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
 
         if (GraveStoneHelper.placeGraveStone(level(), gravePos, graveState)) {
