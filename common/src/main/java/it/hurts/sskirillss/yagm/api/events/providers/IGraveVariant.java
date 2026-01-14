@@ -21,12 +21,6 @@ public interface IGraveVariant {
     boolean matches(GraveVariantContext context);
 
 
-    ResourceLocation getTexture(int level);
-
-
-    ResourceLocation getModel(int level);
-
-
     /**
      * Optional color value for your text
      */
