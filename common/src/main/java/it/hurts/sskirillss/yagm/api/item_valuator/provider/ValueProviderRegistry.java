@@ -3,6 +3,7 @@ package it.hurts.sskirillss.yagm.api.item_valuator.provider;
 import it.hurts.sskirillss.yagm.api.item_valuator.providers.IItemValueProvider;
 import it.hurts.sskirillss.yagm.api.item_valuator.providers.IValueModifier;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Registry of item value providers.
  */
+@ApiStatus.Internal
 public final class ValueProviderRegistry {
 
     private static final Map<String, IItemValueProvider> PROVIDERS = new ConcurrentHashMap<>();

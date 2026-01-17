@@ -23,8 +23,7 @@ import java.nio.file.Path;
 @SuppressWarnings("all")
 public class ItemValuator extends AbstractItemValuator {
 
-    @Getter
-    private static ItemValuator instance;
+    private static ItemValuator INSTANCE;
 
     private static final double[] LIST_THRESHOLDS = {0, 100, 500, 4000};
     private static final double DEFAULT_VALUE = 1.0;
@@ -45,20 +44,23 @@ public class ItemValuator extends AbstractItemValuator {
         config.setRarityMultiplier(DEFAULT_RARITY_MULTIPLIER);
         config.setExportValues(true);
 
-        server.submit(() -> {
-            instance = new ItemValuator(server, config);
-            instance.registerDefaultModifiers();
-            instance.initialize();
-            YAGMCommon.LOGGER.info("ItemValuator initialized with {} items", instance.valueCache.size());
-        });
+        INSTANCE = new ItemValuator(server, config);
+        INSTANCE.registerDefaultModifiers();
+        INSTANCE.initialize();
+        YAGMCommon.LOGGER.info("ItemValuator initialized (base cache size: {}), recipe values computing in background.",
+                INSTANCE.valueCache.size());
     }
 
     public static void shutdown() {
-        instance = null;
+        INSTANCE = null;
     }
 
     public static boolean isAvailable() {
-        return instance != null;
+        return INSTANCE != null;
+    }
+
+    public static ItemValuator getInstance() {
+        return INSTANCE;
     }
 
     private void registerDefaultModifiers() {

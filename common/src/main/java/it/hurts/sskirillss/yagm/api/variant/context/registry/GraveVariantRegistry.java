@@ -1,17 +1,18 @@
 package it.hurts.sskirillss.yagm.api.variant.context.registry;
 
-import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.api.events.providers.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.context.GraveVariantContext;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+@ApiStatus.Internal
 public class GraveVariantRegistry {
     private static final Map<ResourceLocation, IGraveVariant> GRAVESTONE_VARIANTS = new ConcurrentHashMap<>();
     private static final List<IGraveVariant> SORTED_VARIANTS = new ArrayList<>();
@@ -32,8 +33,6 @@ public class GraveVariantRegistry {
 
         GRAVESTONE_VARIANTS.put(id, variant);
         needsSort = true;
-
-        YAGMCommon.LOGGER.info("Registered grave variant: {}", id);
     }
 
     public static void setDefaultVariant(IGraveVariant variant) {

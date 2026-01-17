@@ -127,8 +127,6 @@ public final class BlockRegistry {
         // Tropics variant
         tropicsBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_1, TROPICS_GRAVESTONE_1);
         tropicsBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_2, TROPICS_GRAVESTONE_2);
-        tropicsBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_3, null);
-        tropicsBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_4, null);
         VARIANT_TO_BLOCKS.put("yagm:tropics", tropicsBlocks);
     }
 
