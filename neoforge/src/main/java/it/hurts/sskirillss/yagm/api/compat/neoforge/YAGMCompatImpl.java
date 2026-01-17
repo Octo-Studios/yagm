@@ -2,6 +2,7 @@ package it.hurts.sskirillss.yagm.api.compat.neoforge;
 
 
 import it.hurts.sskirillss.yagm.neoforge.compat.NeoForgeCompatImpl;
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * Platform-specific implementation for YAGMCompat.registerPlatformHandlers()
@@ -10,6 +11,7 @@ import it.hurts.sskirillss.yagm.neoforge.compat.NeoForgeCompatImpl;
  * This class delegates to FabricCompatImpl which contains the actual
  * implementation logic for Fabric-specific compatibility.
  */
+@ApiStatus.Internal
 public class YAGMCompatImpl {
 
     /**

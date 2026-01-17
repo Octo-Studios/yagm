@@ -23,6 +23,9 @@ public class GraveStoneBlockEntityRenderer implements BlockEntityRenderer<GraveS
 
     @Override
     public void render(GraveStoneBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {
+        if (!blockEntity.hasLevel() || blockEntity.getLevel().getBlockState(blockEntity.getBlockPos()).getBlock() != blockEntity.getBlockState().getBlock()) {
+            return;
+        }
         renderText(blockEntity, poseStack, buffer, packedLight);
     }
 
@@ -30,6 +33,10 @@ public class GraveStoneBlockEntityRenderer implements BlockEntityRenderer<GraveS
     private void renderText(GraveStoneBlockEntity blockEntity, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
         String ownerName = blockEntity.getOwnerName();
         if (ownerName == null || ownerName.isEmpty() || ownerName.equals("Unknown")) {
+            return;
+        }
+
+        if (!blockEntity.hasLevel() || blockEntity.isRemoved()) {
             return;
         }
 

@@ -183,8 +183,6 @@ public class InventoryHelper {
             CompoundTag accessoriesNBT = data.getCompound("Accessories");
             Map<String, Map<String, ItemStack>> allAccessories = AccessoryManager.loadAllFromNBT(accessoriesNBT, player.registryAccess());
             AccessoryManager.restoreAllAccessories(player, allAccessories, true);
-        } else {
-            throw new RuntimeException();
         }
     }
 
