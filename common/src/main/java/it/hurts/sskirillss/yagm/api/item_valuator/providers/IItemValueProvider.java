@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.api.item_valuator.providers;
 
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.OptionalDouble;
 
@@ -8,6 +9,7 @@ import java.util.OptionalDouble;
  * Item value provider.
  * Addons can implement custom evaluation logic.
  */
+@ApiStatus.Internal
 public interface IItemValueProvider {
 
     /**

@@ -7,11 +7,13 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 
+@ApiStatus.Internal
 public final class AccessoryManager {
 
     private static final Map<String, IAccessoryHandler> handlers = new ConcurrentHashMap<>();
@@ -37,14 +39,9 @@ public final class AccessoryManager {
         }
     }
 
-    /**
-     * Initialize the manager. Called after all handlers are registered.
-     */
     public static void initialize() {
         if (initialized) return;
         initialized = true;
-
-        YAGMCommon.LOGGER.info("[YAGM] AccessoryManager initialized with {} handler(s)", handlers.size());
     }
 
     /**
@@ -78,13 +75,9 @@ public final class AccessoryManager {
         Map<String, Map<String, ItemStack>> allAccessories = new HashMap<>();
 
         for (IAccessoryHandler handler : handlers.values()) {
-            try {
-                Map<String, ItemStack> accessories = handler.collectAccessories(player);
-                if (!accessories.isEmpty()) {
-                    allAccessories.put(handler.getModName(), accessories);
-                }
-            } catch (Exception e) {
-                YAGMCommon.LOGGER.error("[YAGM] Error collecting from handler {}: {}", handler.getModName(), e.getMessage());
+            Map<String, ItemStack> accessories = handler.collectAccessories(player);
+            if (!accessories.isEmpty()) {
+                allAccessories.put(handler.getModName(), accessories);
             }
         }
 
@@ -96,17 +89,11 @@ public final class AccessoryManager {
      */
     public static void clearAllAccessories(ServerPlayer player) {
         for (IAccessoryHandler handler : handlers.values()) {
-            try {
-                handler.clearAccessories(player);
-            } catch (Exception e) {
-                YAGMCommon.LOGGER.error("[YAGM] Error clearing accessories via handler {}: {}", handler.getModName(), e.getMessage());
-            }
+            handler.clearAccessories(player);
         }
     }
 
-    /**
-     * Convert all accessories to flat list (for counting, rendering, etc.)
-     */
+
     public static NonNullList<ItemStack> toFlatList(Map<String, Map<String, ItemStack>> allAccessories) {
         NonNullList<ItemStack> list = NonNullList.create();
 
@@ -137,17 +124,13 @@ public final class AccessoryManager {
 
             IAccessoryHandler handler = handlers.get(handlerName);
             if (handler != null) {
-                try {
-                    CompoundTag handlerData = handler.saveToNBT(accessories, registryAccess);
-                    if (handlerData != null && !handlerData.isEmpty()) {
-                        root.put(handlerName, handlerData);
-                    }
-                } catch (Exception e) {
-                    YAGMCommon.LOGGER.error("[YAGM] Error saving from handler {}: {}", handlerName, e.getMessage());
+                CompoundTag handlerData = handler.saveToNBT(accessories, registryAccess);
+                if (handlerData != null && !handlerData.isEmpty()) {
+                    root.put(handlerName, handlerData);
+
                 }
             }
         }
-
         return root;
     }
 
@@ -164,20 +147,13 @@ public final class AccessoryManager {
         for (String handlerName : tag.getAllKeys()) {
             IAccessoryHandler handler = handlers.get(handlerName);
             if (handler != null) {
-                try {
-                    CompoundTag handlerData = tag.getCompound(handlerName);
-                    Map<String, ItemStack> accessories = handler.loadFromNBT(handlerData, registryAccess);
-                    if (!accessories.isEmpty()) {
-                        allAccessories.put(handlerName, accessories);
-                    }
-                } catch (Exception e) {
-                    YAGMCommon.LOGGER.error("[YAGM] Error loading from handler {}: {}", handlerName, e.getMessage());
+                CompoundTag handlerData = tag.getCompound(handlerName);
+                Map<String, ItemStack> accessories = handler.loadFromNBT(handlerData, registryAccess);
+                if (!accessories.isEmpty()) {
+                    allAccessories.put(handlerName, accessories);
                 }
-            } else {
-                YAGMCommon.LOGGER.warn("[YAGM] Handler {} not available for loading", handlerName);
             }
         }
-
         return allAccessories;
     }
 
@@ -195,11 +171,7 @@ public final class AccessoryManager {
 
             IAccessoryHandler handler = handlers.get(handlerName);
             if (handler != null) {
-                try {
-                    handler.restoreAccessories(player, accessories, dropIfFull);
-                } catch (Exception e) {
-                    YAGMCommon.LOGGER.error("[YAGM] Error restoring via handler {}: {}", handlerName, e.getMessage());
-                }
+                handler.restoreAccessories(player, accessories, dropIfFull);
             } else {
                 for (ItemStack stack : accessories.values()) {
                     if (!stack.isEmpty()) {
@@ -221,14 +193,10 @@ public final class AccessoryManager {
      */
     public static boolean tryEquipAsAccessory(ServerPlayer player, ItemStack stack) {
         for (IAccessoryHandler handler : handlers.values()) {
-            try {
-                if (handler.canEquipAsAccessory(player, stack)) {
-                    if (handler.tryEquipAccessory(player, stack)) {
-                        return true;
-                    }
+            if (handler.canEquipAsAccessory(player, stack)) {
+                if (handler.tryEquipAccessory(player, stack)) {
+                    return true;
                 }
-            } catch (Exception e) {
-                YAGMCommon.LOGGER.error("[YAGM] Error equipping via handler {}: {}", handler.getModName(), e.getMessage());
             }
         }
         return false;

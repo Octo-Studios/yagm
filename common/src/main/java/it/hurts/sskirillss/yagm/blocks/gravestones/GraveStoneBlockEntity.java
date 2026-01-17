@@ -10,6 +10,8 @@ import it.hurts.sskirillss.yagm.data.GraveDataManager;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.network.handlers.InventoryHelper;
 import it.hurts.sskirillss.yagm.register.BlockEntityRegistry;
+import it.hurts.sskirillss.yagm.structures.cemetery.CemeteryManager;
+import it.hurts.sskirillss.yagm.structures.cemetery.data.CemeterySavedData;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -247,6 +249,9 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
                 if (player instanceof ServerPlayer serverPlayer) {
                     giveInventoryToPlayer(serverPlayer);
                     level.removeBlock(getBlockPos(), false);
+                    if (level instanceof ServerLevel serverLevel) {
+                       CemeterySavedData.markDirty(serverLevel);
+                    }
                 }
             }
         }
@@ -276,12 +281,10 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
             GraveDataManager graveDataManager = GraveDataManager.get(serverLevel);
             boolean restored = false;
 
-            boolean accessoriesRestored = false;
             if (AccessoryManager.hasAnyHandler() && inventoryData != null && inventoryData.contains("Accessories", 10)) {
                 CompoundTag accessoriesNBT = inventoryData.getCompound("Accessories");
                 Map<String, Map<String, ItemStack>> allAccessories = AccessoryManager.loadAllFromNBT(accessoriesNBT, player.serverLevel().registryAccess());
                 AccessoryManager.restoreAllAccessories(player, allAccessories, true);
-                accessoriesRestored = true;
             }
 
             if (graveId != null) {
@@ -380,6 +383,12 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
 
         removeFromGraveManager();
     }
+    
+    private void saveCemeteryData() {
+        if (level instanceof ServerLevel serverLevel) {
+           CemeterySavedData.markDirty(serverLevel);
+        }
+    }
 
 
     private void removeFromGraveManager() {
@@ -399,6 +408,10 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
                 manager.removeGrave(keyToRemove);
                 manager.removeTransientGrave(graveId);
             }
+
+           CemeteryManager.getInstance().removeGrave(serverLevel.dimension(), getBlockPos());
+
+           CemeterySavedData.markDirty(serverLevel);
         }
     }
 

@@ -4,8 +4,10 @@ import dev.architectury.event.events.common.LifecycleEvent;
 import it.hurts.sskirillss.yagm.api.compat.YAGMCompat;
 import it.hurts.sskirillss.yagm.api.item_valuator.ItemValuator;
 import it.hurts.sskirillss.yagm.register.*;
+import it.hurts.sskirillss.yagm.structures.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.test.CemeteryTestLogger;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +26,16 @@ public class YAGMCommon {
         LifecycleEvent.SERVER_STARTED.register(server -> {
             ItemValuator.initialize(server);
             CemeteryTestLogger.init(server);
+
+         CemeteryManager.getInstance().setLevelChecker(dimension -> {
+                for (ServerLevel level : server.getAllLevels()) {
+                    if (level.dimension().equals(dimension)) {
+                        return level;
+                    }
+                }
+                return null;
+            });
+           CemeteryManager.getInstance().validateAndCleanGraves();
         });
         LifecycleEvent.SERVER_STOPPING.register(server -> ItemValuator.shutdown());
         YAGMCompat.init();

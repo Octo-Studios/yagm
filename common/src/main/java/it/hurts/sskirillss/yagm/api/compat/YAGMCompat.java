@@ -2,8 +2,9 @@ package it.hurts.sskirillss.yagm.api.compat;
 
 import dev.architectury.injectables.annotations.ExpectPlatform;
 import dev.architectury.platform.Platform;
-import it.hurts.sskirillss.yagm.YAGMCommon;
+import org.jetbrains.annotations.ApiStatus;
 
+@ApiStatus.Internal
 public class YAGMCompat {
 
     private static boolean initialized = false;

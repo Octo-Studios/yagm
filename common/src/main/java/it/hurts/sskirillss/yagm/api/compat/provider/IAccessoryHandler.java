@@ -5,9 +5,11 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.Map;
 
+@ApiStatus.Internal
 public interface IAccessoryHandler {
 
     /**

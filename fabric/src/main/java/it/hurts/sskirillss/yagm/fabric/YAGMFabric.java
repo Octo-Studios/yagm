@@ -11,8 +11,5 @@ public class YAGMFabric implements ModInitializer {
     public void onInitialize() {
         YAGMCommon.init();
         YAGMCompat.init();
-
-        ServerLifecycleEvents.SERVER_STARTED.register(ItemValuator::initialize);
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> ItemValuator.shutdown());
     }
 }

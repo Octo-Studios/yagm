@@ -2,15 +2,21 @@ package it.hurts.sskirillss.yagm.structures.cemetery;
 
 
 import it.hurts.sskirillss.yagm.YAGMCommon;
+import it.hurts.sskirillss.yagm.blocks.gravestones.GraveStoneBlock;
 import it.hurts.sskirillss.yagm.structures.cemetery.config.CemeteryConfig;
 import it.hurts.sskirillss.yagm.structures.cemetery.data.CemeteryInfo;
+import it.hurts.sskirillss.yagm.structures.cemetery.data.CemeterySavedData;
 import it.hurts.sskirillss.yagm.structures.cemetery.data.DimensionGraveData;
+import it.hurts.sskirillss.yagm.structures.cemetery.utils.cemetery.ICemeteryManager;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.*;
 import java.util.function.Function;
@@ -32,15 +38,13 @@ public class CemeteryManager {
     private final Map<ResourceKey<Level>, DimensionGraveData> dimensions = new HashMap<>();
 
     @Setter
-    private CemeteryFormedCallback onCemeteryFormed;
+    private ICemeteryManager.CemeteryFormedCallback onCemeteryFormed;
 
-    private CemeteryManager() {}
+    @Setter
+    private ICemeteryManager.LevelChecker levelChecker;
 
-    @FunctionalInterface
-    public interface CemeteryFormedCallback {
-        void onFormed(ResourceKey<Level> dimension, BlockPos center, int graveCount);
+    private CemeteryManager() {
     }
-
 
     /**
      * Add Grave
@@ -135,6 +139,52 @@ public class CemeteryManager {
         dimensions.clear();
     }
 
+    /**
+     * Validate and remove invalid graves from the cemetery system
+     * This should be called after world load to clean up phantom blocks
+     */
+    public void validateAndCleanGraves() {
+        for (Map.Entry<ResourceKey<Level>, DimensionGraveData> entry : dimensions.entrySet()) {
+            ResourceKey<Level> dimension = entry.getKey();
+            DimensionGraveData data = entry.getValue();
+
+            Level level = levelChecker != null ? levelChecker.getLevel(dimension) : null;
+
+            if (level != null && !level.isClientSide) {
+                Set<BlockPos> allGraves = data.getAllGraves();
+                Set<BlockPos> invalidGraves = new HashSet<>();
+
+                for (BlockPos pos : allGraves) {
+                    if (!isGraveBlockAtPosition(level, pos)) {
+                        invalidGraves.add(pos);
+                    }
+                }
+
+                for (BlockPos pos : invalidGraves) {
+                    data.removeGrave(pos);
+                }
+
+                if (!invalidGraves.isEmpty()) {
+                    if (level instanceof ServerLevel serverLevel) {
+                        CemeterySavedData.markDirty(serverLevel);
+                    }
+                }
+            }
+        }
+    }
+
+
+    private boolean isGraveBlockAtPosition(Level level, BlockPos pos) {
+        if (!level.isLoaded(pos)) {
+            return true;
+        }
+
+        BlockState state = level.getBlockState(pos);
+        Block block = state.getBlock();
+
+        return block instanceof GraveStoneBlock;
+    }
+
     public Set<ResourceKey<Level>> getLoadedDimensions() {
         return Collections.unmodifiableSet(dimensions.keySet());
     }
@@ -160,8 +210,6 @@ public class CemeteryManager {
                 DimensionGraveData data = createDimensionData();
                 data.load(tag.getCompound(key));
                 dimensions.put(dimension, data);
-
-                YAGMCommon.LOGGER.debug("Loaded {} graves for dimension {}", data.getGraveCount(), key);
             }
         }
     }
@@ -171,7 +219,6 @@ public class CemeteryManager {
             DimensionGraveData data = createDimensionData();
 
             data.setOnCemeteryFormed((center, size) -> {
-                YAGMCommon.LOGGER.info("Cemetery formed at {} with {} graves in {}", center, size, dimension.location());
 
                 if (onCemeteryFormed != null) {
                     onCemeteryFormed.onFormed(dimension, center, size);

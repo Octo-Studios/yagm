@@ -6,7 +6,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 import java.util.function.Supplier;
 
-@ApiStatus.Internal
+@ApiStatus.Experimental
 public interface GraveStonePopApi {
 
     public NonNullList<ItemStack> getOrThrowInventory(NonNullList<ItemStack> cached, Supplier<NonNullList<ItemStack>> supplier);

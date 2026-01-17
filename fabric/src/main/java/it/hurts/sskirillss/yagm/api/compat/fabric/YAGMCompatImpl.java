@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.api.compat.fabric;
 
 import it.hurts.sskirillss.yagm.fabric.compat.FabricCompatImpl;
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * Platform-specific implementation for YAGMCompat.registerPlatformHandlers()
@@ -9,6 +10,7 @@ import it.hurts.sskirillss.yagm.fabric.compat.FabricCompatImpl;
  * This class delegates to FabricCompatImpl which contains the actual
  * implementation logic for Fabric-specific compatibility.
  */
+@ApiStatus.Internal
 public class YAGMCompatImpl {
 
     /**

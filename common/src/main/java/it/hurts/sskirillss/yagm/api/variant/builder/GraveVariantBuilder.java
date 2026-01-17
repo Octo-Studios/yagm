@@ -11,11 +11,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
+@ApiStatus.Internal
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class GraveVariantBuilder {
 

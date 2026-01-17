@@ -1,11 +1,13 @@
 package it.hurts.sskirillss.yagm.api.item_valuator.providers;
 
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * Item value modifier.
  * Applied after the base value is obtained.
  */
+@ApiStatus.Internal
 @FunctionalInterface
 public interface IValueModifier {
 

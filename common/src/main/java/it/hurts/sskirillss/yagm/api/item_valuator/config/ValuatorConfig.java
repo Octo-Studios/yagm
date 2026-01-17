@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -20,6 +21,7 @@ import java.util.Objects;
 
 @Getter
 @Setter
+@ApiStatus.Internal
 @SuppressWarnings("all")
 public class ValuatorConfig {
 

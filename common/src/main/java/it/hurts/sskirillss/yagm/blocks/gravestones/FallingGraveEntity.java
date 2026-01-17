@@ -185,10 +185,7 @@ public class FallingGraveEntity extends Entity {
             this.ownerUUID = tag.getUUID("OwnerUUID");
         }
         this.ownerName = tag.getString("OwnerName");
-        this.graveLevel = GraveStoneLevels.CODEC.byName(
-                tag.getString("GraveLevel"),
-                GraveStoneLevels.GRAVESTONE_LEVEL_1
-        );
+        this.graveLevel = GraveStoneLevels.CODEC.byName(tag.getString("GraveLevel"), GraveStoneLevels.GRAVESTONE_LEVEL_1);
         this.facing = Direction.from2DDataValue(tag.getInt("Facing"));
         this.rotationSpeed = tag.getFloat("RotationSpeed");
         this.lifetime = tag.getInt("Lifetime");

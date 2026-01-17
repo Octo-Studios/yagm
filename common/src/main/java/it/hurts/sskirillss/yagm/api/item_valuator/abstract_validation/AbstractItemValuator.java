@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.api.item_valuator.abstract_validation;
 
+import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.api.item_valuator.providers.ILevelDeterminer;
 import it.hurts.sskirillss.yagm.api.item_valuator.config.ValuatorConfig;
 import it.hurts.sskirillss.yagm.api.item_valuator.provider.ValueProviderRegistry;
@@ -14,6 +15,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,29 +26,27 @@ import java.util.stream.Collectors;
  * Extendable to create custom logic.
  */
 @Getter
+@ApiStatus.Internal
 public abstract class AbstractItemValuator {
 
     protected final MinecraftServer server;
     protected final ValuatorConfig config;
     protected final Map<Item, Double> valueCache = new ConcurrentHashMap<>();
-    protected final List<Recipe<?>> allRecipes;
+    protected List<Recipe<?>> allRecipes = Collections.emptyList();
+    private volatile boolean recipeComputationScheduled = false;
 
     protected AbstractItemValuator(MinecraftServer server, ValuatorConfig config) {
         this.server = server;
         this.config = config;
-        this.allRecipes = loadRecipes();
     }
 
     public void initialize() {
         config.load();
         config.loadOverrides();
-
+        this.allRecipes = loadRecipes();
+        this.recipeComputationScheduled = false;
         computeBaseValues();
-        computeRecipeValues();
-        fillMissingValues();
-
-        exportValues();
-
+        scheduleRecipeComputation();
         onInitialized();
     }
 
@@ -100,25 +100,40 @@ public abstract class AbstractItemValuator {
     }
 
     protected void computeRecipeValues() {
+        computeRecipeValues(allRecipes);
+    }
+
+    protected void computeRecipeValues(List<Recipe<?>> recipes) {
         boolean changed;
+        int maxIterations = 100;
+        int iterations = 0;
+        double tolerance = 1e-9;
 
         do {
             changed = false;
+            iterations++;
 
-            for (Recipe<?> recipe : allRecipes) {
+            if (iterations > maxIterations) {
+                YAGMCommon.LOGGER.warn("Recipe value computation reached max iterations ({}). Possible circular dependency detected.", maxIterations);
+                break;
+            }
+
+            for (Recipe<?> recipe : recipes) {
                 ItemStack result = recipe.getResultItem(server.registryAccess());
                 if (result.isEmpty()) continue;
 
                 Item resultItem = result.getItem();
-                if (valueCache.containsKey(resultItem)) continue;
-
                 OptionalDouble recipeValue = computeRecipeValue(recipe);
 
                 if (recipeValue.isPresent()) {
                     double perUnit = recipeValue.getAsDouble() / result.getCount();
                     perUnit = ValueProviderRegistry.applyModifiers(result, perUnit);
-                    valueCache.put(resultItem, perUnit);
-                    changed = true;
+
+                    Double currentValue = valueCache.get(resultItem);
+                    if (currentValue == null || Math.abs(currentValue - perUnit) > tolerance) {
+                        valueCache.put(resultItem, perUnit);
+                        changed = true;
+                    }
                 }
             }
         } while (changed);
@@ -258,5 +273,22 @@ public abstract class AbstractItemValuator {
     public void reload() {
         clearCache();
         initialize();
+    }
+
+    private void scheduleRecipeComputation() {
+        if (recipeComputationScheduled) {
+            return;
+        }
+        recipeComputationScheduled = true;
+
+        List<Recipe<?>> recipesSnapshot = new ArrayList<>(allRecipes);
+        Thread worker = new Thread(() -> {
+            long start = System.currentTimeMillis();
+            computeRecipeValues(recipesSnapshot);
+            fillMissingValues();
+            exportValues();
+            YAGMCommon.LOGGER.info("ItemValuator recipe values computed in {} ms ({} recipes).", System.currentTimeMillis() - start, recipesSnapshot.size());}, "yagm-item-valuator");
+        worker.setDaemon(true);
+        worker.start();
     }
 }
