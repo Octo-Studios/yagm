@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.blocks.gravestones;
 
+import it.hurts.sskirillss.yagm.structures.cemetery.CemeteryManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
@@ -139,6 +140,15 @@ public class GraveStoneBlock extends Block implements EntityBlock {
                 }
             }
             super.onRemove(state, level, pos, newState, isMoving);
+        }
+    }
+    
+    @Override
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
+        super.onPlace(state, level, pos, oldState, isMoving);
+
+        if (!level.isClientSide() && state.is(state.getBlock()) && !isMoving && oldState.isAir()) {
+           CemeteryManager.getInstance().addGrave(level.dimension(), pos);
         }
     }
 
