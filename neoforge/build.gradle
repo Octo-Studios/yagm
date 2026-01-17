@@ -31,8 +31,10 @@ dependencies {
 
     runtimeOnly files("${rootProject.projectDir}/libs/curios-neoforge-9.5.1+1.21.1.jar")
     compileOnly files("${rootProject.projectDir}/libs/curios-neoforge-9.5.1+1.21.1-api.jar")
-    compileOnly "io.wispforest:accessories-neoforge:${rootProject.accessories_version}"
-    runtimeOnly "io.wispforest:accessories-neoforge:${rootProject.accessories_version}"
+    compileOnly files("${rootProject.projectDir}/libs/accessories-neoforge-1.1.0-beta.52+1.21.1.jar")
+    runtimeOnly files("${rootProject.projectDir}/libs/accessories-neoforge-1.1.0-beta.52+1.21.1.jar")
+    compileOnly files("${rootProject.projectDir}/libs/owo-lib-neoforge-0.12.15.5-beta.1+1.21.jar")
+    runtimeOnly files("${rootProject.projectDir}/libs/owo-lib-neoforge-0.12.15.5-beta.1+1.21.jar")
 }
 
 def resourceTargets = ['META-INF/mods.toml', 'pack.mcmeta']
