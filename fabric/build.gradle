@@ -29,11 +29,8 @@ dependencies {
 
     modCompileOnly "dev.emi:trinkets:${rootProject.trinkets_version}"
     modRuntimeOnly "dev.emi:trinkets:${rootProject.trinkets_version}"
-   // modCompileOnly "io.wispforest:accessories-fabric:${rootProject.accessories_version}"
-   // modRuntimeOnly "io.wispforest:accessories-fabric:${rootProject.accessories_version}"
-
-    modCompileOnly files("${rootProject.projectDir}/libs/accessories-fabric-1.1.0-beta.52+1.21.1.jar")
-    modRuntimeOnly files("${rootProject.projectDir}/libs/accessories-fabric-1.1.0-beta.52+1.21.1.jar")
+    modCompileOnly "io.wispforest:accessories-fabric:${rootProject.accessories_version}"
+    modRuntimeOnly "io.wispforest:accessories-fabric:${rootProject.accessories_version}"
 }
 
 def resourceTargets = ['fabric.mod.json']
