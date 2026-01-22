@@ -4,7 +4,6 @@ import dev.architectury.event.EventResult;
 import dev.architectury.event.events.common.EntityEvent;
 import it.hurts.sskirillss.yagm.events.GraveStoneEvent;
 import it.hurts.sskirillss.yagm.api.events.providers.IServerEvent;
-import it.hurts.sskirillss.yagm.network.handlers.InventoryHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.level.GameRules;
@@ -15,7 +14,7 @@ public class EventRegistry {
         EntityEvent.LIVING_DEATH.register((entity, source) -> {
             if (entity instanceof ServerPlayer player) {
                 if (shouldCreateGrave(player, source)) {
-                    InventoryHelper.handlePlayerDeath(player);
+                    GraveStoneEvent.handlePlayerDeath(player);
                 }
             }
             return EventResult.pass();

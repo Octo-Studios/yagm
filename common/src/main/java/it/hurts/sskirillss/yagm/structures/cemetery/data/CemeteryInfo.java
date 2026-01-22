@@ -8,9 +8,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Information about the cemetery.
- */
 
 @Getter
 public class CemeteryInfo {

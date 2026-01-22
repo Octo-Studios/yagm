@@ -63,10 +63,7 @@ public class GraveData {
         }
 
         if (tag.contains("GraveLevel")) {
-            this.graveLevel = GraveStoneLevels.CODEC.byName(
-                    tag.getString("GraveLevel"),
-                    GraveStoneLevels.GRAVESTONE_LEVEL_1
-            );
+            this.graveLevel = GraveStoneLevels.CODEC.byName(tag.getString("GraveLevel"), GraveStoneLevels.GRAVESTONE_LEVEL_1);
         }
 
         if (tag.contains("VariantId")) {

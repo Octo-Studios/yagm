@@ -19,15 +19,9 @@ public final class AccessoryManager {
     private static final Map<String, IAccessoryHandler> handlers = new ConcurrentHashMap<>();
     private static boolean initialized = false;
 
-    private static final String TAG_HANDLER_NAME = "HandlerName";
-    private static final String TAG_HANDLER_DATA = "HandlerData";
-
     private AccessoryManager() {}
 
-    /**
-     * Register an accessory handler.
-     * Should be called from platform-specific CompatInitImpl.
-     */
+
     public static void registerHandler(IAccessoryHandler handler) {
         if (handler == null) return;
 
@@ -44,23 +38,15 @@ public final class AccessoryManager {
         initialized = true;
     }
 
-    /**
-     * @return Collection of all registered handlers
-     */
+
     public static Collection<IAccessoryHandler> getHandlers() {
         return Collections.unmodifiableCollection(handlers.values());
     }
 
-    /**
-     * @return Handler by name, or null
-     */
     public static IAccessoryHandler getHandler(String name) {
         return handlers.get(name);
     }
 
-    /**
-     * @return true if any accessory handler is available
-     */
     public static boolean hasAnyHandler() {
         return !handlers.isEmpty();
     }
@@ -84,9 +70,7 @@ public final class AccessoryManager {
         return allAccessories;
     }
 
-    /**
-     * Clear all accessory slots using all handlers.
-     */
+
     public static void clearAllAccessories(ServerPlayer player) {
         for (IAccessoryHandler handler : handlers.values()) {
             handler.clearAccessories(player);
@@ -184,21 +168,5 @@ public final class AccessoryManager {
                 }
             }
         }
-    }
-
-    /**
-     * Try to equip an item as accessory using any available handler.
-     *
-     * @return true if successfully equipped
-     */
-    public static boolean tryEquipAsAccessory(ServerPlayer player, ItemStack stack) {
-        for (IAccessoryHandler handler : handlers.values()) {
-            if (handler.canEquipAsAccessory(player, stack)) {
-                if (handler.tryEquipAccessory(player, stack)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 }

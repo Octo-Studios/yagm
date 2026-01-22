@@ -4,7 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.FluidState;
 
 import java.util.UUID;
 
@@ -39,13 +38,15 @@ public class GraveStoneHelper {
 
     private static BlockPos findEndPosition(Level level, BlockPos pos) {
         BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
+        BlockPos bestPos = null;
+        double bestDistance = Double.MAX_VALUE;
 
-        for (int radius = 0; radius <= 64; radius++) {
+        for (int radius = 0; radius <= 200; radius++) {
             for (int x = -radius; x <= radius; x++) {
                 for (int z = -radius; z <= radius; z++) {
                     if (Math.abs(x) != radius && Math.abs(z) != radius) continue;
 
-                    for (int y = 0; y < level.getMaxBuildHeight(); y++) {
+                    for (int y = level.getMinBuildHeight(); y < level.getMaxBuildHeight(); y++) {
                         mutable.set(pos.getX() + x, y, pos.getZ() + z);
 
                         BlockState block = level.getBlockState(mutable);
@@ -53,14 +54,28 @@ public class GraveStoneHelper {
 
                         if (block.isSolid() && (above.isAir() || above.canBeReplaced())) {
                             if (hasEnoughSpace(level, mutable.above(), 2)) {
-                                return mutable.above().immutable();
+                                double distance = Math.sqrt(
+                                    (double) x * x +
+                                    (double) (y - pos.getY()) * (y - pos.getY()) +
+                                    (double) z * z
+                                );
+
+                                if (distance < bestDistance) {
+                                    bestDistance = distance;
+                                    bestPos = mutable.above().immutable();
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        return new BlockPos(0, 64, 0);
+
+        if (bestPos != null) {
+            return bestPos;
+        }
+
+        return new BlockPos(0, 65, 0);
     }
 
     private static BlockPos findPositionAboveFluid(Level level, BlockPos startPos) {

@@ -264,12 +264,6 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
     }
 
 
-    public void setTransientInventory(NonNullList<ItemStack> main, NonNullList<ItemStack> armor, NonNullList<ItemStack> offhand) {
-        this.playerMainSlots = InventoryHelper.copyInventoryList(main);
-        this.playerArmorSlots = InventoryHelper.copyInventoryList(armor);
-        this.playerOffHandSlots = InventoryHelper.copyInventoryList(offhand);
-    }
-
     public void giveInventoryToPlayer(ServerPlayer player) {
         if (player == null) return;
 

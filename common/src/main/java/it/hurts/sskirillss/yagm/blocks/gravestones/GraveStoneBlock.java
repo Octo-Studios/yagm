@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.blocks.gravestones;
 
+import it.hurts.sskirillss.yagm.client.particles.util.GraveParticleHelper;
 import it.hurts.sskirillss.yagm.structures.cemetery.CemeteryManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -8,6 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -34,6 +36,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+import static com.ibm.icu.util.ULocale.getVariant;
+
 
 public class GraveStoneBlock extends Block implements EntityBlock {
 
@@ -50,10 +54,6 @@ public class GraveStoneBlock extends Block implements EntityBlock {
         this.shapeNS = shapeNS;
         this.shapeEW = shapeEW;
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
-    }
-
-    public GraveStoneBlock(Properties properties) {
-        this(properties, Block.box(2, 0, 6, 14, 16, 10), Block.box(6, 0, 2, 10, 16, 14));
     }
 
 
@@ -133,6 +133,9 @@ public class GraveStoneBlock extends Block implements EntityBlock {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
+            if (!level.isClientSide()) {
+                CemeteryManager.getInstance().removeGrave(level.dimension(), pos);
+            }
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof GraveStoneBlockEntity grave) {
                 if (!level.isClientSide()) {
