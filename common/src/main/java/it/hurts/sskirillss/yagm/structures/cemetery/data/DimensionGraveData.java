@@ -13,12 +13,12 @@ import net.minecraft.nbt.Tag;
 
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Data on graves in ONLY one dimension.
  */
 public class DimensionGraveData {
-
 
     @Getter
     private final int clusterRadius;
@@ -34,6 +34,9 @@ public class DimensionGraveData {
 
     @Setter
     private BiConsumer<BlockPos, Integer> onCemeteryFormed;
+    
+    @Setter
+    private Consumer<BlockPos> onCemeteryDestroyed;
 
     public DimensionGraveData(int clusterRadius, int minGravesForCemetery) {
         this.clusterRadius = clusterRadius;
@@ -56,6 +59,7 @@ public class DimensionGraveData {
         }
 
         int clusterSize = getClusterSize(pos);
+        
         if (clusterSize >= minGravesForCemetery && onCemeteryFormed != null) {
             onCemeteryFormed.accept(getClusterCenter(pos), clusterSize);
         }
@@ -64,14 +68,23 @@ public class DimensionGraveData {
     public void removeGrave(BlockPos pos) {
         if (!spatialHash.remove(pos)) return;
 
+        BlockPos oldRoot = unionFind.find(pos);
+        int oldClusterSize = unionFind.getClusterSize(pos);
+        
         Set<BlockPos> neighbors = spatialHash.findInRadius(pos, clusterRadius);
 
-        BlockPos oldRoot = unionFind.find(pos);
         unionFind.remove(pos);
         invalidateCenter(oldRoot);
 
         if (!neighbors.isEmpty()) {
             rebuildToCluster(neighbors);
+
+            if (oldClusterSize >= minGravesForCemetery && onCemeteryDestroyed != null) {
+                int newClusterSize = getClusterSize(pos);
+                if (newClusterSize < minGravesForCemetery) {
+                    onCemeteryDestroyed.accept(oldRoot);
+                }
+            }
         }
     }
 
@@ -190,7 +203,6 @@ public class DimensionGraveData {
     }
 
 
-
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
         ListTag gravesList = new ListTag();
@@ -217,7 +229,16 @@ public class DimensionGraveData {
                     graveTag.getInt("y"),
                     graveTag.getInt("z")
             );
-            addGrave(pos);
+
+            if (!spatialHash.add(pos)) continue;
+            unionFind.makeSet(pos);
+            
+            Set<BlockPos> neighbors = spatialHash.findNeighborsInRadius(pos, clusterRadius);
+            for (BlockPos neighbor : neighbors) {
+                if (unionFind.union(pos, neighbor)) {
+                    invalidateCenter(unionFind.find(pos));
+                }
+            }
         }
     }
 }

@@ -21,13 +21,15 @@ public class YAGMCommon {
         EntityRegistry.init();
         ItemsRegistry.init();
         EventRegistry.init();
+        CommandRegistry.init();
+        CommandRegistry.init();
         CreativeTabsRegistry.init();
         DefaultVariantsRegistry.registerAll();
         LifecycleEvent.SERVER_STARTED.register(server -> {
             ItemValuator.initialize(server);
+            LOGGER.info("ItemValuator initialized");
             CemeteryTestLogger.init(server);
-
-         CemeteryManager.getInstance().setLevelChecker(dimension -> {
+            CemeteryManager.getInstance().setLevelChecker(dimension -> {
                 for (ServerLevel level : server.getAllLevels()) {
                     if (level.dimension().equals(dimension)) {
                         return level;
@@ -35,7 +37,9 @@ public class YAGMCommon {
                 }
                 return null;
             });
-           CemeteryManager.getInstance().validateAndCleanGraves();
+
+            CemeteryManager.getInstance().validateAndCleanGraves();
+            CemeteryManager.getInstance().reevaluateCemeteries();
         });
         LifecycleEvent.SERVER_STOPPING.register(server -> ItemValuator.shutdown());
         YAGMCompat.init();
