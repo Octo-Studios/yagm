@@ -1,10 +1,9 @@
 package it.hurts.sskirillss.yagm.network.handlers;
 
 
-import dev.architectury.event.EventResult;
-import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
-import it.hurts.sskirillss.yagm.api.events.providers.IServerEvent;
+import it.hurts.sskirillss.yagm.api.item_valuator.ItemValuator;
+import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.utils.ItemUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -15,7 +14,6 @@ import net.minecraft.world.Containers;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.GameRules;
 
 import java.util.Map;
 import java.util.UUID;
@@ -28,29 +26,13 @@ import net.minecraft.world.level.Level;
 
 public class InventoryHelper {
 
+    private static final String main = "MainInventory";
+    private static final String armor = "ArmorInventory";
+    private static final String offhand = "OffhandInventory";
 
-    public static void handlePlayerDeath(ServerPlayer player) {
-        if (player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
-            return;
-        }
-        CompoundTag graveData = savePlayerInventory(player);
-
-        //Event
-        EventResult result = IServerEvent.ON_PLAYER_DEATH.invoker().onPlayerDeath(player, graveData);
-
-        if (result.interruptsFurtherEvaluation()) {
-            YAGMCommon.LOGGER.info("Player death event interrupted for: " + player.getUUID());
-            return;
-        }
-
-        if (AccessoryManager.hasAnyHandler()) {
-            AccessoryManager.clearAllAccessories(player);
-        }
-        
-        player.getInventory().clearContent();
-    }
-
-
+    NonNullList<ItemStack> mainList = NonNullList.withSize(36, ItemStack.EMPTY);
+    NonNullList<ItemStack> armorList = NonNullList.withSize(4, ItemStack.EMPTY);
+    NonNullList<ItemStack> offhandList = NonNullList.withSize(1, ItemStack.EMPTY);
 
     public static CompoundTag savePlayerInventory(Player player) {
         CompoundTag nbt = new CompoundTag();
@@ -67,9 +49,9 @@ public class InventoryHelper {
             nbt.putString("DeathCause", "Unknown");
         }
 
-        ItemUtils.saveInventory(player.registryAccess(), nbt, "MainInventory", inventory.items);
-        ItemUtils.saveInventory(player.registryAccess(), nbt, "ArmorInventory", inventory.armor);
-        ItemUtils.saveInventory(player.registryAccess(), nbt, "OffhandInventory", inventory.offhand);
+        ItemUtils.saveInventory(player.registryAccess(), nbt, main, inventory.items);
+        ItemUtils.saveInventory(player.registryAccess(), nbt, armor, inventory.armor);
+        ItemUtils.saveInventory(player.registryAccess(), nbt, offhand, inventory.offhand);
 
 
         if (AccessoryManager.hasAnyHandler() && player instanceof ServerPlayer serverPlayer) {
@@ -105,9 +87,9 @@ public class InventoryHelper {
 
         Inventory inventory = player.getInventory();
 
-        ItemUtils.readInventory(player.registryAccess(), nbt, "MainInventory", inventory.items);
-        ItemUtils.readInventory(player.registryAccess(), nbt, "ArmorInventory", inventory.armor);
-        ItemUtils.readInventory(player.registryAccess(), nbt, "OffhandInventory", inventory.offhand);
+        ItemUtils.readInventory(player.registryAccess(), nbt, main, inventory.items);
+        ItemUtils.readInventory(player.registryAccess(), nbt, armor, inventory.armor);
+        ItemUtils.readInventory(player.registryAccess(), nbt, offhand, inventory.offhand);
 
         inventory.setChanged();
     }
@@ -120,9 +102,9 @@ public class InventoryHelper {
         NonNullList<ItemStack> armorInventory = NonNullList.withSize(4, ItemStack.EMPTY);
         NonNullList<ItemStack> offhandInventory = NonNullList.withSize(1, ItemStack.EMPTY);
 
-        ItemUtils.readInventory(provider, nbt, "MainInventory", mainInventory);
-        ItemUtils.readInventory(provider, nbt, "ArmorInventory", armorInventory);
-        ItemUtils.readInventory(provider, nbt, "OffhandInventory", offhandInventory);
+        ItemUtils.readInventory(provider, nbt, main, mainInventory);
+        ItemUtils.readInventory(provider, nbt, armor, armorInventory);
+        ItemUtils.readInventory(provider, nbt, offhand, offhandInventory);
 
         for (ItemStack stack : mainInventory) {
             if (!stack.isEmpty()) {
@@ -171,9 +153,9 @@ public class InventoryHelper {
         NonNullList<ItemStack> armorItems = NonNullList.withSize(4, ItemStack.EMPTY);
         NonNullList<ItemStack> offhandItems = NonNullList.withSize(1, ItemStack.EMPTY);
 
-        ItemUtils.readInventory(player.registryAccess(), data, "MainInventory", mainItems);
-        ItemUtils.readInventory(player.registryAccess(), data, "ArmorInventory", armorItems);
-        ItemUtils.readInventory(player.registryAccess(), data, "OffhandInventory", offhandItems);
+        ItemUtils.readInventory(player.registryAccess(), data, main, mainItems);
+        ItemUtils.readInventory(player.registryAccess(), data, armor, armorItems);
+        ItemUtils.readInventory(player.registryAccess(), data, offhand, offhandItems);
 
         restoreInventory(player.getInventory().items, mainItems, player);
         restoreInventory(player.getInventory().armor, armorItems, player);
@@ -210,5 +192,24 @@ public class InventoryHelper {
         NonNullList<ItemStack> copy = NonNullList.withSize(source.size(), ItemStack.EMPTY);
         IntStream.range(0, source.size()).forEach(i -> copy.set(i, source.get(i).copy()));
         return copy;
+    }
+
+    public static GraveStoneLevels calculateGraveLevel(ServerPlayer player, CompoundTag graveData) {
+        if (!ItemValuator.isAvailable()) {
+            return GraveStoneLevels.GRAVESTONE_LEVEL_1;
+        }
+
+        NonNullList<ItemStack> mainList = NonNullList.withSize(36, ItemStack.EMPTY);
+        NonNullList<ItemStack> armorList = NonNullList.withSize(4, ItemStack.EMPTY);
+        NonNullList<ItemStack> offhandList = NonNullList.withSize(1, ItemStack.EMPTY);
+
+        ItemUtils.readInventory(player.registryAccess(), graveData, main, mainList);
+        ItemUtils.readInventory(player.registryAccess(), graveData, armor, armorList);
+        ItemUtils.readInventory(player.registryAccess(), graveData, offhand, offhandList);
+
+        double value = ItemValuator.getInstance().calculateValue(mainList, armorList, offhandList);
+        GraveStoneLevels level = ItemValuator.getInstance().determineLevelByValue(value);
+
+        return level;
     }
 }

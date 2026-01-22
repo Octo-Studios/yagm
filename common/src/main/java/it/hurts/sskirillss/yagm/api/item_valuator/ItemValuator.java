@@ -47,8 +47,7 @@ public class ItemValuator extends AbstractItemValuator {
         INSTANCE = new ItemValuator(server, config);
         INSTANCE.registerDefaultModifiers();
         INSTANCE.initialize();
-        YAGMCommon.LOGGER.info("ItemValuator initialized (base cache size: {}), recipe values computing in background.",
-                INSTANCE.valueCache.size());
+        YAGMCommon.LOGGER.info("ItemValuator initialized (base cache size: {}), recipe values computing in background.", INSTANCE.valueCache.size());
     }
 
     public static void shutdown() {

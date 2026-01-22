@@ -33,9 +33,7 @@ public class UnionFind {
         return parent.containsKey(pos);
     }
 
-    /**
-     * Finds the root of a cluster
-     */
+
     public BlockPos find(BlockPos pos) {
         BlockPos p = parent.get(pos);
         if (p == null) return null;
@@ -48,10 +46,7 @@ public class UnionFind {
         return pos;
     }
 
-    /**
-     * Combines two clusters with union by rank
-     * @return true if the clusters were different and merged
-     */
+
     public boolean union(BlockPos a, BlockPos b) {
         BlockPos rootA = find(a);
         BlockPos rootB = find(b);
@@ -140,9 +135,7 @@ public class UnionFind {
         return Collections.unmodifiableSet(parent.keySet());
     }
 
-    /**
-     * Resets elements into separate clusters
-     */
+
     public void resetElements(Collection<BlockPos> elements) {
         for (BlockPos pos : elements) {
             if (parent.containsKey(pos)) {

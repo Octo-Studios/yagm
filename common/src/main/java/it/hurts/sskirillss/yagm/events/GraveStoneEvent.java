@@ -1,16 +1,17 @@
 package it.hurts.sskirillss.yagm.events;
 
-import it.hurts.sskirillss.yagm.api.item_valuator.ItemValuator;
+import dev.architectury.event.EventResult;
+import it.hurts.sskirillss.yagm.YAGMCommon;
+import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
+import it.hurts.sskirillss.yagm.api.events.providers.IServerEvent;
 import it.hurts.sskirillss.yagm.blocks.gravestones.FallingGraveEntity;
 import it.hurts.sskirillss.yagm.data.GraveDataManager;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
-import it.hurts.sskirillss.yagm.utils.ItemUtils;
+import it.hurts.sskirillss.yagm.network.handlers.InventoryHelper;
 import net.minecraft.core.Direction;
-import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -24,14 +25,14 @@ public class GraveStoneEvent {
         if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) return;
         if (!(level instanceof ServerLevel serverLevel)) return;
 
-        GraveStoneLevels graveLevel = calculateGraveLevel(player, graveData);
+        GraveStoneLevels graveLevel = InventoryHelper.calculateGraveLevel(player, graveData);
 
         Vec3 deathPos = player.position().add(0, 0.5, 0);
 
-        double angle = level.random.nextDouble() * Math.PI * 2;
+        double angle = level.random.nextDouble() * Math.TAU;
         double speed = 0.4 + level.random.nextDouble() * 0.2;
 
-        Vec3 velocity = new Vec3(Math.cos(angle) * speed, 0.15 + level.random.nextDouble() * 0.1, Math.sin(angle) * speed);
+        Vec3 velocity = new Vec3(Math.cos(angle) * speed, 0.60 + level.random.nextDouble() * 0.1, Math.sin(angle) * speed);
 
         Direction facing = player.getDirection().getOpposite();
 
@@ -47,23 +48,25 @@ public class GraveStoneEvent {
         });
     }
 
-    private static GraveStoneLevels calculateGraveLevel(ServerPlayer player, CompoundTag graveData) {
-        if (!ItemValuator.isAvailable()) {
-            return GraveStoneLevels.GRAVESTONE_LEVEL_1;
+
+    public static void handlePlayerDeath(ServerPlayer player) {
+        if (player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
+            return;
+        }
+        CompoundTag graveData = InventoryHelper.savePlayerInventory(player);
+
+
+        EventResult result = IServerEvent.ON_PLAYER_DEATH.invoker().onPlayerDeath(player, graveData);
+
+        if (result.interruptsFurtherEvaluation()) {
+            YAGMCommon.LOGGER.info("Player death event interrupted for: " + player.getUUID());
+            return;
         }
 
-        NonNullList<ItemStack> mainList = NonNullList.withSize(36, ItemStack.EMPTY);
-        NonNullList<ItemStack> armorList = NonNullList.withSize(4, ItemStack.EMPTY);
-        NonNullList<ItemStack> offhandList = NonNullList.withSize(1, ItemStack.EMPTY);
+        if (AccessoryManager.hasAnyHandler()) {
+            AccessoryManager.clearAllAccessories(player);
+        }
 
-        ItemUtils.readInventory(player.registryAccess(), graveData, "MainInventory", mainList);
-        ItemUtils.readInventory(player.registryAccess(), graveData, "ArmorInventory", armorList);
-        ItemUtils.readInventory(player.registryAccess(), graveData, "OffhandInventory", offhandList);
-
-        double value = ItemValuator.getInstance().calculateValue(mainList, armorList, offhandList);
-        GraveStoneLevels level = ItemValuator.getInstance().determineLevelByValue(value);
-
-        return level;
+        player.getInventory().clearContent();
     }
-
 }
