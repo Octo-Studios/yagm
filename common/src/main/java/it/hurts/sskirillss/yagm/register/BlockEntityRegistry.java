@@ -1,7 +1,7 @@
 package it.hurts.sskirillss.yagm.register;
 
 import it.hurts.sskirillss.yagm.YAGMCommon;
-import it.hurts.sskirillss.yagm.blocks.gravestones.GraveStoneBlockEntity;
+import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.GraveStoneBlockEntity;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import net.minecraft.core.registries.Registries;

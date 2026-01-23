@@ -30,9 +30,6 @@ public class InventoryHelper {
     private static final String armor = "ArmorInventory";
     private static final String offhand = "OffhandInventory";
 
-    NonNullList<ItemStack> mainList = NonNullList.withSize(36, ItemStack.EMPTY);
-    NonNullList<ItemStack> armorList = NonNullList.withSize(4, ItemStack.EMPTY);
-    NonNullList<ItemStack> offhandList = NonNullList.withSize(1, ItemStack.EMPTY);
 
     public static CompoundTag savePlayerInventory(Player player) {
         CompoundTag nbt = new CompoundTag();

@@ -1,7 +1,7 @@
 package it.hurts.sskirillss.yagm.structures.cemetery;
 
 
-import it.hurts.sskirillss.yagm.blocks.gravestones.GraveStoneBlock;
+import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.block.GraveStoneBlock;
 import it.hurts.sskirillss.yagm.structures.cemetery.config.CemeteryConfig;
 import it.hurts.sskirillss.yagm.structures.cemetery.data.CemeteryInfo;
 import it.hurts.sskirillss.yagm.structures.cemetery.data.CemeterySavedData;

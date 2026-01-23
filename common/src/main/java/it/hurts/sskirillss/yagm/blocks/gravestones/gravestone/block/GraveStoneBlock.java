@@ -1,6 +1,6 @@
-package it.hurts.sskirillss.yagm.blocks.gravestones;
+package it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.block;
 
-import it.hurts.sskirillss.yagm.client.particles.util.GraveParticleHelper;
+import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.structures.cemetery.CemeteryManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -9,7 +9,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -35,8 +34,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-
-import static com.ibm.icu.util.ULocale.getVariant;
 
 
 public class GraveStoneBlock extends Block implements EntityBlock {

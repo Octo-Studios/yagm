@@ -4,7 +4,7 @@ import dev.architectury.event.EventResult;
 import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.events.providers.IServerEvent;
-import it.hurts.sskirillss.yagm.blocks.gravestones.FallingGraveEntity;
+import it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave.FallingGraveEntity;
 import it.hurts.sskirillss.yagm.data.GraveDataManager;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.network.handlers.InventoryHelper;

@@ -4,7 +4,7 @@ import it.hurts.sskirillss.yagm.YAGMCommon;
 
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
-import it.hurts.sskirillss.yagm.blocks.gravestones.FallingGraveEntity;
+import it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave.FallingGraveEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;

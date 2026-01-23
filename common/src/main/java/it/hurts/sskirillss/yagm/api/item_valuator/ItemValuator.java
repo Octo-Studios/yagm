@@ -7,7 +7,6 @@ import it.hurts.sskirillss.yagm.api.item_valuator.provider.ValueProviderRegistry
 import it.hurts.sskirillss.yagm.api.item_valuator.providers.ILevelDeterminer;
 import it.hurts.sskirillss.yagm.api.item_valuator.providers.IValueModifier;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
-import lombok.Getter;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;

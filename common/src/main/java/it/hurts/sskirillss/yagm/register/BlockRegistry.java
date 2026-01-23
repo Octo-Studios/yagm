@@ -3,7 +3,7 @@ package it.hurts.sskirillss.yagm.register;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import it.hurts.sskirillss.yagm.YAGMCommon;
-import it.hurts.sskirillss.yagm.blocks.gravestones.GraveStoneBlock;
+import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.block.GraveStoneBlock;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Block;

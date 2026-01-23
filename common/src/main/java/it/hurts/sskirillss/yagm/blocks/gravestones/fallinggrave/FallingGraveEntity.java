@@ -1,7 +1,8 @@
-package it.hurts.sskirillss.yagm.blocks.gravestones;
+package it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave;
 
 import it.hurts.sskirillss.yagm.api.events.providers.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.context.registry.GraveVariantRegistry;
+import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.register.BlockRegistry;
 import it.hurts.sskirillss.yagm.register.EntityRegistry;
@@ -14,7 +15,8 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
@@ -28,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
+@SuppressWarnings("deprecation")
 public class FallingGraveEntity extends Entity {
 
     private static final EntityDataAccessor<Integer> DATA_LEVEL = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.INT);
@@ -94,25 +97,51 @@ public class FallingGraveEntity extends Entity {
             entityData.set(DATA_ROTATION, newRotation);
         }
 
+        if (this.getY() < level().getMinBuildHeight() - 10) {
+            if (level().dimension() == Level.END) {
+                BlockPos safePos = findEndIslandPosition(blockPosition());
+                this.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
+                this.setDeltaMovement(Vec3.ZERO);
+                if (!level().isClientSide()) {
+                    level().playSound(null, safePos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.BLOCKS, 1.0F, 1.0F);
+                }
+            }
+        }
+
         Vec3 motion = getDeltaMovement();
         setDeltaMovement(motion.x * 0.98, motion.y - 0.04, motion.z * 0.98);
 
         move(MoverType.SELF, getDeltaMovement());
 
         if (!level().isClientSide()) {
-            if (onGround() || lifetime > MAX_LIFETIME) {
+            boolean shouldPlace = onGround();
+
+            if (!shouldPlace && motion.y < 0) {
+                BlockPos belowPos = blockPosition().below();
+                BlockState belowState = level().getBlockState(belowPos);
+                
+                if (belowState.isSuffocating(level(), belowPos) || belowState.isSolid()) {
+                    BlockPos currentPos = blockPosition();
+                    BlockState currentState = level().getBlockState(currentPos);
+
+                    if (!currentState.isAir() && !currentState.canBeReplaced()) {
+                        shouldPlace = true;
+                    }
+                }
+            }
+
+            if (!shouldPlace && lifetime > MAX_LIFETIME) {
+                shouldPlace = true;
+            }
+            
+            if (shouldPlace) {
                 placeGrave();
             }
         }
     }
 
     private void placeGrave() {
-        if (!(level() instanceof ServerLevel serverLevel)) {
-            return;
-        }
-
-
-        BlockPos landingPos = blockPosition();
+        BlockPos landingPos = findActualLandingPosition();
         BlockPos gravePos = GraveStoneHelper.getGraveStoneBlockPosition(level(), landingPos);
 
         String variantStr = variantId != null ? variantId.toString() : null;
@@ -137,6 +166,123 @@ public class FallingGraveEntity extends Entity {
         discard();
     }
 
+    private BlockPos findActualLandingPosition() {
+        Vec3 currentPos = position();
+        BlockPos blockPos = BlockPos.containing(currentPos);
+
+        if (level().dimension() == Level.END && blockPos.getY() < level().getMinBuildHeight() + 5) {
+            return findEndIslandPosition(blockPos);
+        }
+
+        BlockState currentState = level().getBlockState(blockPos);
+        if (!currentState.isAir() && !currentState.canBeReplaced()) {
+            for (int y = 0; y <= 5; y++) {
+                BlockPos above = blockPos.above(y);
+                BlockState aboveState = level().getBlockState(above);
+                BlockState below = level().getBlockState(above.below());
+                if ((aboveState.isAir() || aboveState.canBeReplaced()) && below.isSolid()) {
+                    return above;
+                }
+            }
+        }
+
+        for (int y = 0; y <= 10; y++) {
+            BlockPos below = blockPos.below(y);
+            BlockState belowState = level().getBlockState(below);
+            BlockState atPos = level().getBlockState(below.above());
+
+            if (belowState.isSolid() && (atPos.isAir() || atPos.canBeReplaced())) {
+                return below.above();
+            }
+        }
+
+        return blockPos;
+    }
+
+    private BlockPos findEndIslandPosition(BlockPos deathPos) {
+        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
+        BlockPos bestPos = null;
+        double bestDistance = Double.MAX_VALUE;
+
+        for (int radius = 0; radius <= 200; radius += 4) {
+            for (int x = -radius; x <= radius; x += 2) {
+                for (int z = -radius; z <= radius; z += 2) {
+                    if (radius > 0 && Math.abs(x) != radius && Math.abs(z) != radius) continue;
+
+                    for (int y = 0; y < level().getMaxBuildHeight(); y++) {
+                        mutable.set(deathPos.getX() + x, y, deathPos.getZ() + z);
+
+                        BlockState block = level().getBlockState(mutable);
+                        BlockState above = level().getBlockState(mutable.above());
+
+                        if (block.isSolid() && (above.isAir() || above.canBeReplaced())) {
+                            BlockPos candidate = mutable.above();
+
+                            if (hasSpaceForGrave(candidate)) {
+                                double distance = calculateDistance(deathPos, candidate);
+
+                                if (distance < bestDistance) {
+                                    bestDistance = distance;
+                                    bestPos = candidate.immutable();
+
+                                    if (distance < 50) {
+                                        return bestPos;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (bestPos != null && radius > 20) {
+                return bestPos;
+            }
+        }
+
+        if (bestPos == null) {
+            bestPos = findMainEndIslandPosition();
+        }
+
+        return bestPos != null ? bestPos : new BlockPos(0, 65, 0);
+    }
+
+    private BlockPos findMainEndIslandPosition() {
+        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
+
+        for (int x = -20; x <= 20; x++) {
+            for (int z = -20; z <= 20; z++) {
+                for (int y = 50; y < 100; y++) {
+                    mutable.set(x, y, z);
+
+                    BlockState block = level().getBlockState(mutable);
+                    BlockState above = level().getBlockState(mutable.above());
+
+                    if (block.isSolid() && above.isAir()) {
+                        return mutable.above().immutable();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean hasSpaceForGrave(BlockPos pos) {
+        for (int i = 0; i < 2; i++) {
+            BlockState state = level().getBlockState(pos.above(i));
+            if (!state.isAir() && !state.canBeReplaced()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private double calculateDistance(BlockPos from, BlockPos to) {
+        double dx = to.getX() - from.getX();
+        double dy = to.getY() - from.getY();
+        double dz = to.getZ() - from.getZ();
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
     public float getGraveRotation() {
         return entityData.get(DATA_ROTATION);
     }
@@ -158,10 +304,12 @@ public class FallingGraveEntity extends Entity {
         return GraveStoneLevels.GRAVESTONE_LEVEL_1;
     }
 
+
+
     @Nullable
     public ResourceLocation getVariantId() {
         String variantStr = entityData.get(DATA_VARIANT);
-        if (variantStr != null && !variantStr.isEmpty()) {
+        if (!variantStr.isEmpty()) {
             return ResourceLocation.tryParse(variantStr);
         }
         return variantId;
