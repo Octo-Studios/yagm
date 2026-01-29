@@ -38,7 +38,11 @@ public class BlockEntityRegistry {
                             BlockRegistry.END_GRAVESTONE_1.get(),
                             BlockRegistry.END_GRAVESTONE_2.get(),
                             BlockRegistry.END_GRAVESTONE_3.get(),
-                            BlockRegistry.END_GRAVESTONE_4.get()
+                            BlockRegistry.END_GRAVESTONE_4.get(),
+                            BlockRegistry.OCEAN_GRAVESTONE_1.get(),
+                            BlockRegistry.OCEAN_GRAVESTONE_2.get(),
+                            BlockRegistry.OCEAN_GRAVESTONE_3.get(),
+                            BlockRegistry.OCEAN_GRAVESTONE_4.get()
                     ).build(null)
             );
 

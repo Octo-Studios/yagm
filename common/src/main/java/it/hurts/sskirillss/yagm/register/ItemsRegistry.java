@@ -65,6 +65,14 @@ public final class ItemsRegistry {
 
     public static final RegistrySupplier<BlockItem> END_GRAVESTONE_TIER_4 = blockItem("end_grave_tier_4", BlockRegistry.END_GRAVESTONE_4);
 
+    public static final RegistrySupplier<BlockItem> OCEAN_GRAVESTONE_TIER_1 = blockItem("ocean_grave_tier_1", BlockRegistry.OCEAN_GRAVESTONE_1);
+
+    public static final RegistrySupplier<BlockItem> OCEAN_GRAVESTONE_TIER_2 = blockItem("ocean_grave_tier_2", BlockRegistry.OCEAN_GRAVESTONE_2);
+
+    public static final RegistrySupplier<BlockItem> OCEAN_GRAVESTONE_TIER_3 = blockItem("ocean_grave_tier_3", BlockRegistry.OCEAN_GRAVESTONE_3);
+
+    public static final RegistrySupplier<BlockItem> OCEAN_GRAVESTONE_TIER_4 = blockItem("ocean_grave_tier_4", BlockRegistry.OCEAN_GRAVESTONE_4);
+
 
     public static void init() {
         ITEMS.register();

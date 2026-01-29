@@ -50,5 +50,15 @@ public class DefaultVariantsRegistry {
                 .inOverworldLevel()
                 .matchBiomeTags(BiomeTags.IS_JUNGLE)
                 .buildAndRegister();
+
+        // Ocean biomes
+        GraveVariantBuilder.create(YAGMCommon.MODID, "ocean")
+                .displayName("ocean")
+                .priority(55)
+                .inOverworldLevel()
+                .matchBiomes(Biomes.FROZEN_OCEAN)
+                .matchBiomeTags(BiomeTags.IS_OCEAN, BiomeTags.IS_DEEP_OCEAN, BiomeTags.IS_BEACH)
+                .buildAndRegister();
+
     }
 }
