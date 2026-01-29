@@ -44,7 +44,11 @@ public class YAGMClient {
                 BlockRegistry.HOT_GRAVESTONE_1.get(),
                 BlockRegistry.HOT_GRAVESTONE_2.get(),
                 BlockRegistry.HOT_GRAVESTONE_3.get(),
-                BlockRegistry.HOT_GRAVESTONE_4.get()
+                BlockRegistry.HOT_GRAVESTONE_4.get(),
+                BlockRegistry.OCEAN_GRAVESTONE_1.get(),
+                BlockRegistry.OCEAN_GRAVESTONE_2.get(),
+                BlockRegistry.OCEAN_GRAVESTONE_3.get(),
+                BlockRegistry.OCEAN_GRAVESTONE_4.get()
         );
     }
 

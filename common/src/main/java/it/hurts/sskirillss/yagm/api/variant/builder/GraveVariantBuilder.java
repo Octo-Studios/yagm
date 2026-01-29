@@ -15,6 +15,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 @ApiStatus.Internal
@@ -46,18 +47,24 @@ public class GraveVariantBuilder {
         return this;
     }
 
-    public GraveVariantBuilder matchBiome(ResourceKey<Biome> biome) {
-        conditions.add(ctx -> ctx.isBiome(biome));
+    @SafeVarargs
+    public final GraveVariantBuilder matchBiomes(ResourceKey<Biome>... biomes) {
+        Set<ResourceKey<Biome>> biomeSet = Set.of(biomes);
+        conditions.add(ctx -> biomeSet.stream().anyMatch(ctx::isBiome));
         return this;
     }
 
-    public GraveVariantBuilder matchBiomeTag(TagKey<Biome> tag) {
-        conditions.add(ctx -> ctx.isBiomeTag(tag));
+    @SafeVarargs
+    public final GraveVariantBuilder matchBiomeTags(TagKey<Biome>... tags) {
+        Set<TagKey<Biome>> tagSet = Set.of(tags);
+        conditions.add(ctx -> tagSet.stream().anyMatch(ctx::isBiomeTag));
         return this;
     }
 
-    public GraveVariantBuilder matchDimension(ResourceKey<Level> dimension) {
-        conditions.add(ctx -> ctx.isDimension(dimension));
+    @SafeVarargs
+    public final GraveVariantBuilder matchDimensions(ResourceKey<Level>... dimensions) {
+        Set<ResourceKey<Level>> dimensionSet = Set.of(dimensions);
+        conditions.add(ctx -> dimensionSet.stream().anyMatch(ctx::isDimension));
         return this;
     }
 
@@ -91,10 +98,6 @@ public class GraveVariantBuilder {
         return this;
     }
 
-    public GraveVariantBuilder getIsMatch(Predicate<GraveVariantContext> condition) {
-        conditions.add(condition);
-        return this;
-    }
 
     public GraveVariantBuilder textColor(int color) {
         this.textColor = color;

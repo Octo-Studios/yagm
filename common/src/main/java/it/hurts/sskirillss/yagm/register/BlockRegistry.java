@@ -106,6 +106,18 @@ public final class BlockRegistry {
     public static final RegistrySupplier<Block> END_GRAVESTONE_4 = BLOCKS.register("end_grave_tier_4", () -> new GraveStoneBlock(
             BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_4_NS, TIER_4_EW));
 
+    public static final RegistrySupplier<Block> OCEAN_GRAVESTONE_1 = BLOCKS.register("ocean_grave_tier_1", () -> new GraveStoneBlock(
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_1_NS, TIER_1_EW));
+
+    public static final RegistrySupplier<Block> OCEAN_GRAVESTONE_2 = BLOCKS.register("ocean_grave_tier_2", () -> new GraveStoneBlock(
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_1_NS, TIER_1_EW));
+
+    public static final RegistrySupplier<Block> OCEAN_GRAVESTONE_3 = BLOCKS.register("ocean_grave_tier_3", () -> new GraveStoneBlock(
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_1_NS, TIER_1_EW));
+
+    public static final RegistrySupplier<Block> OCEAN_GRAVESTONE_4 = BLOCKS.register("ocean_grave_tier_4", () -> new GraveStoneBlock(
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_1_NS, TIER_1_EW));
+
 
 
 

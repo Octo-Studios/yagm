@@ -18,7 +18,7 @@ public class DefaultVariantsRegistry {
                 .displayName("Cold")
                 .priority(55)
                 .inOverworldLevel()
-                .getIsMatch(ctx -> ctx.isBiome(Biomes.SNOWY_BEACH) || ctx.isBiome(Biomes.SNOWY_TAIGA) || ctx.isBiome(Biomes.SNOWY_PLAINS) || ctx.isBiome(Biomes.SNOWY_SLOPES))
+                .matchBiomes(Biomes.SNOWY_BEACH, Biomes.SNOWY_TAIGA, Biomes.SNOWY_PLAINS, Biomes.SNOWY_SLOPES)
                 .buildAndRegister();
 
         // Hot biomes (desert, savanna, badlands)
@@ -26,7 +26,7 @@ public class DefaultVariantsRegistry {
                 .displayName("Hot")
                 .priority(55)
                 .inOverworldLevel()
-                .getIsMatch(ctx -> ctx.isBiome(Biomes.DESERT) || ctx.isBiome(Biomes.SAVANNA) || ctx.isBiome(Biomes.BADLANDS))
+                .matchBiomes(Biomes.DESERT, Biomes.SAVANNA, Biomes.BADLANDS)
                 .buildAndRegister();
 
         // Nether biomes
@@ -36,12 +36,29 @@ public class DefaultVariantsRegistry {
                 .inNetherLevel()
                 .buildAndRegister();
 
+        // End biomes
+        GraveVariantBuilder.create(YAGMCommon.MODID, "end")
+                .displayName("End")
+                .priority(60)
+                .inEndLevel()
+                .buildAndRegister();
+
         // Tropics biomes (jungle)
         GraveVariantBuilder.create(YAGMCommon.MODID, "tropics")
                 .displayName("Tropics")
                 .priority(55)
                 .inOverworldLevel()
-                .matchBiomeTag(BiomeTags.IS_JUNGLE)
+                .matchBiomeTags(BiomeTags.IS_JUNGLE)
                 .buildAndRegister();
+
+        // Ocean biomes
+        GraveVariantBuilder.create(YAGMCommon.MODID, "ocean")
+                .displayName("ocean")
+                .priority(55)
+                .inOverworldLevel()
+                .matchBiomes(Biomes.FROZEN_OCEAN)
+                .matchBiomeTags(BiomeTags.IS_OCEAN, BiomeTags.IS_DEEP_OCEAN, BiomeTags.IS_BEACH)
+                .buildAndRegister();
+
     }
 }
