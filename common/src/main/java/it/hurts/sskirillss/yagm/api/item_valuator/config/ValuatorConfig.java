@@ -6,7 +6,6 @@ import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.resources.ResourceLocation;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -14,6 +13,7 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -21,7 +21,6 @@ import java.util.Objects;
 
 @Getter
 @Setter
-@ApiStatus.Internal
 @SuppressWarnings("all")
 public class ValuatorConfig {
 
@@ -87,7 +86,10 @@ public class ValuatorConfig {
                     .sorted(Map.Entry.<ResourceLocation, Double>comparingByValue().reversed())
                     .forEach(e -> sorted.put(e.getKey().toString(), e.getValue()));
 
-            try (Writer writer = Files.newBufferedWriter(exportFile, StandardCharsets.UTF_8)) {
+            try (Writer writer = Files.newBufferedWriter(exportFile, StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE)) {
                 GSON.toJson(sorted, writer);
             }
         } catch (IOException e) {

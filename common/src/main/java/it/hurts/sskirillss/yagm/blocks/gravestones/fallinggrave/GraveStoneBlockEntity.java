@@ -1,9 +1,10 @@
-package it.hurts.sskirillss.yagm.blocks.gravestones;
+package it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave;
 
 import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.events.providers.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.provider.IGravestoneTitlesProvider;
 import it.hurts.sskirillss.yagm.api.variant.context.registry.GraveVariantRegistry;
+import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.block.GraveStoneBlock;
 import it.hurts.sskirillss.yagm.client.titles.renderer.GravestoneTitles;
 import it.hurts.sskirillss.yagm.data.GraveData;
 import it.hurts.sskirillss.yagm.data.GraveDataManager;

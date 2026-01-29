@@ -8,7 +8,6 @@ import org.jetbrains.annotations.ApiStatus;
  *
  * @param <T> Level type (e.g., GraveStoneLevels)
  */
-@ApiStatus.Internal
 public interface ILevelDeterminer<T> {
 
     /**

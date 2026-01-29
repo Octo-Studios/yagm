@@ -4,7 +4,7 @@ import dev.architectury.event.EventResult;
 import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.events.providers.IServerEvent;
-import it.hurts.sskirillss.yagm.blocks.gravestones.FallingGraveEntity;
+import it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave.FallingGraveEntity;
 import it.hurts.sskirillss.yagm.data.GraveDataManager;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.network.handlers.InventoryHelper;
@@ -46,15 +46,14 @@ public class GraveStoneEvent {
             FallingGraveEntity fallingGrave = FallingGraveEntity.create(serverLevel, deathPos, velocity, graveData, graveLevel, player.getUUID(), player.getName().getString(), facing);
             serverLevel.addFreshEntity(fallingGrave);
         });
-    }
 
+    }
 
     public static void handlePlayerDeath(ServerPlayer player) {
         if (player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
             return;
         }
         CompoundTag graveData = InventoryHelper.savePlayerInventory(player);
-
 
         EventResult result = IServerEvent.ON_PLAYER_DEATH.invoker().onPlayerDeath(player, graveData);
 

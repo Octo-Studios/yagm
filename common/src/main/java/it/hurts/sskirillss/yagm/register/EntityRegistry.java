@@ -4,7 +4,7 @@ import it.hurts.sskirillss.yagm.YAGMCommon;
 
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
-import it.hurts.sskirillss.yagm.blocks.gravestones.FallingGraveEntity;
+import it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave.FallingGraveEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -15,7 +15,7 @@ public class EntityRegistry {
 
     public static final RegistrySupplier<EntityType<FallingGraveEntity>> FALLING_GRAVE =
             ENTITIES.register("falling_grave", () ->
-                    EntityType.Builder.<FallingGraveEntity>of(FallingGraveEntity::new, MobCategory.MISC)
+                    EntityType.Builder.of(FallingGraveEntity::new, MobCategory.MISC)
                             .sized(0.98f, 0.98f)
                             .clientTrackingRange(64)
                             .updateInterval(1)

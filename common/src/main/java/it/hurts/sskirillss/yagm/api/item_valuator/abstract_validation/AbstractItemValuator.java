@@ -15,7 +15,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
-import org.jetbrains.annotations.ApiStatus;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,7 +25,7 @@ import java.util.stream.Collectors;
  * Extendable to create custom logic.
  */
 @Getter
-@ApiStatus.Internal
+@SuppressWarnings("all")
 public abstract class AbstractItemValuator {
 
     protected final MinecraftServer server;
@@ -46,6 +45,8 @@ public abstract class AbstractItemValuator {
         this.allRecipes = loadRecipes();
         this.recipeComputationScheduled = false;
         computeBaseValues();
+        fillMissingValues();
+        exportValues();
         scheduleRecipeComputation();
         onInitialized();
     }
@@ -190,7 +191,7 @@ public abstract class AbstractItemValuator {
                 .min();
     }
 
-    @SuppressWarnings("all")
+
     protected void fillMissingValues() {
         Registry<Item> registry = getItemRegistry();
 
@@ -199,13 +200,15 @@ public abstract class AbstractItemValuator {
         }
     }
 
+
+
     protected void exportValues() {
         Registry<Item> registry = getItemRegistry();
         Map<ResourceLocation, Double> values = new LinkedHashMap<>();
 
         for (Item item : registry) {
             ResourceLocation id = registry.getKey(item);
-            Double value = valueCache.get(item);
+            Double value = valueCache.computeIfAbsent(item, i -> computeBaseValue(i));
             if (id != null && value != null) {
                 values.put(id, value);
             }

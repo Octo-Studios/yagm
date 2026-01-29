@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.data;
 
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.nbt.CompoundTag;
@@ -16,6 +17,7 @@ import java.util.UUID;
 
 @Getter
 @Setter
+@Data
 public class GraveData {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");

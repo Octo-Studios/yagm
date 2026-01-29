@@ -3,7 +3,7 @@ package it.hurts.sskirillss.yagm.register;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import it.hurts.sskirillss.yagm.YAGMCommon;
-import it.hurts.sskirillss.yagm.blocks.gravestones.GraveStoneBlock;
+import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.block.GraveStoneBlock;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Block;
@@ -88,12 +88,33 @@ public final class BlockRegistry {
     public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_2 = BLOCKS.register("tropics_grave_tier_2", () -> new GraveStoneBlock(
             BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_2_NS, TIER_2_EW));
 
+    public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_3 = BLOCKS.register("tropics_grave_tier_3", () -> new GraveStoneBlock(
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_3_NS, TIER_3_EW));
+
+    public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_4 = BLOCKS.register("tropics_grave_tier_4", () -> new GraveStoneBlock(
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_4_NS, TIER_4_EW));
+
+    public static final RegistrySupplier<Block> END_GRAVESTONE_1 = BLOCKS.register("end_grave_tier_1", () -> new GraveStoneBlock(
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_1_NS, TIER_1_EW));
+
+    public static final RegistrySupplier<Block> END_GRAVESTONE_2 = BLOCKS.register("end_grave_tier_2", () -> new GraveStoneBlock(
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_2_NS, TIER_2_EW));
+
+    public static final RegistrySupplier<Block> END_GRAVESTONE_3 = BLOCKS.register("end_grave_tier_3", () -> new GraveStoneBlock(
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_3_NS, TIER_3_EW));
+
+    public static final RegistrySupplier<Block> END_GRAVESTONE_4 = BLOCKS.register("end_grave_tier_4", () -> new GraveStoneBlock(
+            BlockBehaviour.Properties.of().strength(0.1F, 6.0F).requiresCorrectToolForDrops(), TIER_4_NS, TIER_4_EW));
+
+
+
 
     private static final Map<GraveStoneLevels, RegistrySupplier<Block>> default_blocks = new EnumMap<>(GraveStoneLevels.class);
     private static final Map<GraveStoneLevels, RegistrySupplier<Block>> coldBlocks = new EnumMap<>(GraveStoneLevels.class);
     private static final Map<GraveStoneLevels, RegistrySupplier<Block>> hotBlocks = new EnumMap<>(GraveStoneLevels.class);
     private static final Map<GraveStoneLevels, RegistrySupplier<Block>> netherBlocks = new EnumMap<>(GraveStoneLevels.class);
     private static final Map<GraveStoneLevels, RegistrySupplier<Block>> tropicsBlocks = new EnumMap<>(GraveStoneLevels.class);
+    private static final Map<GraveStoneLevels, RegistrySupplier<Block>> endBlocks = new EnumMap<>(GraveStoneLevels.class);
     // Biome variant blocks mapping: variant_id -> level -> block
     private static final Map<String, Map<GraveStoneLevels, RegistrySupplier<Block>>> VARIANT_TO_BLOCKS = new HashMap<>();
 
@@ -127,7 +148,16 @@ public final class BlockRegistry {
         // Tropics variant
         tropicsBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_1, TROPICS_GRAVESTONE_1);
         tropicsBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_2, TROPICS_GRAVESTONE_2);
+        tropicsBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_3, TROPICS_GRAVESTONE_3);
+        tropicsBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_4, TROPICS_GRAVESTONE_4);
         VARIANT_TO_BLOCKS.put("yagm:tropics", tropicsBlocks);
+
+        // End variant
+        endBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_1, END_GRAVESTONE_1);
+        endBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_2, END_GRAVESTONE_2);
+        endBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_3, END_GRAVESTONE_3);
+        endBlocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_4, END_GRAVESTONE_4);
+        VARIANT_TO_BLOCKS.put("yagm:end", endBlocks);
     }
 
     public static Block getBlockForLevel(GraveStoneLevels level) {

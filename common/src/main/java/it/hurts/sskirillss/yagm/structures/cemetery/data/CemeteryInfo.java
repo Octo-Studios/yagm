@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.structures.cemetery.data;
 
+import lombok.Data;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
@@ -10,6 +11,7 @@ import java.util.UUID;
 
 
 @Getter
+@Data
 public class CemeteryInfo {
 
     private final UUID id;

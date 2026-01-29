@@ -11,7 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Registry of item value providers.
  */
-@ApiStatus.Internal
 public final class ValueProviderRegistry {
 
     private static final Map<String, IItemValueProvider> PROVIDERS = new ConcurrentHashMap<>();

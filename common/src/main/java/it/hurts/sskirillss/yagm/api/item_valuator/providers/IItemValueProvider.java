@@ -9,7 +9,6 @@ import java.util.OptionalDouble;
  * Item value provider.
  * Addons can implement custom evaluation logic.
  */
-@ApiStatus.Internal
 public interface IItemValueProvider {
 
     /**
