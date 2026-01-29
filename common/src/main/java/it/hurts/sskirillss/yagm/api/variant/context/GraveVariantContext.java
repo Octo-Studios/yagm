@@ -8,9 +8,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
-import org.jetbrains.annotations.ApiStatus;
 
-@ApiStatus.Internal
 @Getter
 public class GraveVariantContext {
 

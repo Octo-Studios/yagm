@@ -1,4 +1,4 @@
-package it.hurts.sskirillss.yagm.blocks.gravestones.gravestone;
+package it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave;
 
 import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.events.providers.IGraveVariant;

@@ -2,7 +2,7 @@ package it.hurts.sskirillss.yagm.blocks.gravestones.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import it.hurts.sskirillss.yagm.blocks.gravestones.FallingGraveEntity;
+import it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave.FallingGraveEntity;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.register.BlockRegistry;
 import net.minecraft.client.renderer.MultiBufferSource;

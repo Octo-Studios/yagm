@@ -2,7 +2,6 @@ package it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave;
 
 import it.hurts.sskirillss.yagm.api.events.providers.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.context.registry.GraveVariantRegistry;
-import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.register.BlockRegistry;
 import it.hurts.sskirillss.yagm.register.EntityRegistry;

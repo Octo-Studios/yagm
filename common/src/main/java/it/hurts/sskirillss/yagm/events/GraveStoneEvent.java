@@ -46,15 +46,14 @@ public class GraveStoneEvent {
             FallingGraveEntity fallingGrave = FallingGraveEntity.create(serverLevel, deathPos, velocity, graveData, graveLevel, player.getUUID(), player.getName().getString(), facing);
             serverLevel.addFreshEntity(fallingGrave);
         });
-    }
 
+    }
 
     public static void handlePlayerDeath(ServerPlayer player) {
         if (player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
             return;
         }
         CompoundTag graveData = InventoryHelper.savePlayerInventory(player);
-
 
         EventResult result = IServerEvent.ON_PLAYER_DEATH.invoker().onPlayerDeath(player, graveData);
 

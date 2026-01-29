@@ -1,6 +1,6 @@
 package it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.block;
 
-import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.GraveStoneBlockEntity;
+import it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.structures.cemetery.CemeteryManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -43,8 +43,6 @@ public class GraveStoneBlock extends Block implements EntityBlock {
     private final VoxelShape shapeNS;
     private final VoxelShape shapeEW;
 
-    private static final VoxelShape SHAPE_NS = Block.box(2, 0, 6, 14, 12, 10);
-    private static final VoxelShape SHAPE_EW = Block.box(6, 0, 2, 10, 12, 14);
 
     public GraveStoneBlock(Properties properties, VoxelShape shapeNS, VoxelShape shapeEW) {
         super(properties);
