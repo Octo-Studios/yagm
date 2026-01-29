@@ -8,7 +8,6 @@ import lombok.ToString;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.ApiStatus;
 
-@ApiStatus.Internal
 @Getter
 @ToString
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)

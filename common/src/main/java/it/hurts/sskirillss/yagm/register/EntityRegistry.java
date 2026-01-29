@@ -15,7 +15,7 @@ public class EntityRegistry {
 
     public static final RegistrySupplier<EntityType<FallingGraveEntity>> FALLING_GRAVE =
             ENTITIES.register("falling_grave", () ->
-                    EntityType.Builder.<FallingGraveEntity>of(FallingGraveEntity::new, MobCategory.MISC)
+                    EntityType.Builder.of(FallingGraveEntity::new, MobCategory.MISC)
                             .sized(0.98f, 0.98f)
                             .clientTrackingRange(64)
                             .updateInterval(1)
