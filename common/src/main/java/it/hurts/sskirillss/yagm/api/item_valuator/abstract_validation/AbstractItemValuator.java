@@ -62,7 +62,6 @@ public abstract class AbstractItemValuator {
                 .collect(Collectors.toList());
     }
 
-    @SuppressWarnings("all")
     protected void computeBaseValues() {
         Set<Item> craftedItems = allRecipes.stream()
                 .map(r -> r.getResultItem(server.registryAccess()))
