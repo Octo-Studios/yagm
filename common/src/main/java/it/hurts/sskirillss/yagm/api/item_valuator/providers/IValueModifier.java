@@ -7,7 +7,6 @@ import org.jetbrains.annotations.ApiStatus;
  * Item value modifier.
  * Applied after the base value is obtained.
  */
-@ApiStatus.Internal
 @FunctionalInterface
 public interface IValueModifier {
 
