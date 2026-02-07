@@ -11,7 +11,6 @@ import net.minecraft.world.item.ItemStack;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-
 public final class AccessoryManager {
 
     private static final Map<String, IAccessoryHandler> handlers = new ConcurrentHashMap<>();
