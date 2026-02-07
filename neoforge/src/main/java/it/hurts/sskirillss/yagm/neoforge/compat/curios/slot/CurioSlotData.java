@@ -49,8 +49,7 @@ public class CurioSlotData {
      * The data component type
      * Uses codec() for NBT serialization/deserialization
      */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<SlotInfo>> CURIO_SLOT_DATA =
-            DATA_COMPONENTS.register("curio_slot_data", () -> DataComponentType.<SlotInfo>builder().persistent(CODEC).networkSynchronized(STREAM_CODEC).build());
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<SlotInfo>> CURIO_SLOT_DATA = DATA_COMPONENTS.register("curio_slot_data", () -> DataComponentType.<SlotInfo>builder().persistent(CODEC).networkSynchronized(STREAM_CODEC).build());
 
     /**
      * Register the data component
