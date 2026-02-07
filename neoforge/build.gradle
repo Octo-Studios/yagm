@@ -35,10 +35,6 @@ dependencies {
     forgeRuntimeLibrary("io.wispforest:endec:0.1.8")
     forgeRuntimeLibrary("io.wispforest.endec:gson:0.1.5")
     forgeRuntimeLibrary("io.wispforest.endec:netty:0.1.4")
-
-   // compileOnly files("${rootProject.projectDir}/libs/curios-neoforge-9.5.1+1.21.1-api.jar")
-   // compileOnly files("${rootProject.projectDir}/libs/curios-neoforge-9.5.1+1.21.1.jar")
-  //  compileOnly files("${rootProject.projectDir}/libs/accessories-neoforge-1.1.0-beta.52+1.21.1.jar")
 }
 
 def resourceTargets = ['META-INF/mods.toml', 'pack.mcmeta']
