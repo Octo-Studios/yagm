@@ -14,8 +14,11 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
@@ -27,6 +30,8 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @SuppressWarnings("deprecation")
@@ -47,6 +52,9 @@ public class FallingGraveEntity extends Entity {
     private float rotationSpeed;
     private int lifetime = 0;
     private static final int MAX_LIFETIME = 200;
+    private static final int CHUNK_TICKET_RADIUS = 2;
+    private static final TicketType<Long> FALLING_GRAVE_TICKET = TicketType.create("yagm_falling_grave", Long::compareTo);
+    private final Set<Long> activeChunkTickets = new HashSet<>();
 
     public FallingGraveEntity(EntityType<?> type, Level level) {
         super(type, level);
@@ -89,6 +97,10 @@ public class FallingGraveEntity extends Entity {
     public void tick() {
         super.tick();
         lifetime++;
+
+        if (!level().isClientSide()) {
+            updateChunkTickets();
+        }
 
         if (!onGround()) {
             float currentRotation = entityData.get(DATA_ROTATION);
@@ -139,6 +151,14 @@ public class FallingGraveEntity extends Entity {
         }
     }
 
+    @Override
+    public void remove(@NotNull RemovalReason reason) {
+        if (!level().isClientSide()) {
+            releaseChunkTickets();
+        }
+        super.remove(reason);
+    }
+
     private void placeGrave() {
         BlockPos landingPos = findActualLandingPosition();
         BlockPos gravePos = GraveStoneHelper.getGraveStoneBlockPosition(level(), landingPos);
@@ -163,6 +183,50 @@ public class FallingGraveEntity extends Entity {
         }
 
         discard();
+    }
+
+    private void updateChunkTickets() {
+        if (!(level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        ChunkPos center = new ChunkPos(blockPosition());
+        Set<Long> required = new HashSet<>();
+
+        for (int dx = -CHUNK_TICKET_RADIUS; dx <= CHUNK_TICKET_RADIUS; dx++) {
+            for (int dz = -CHUNK_TICKET_RADIUS; dz <= CHUNK_TICKET_RADIUS; dz++) {
+                ChunkPos chunk = new ChunkPos(center.x + dx, center.z + dz);
+                long chunkId = chunk.toLong();
+                required.add(chunkId);
+
+                if (!activeChunkTickets.contains(chunkId)) {
+                    serverLevel.getChunkSource().addRegionTicket(FALLING_GRAVE_TICKET, chunk, CHUNK_TICKET_RADIUS, chunkId);
+                }
+            }
+        }
+
+        for (Long chunkId : activeChunkTickets) {
+            if (!required.contains(chunkId)) {
+                ChunkPos chunk = new ChunkPos(chunkId);
+                serverLevel.getChunkSource().removeRegionTicket(FALLING_GRAVE_TICKET, chunk, CHUNK_TICKET_RADIUS, chunkId);
+            }
+        }
+
+        activeChunkTickets.clear();
+        activeChunkTickets.addAll(required);
+    }
+
+    private void releaseChunkTickets() {
+        if (!(level() instanceof ServerLevel serverLevel) || activeChunkTickets.isEmpty()) {
+            return;
+        }
+
+        for (Long chunkId : activeChunkTickets) {
+            ChunkPos chunk = new ChunkPos(chunkId);
+            serverLevel.getChunkSource().removeRegionTicket(FALLING_GRAVE_TICKET, chunk, CHUNK_TICKET_RADIUS, chunkId);
+        }
+
+        activeChunkTickets.clear();
     }
 
     private BlockPos findActualLandingPosition() {
