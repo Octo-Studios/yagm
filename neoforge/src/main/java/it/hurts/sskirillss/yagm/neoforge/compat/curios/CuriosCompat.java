@@ -133,8 +133,6 @@ public class CuriosCompat implements IAccessoryHandler {
         ICuriosItemHandler curiosHandler = curiosOpt.get();
         Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
 
-        int restoredCount = 0;
-        
         for (ItemStack stack : accessories.values()) {
             if (stack.isEmpty()) continue;
 
@@ -152,7 +150,6 @@ public class CuriosCompat implements IAccessoryHandler {
                             ItemStack cleanStack = stack.copy();
                             cleanStack.remove(CurioSlotData.CURIO_SLOT_DATA.get());
                             targetStacks.setStackInSlot(slotIndex, cleanStack);
-                            restoredCount++;
                             continue;
                         }
                     }
