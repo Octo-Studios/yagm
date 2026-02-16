@@ -20,10 +20,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-/**
- * Abstract item valuator.
- * Extendable to create custom logic.
- */
+
 @Getter
 @SuppressWarnings("all")
 public abstract class AbstractItemValuator {
