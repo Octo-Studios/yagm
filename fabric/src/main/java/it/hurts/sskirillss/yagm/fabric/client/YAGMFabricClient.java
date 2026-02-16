@@ -5,9 +5,12 @@ import dev.architectury.registry.client.rendering.BlockEntityRendererRegistry;
 import it.hurts.sskirillss.yagm.blocks.gravestones.renderer.FallingGraveEntityRenderer;
 import it.hurts.sskirillss.yagm.blocks.gravestones.renderer.GraveStoneBlockEntityRenderer;
 import it.hurts.sskirillss.yagm.client.YAGMClient;
+import it.hurts.sskirillss.yagm.client.particles.type.Level4GraveParticle;
 import it.hurts.sskirillss.yagm.register.BlockEntityRegistry;
 import it.hurts.sskirillss.yagm.register.EntityRegistry;
+import it.hurts.sskirillss.yagm.register.ParticleRegistry;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 
 
 public class YAGMFabricClient implements ClientModInitializer {
@@ -17,10 +20,16 @@ public class YAGMFabricClient implements ClientModInitializer {
         EntityRendererRegistry.register(EntityRegistry.FALLING_GRAVE, FallingGraveEntityRenderer::new);
     }
 
+    public static void registerParticleFactories() {
+        ParticleFactoryRegistry.getInstance().register(ParticleRegistry.LEVEL4_GRAVE.get(), Level4GraveParticle.Provider::new);
+    }
+
+
     @Override
     public void onInitializeClient() {
         YAGMClient.init();
         registerEntityRenderers();
+        registerParticleFactories();
 
     }
 }
