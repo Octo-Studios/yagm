@@ -35,6 +35,7 @@ dependencies {
     forgeRuntimeLibrary("io.wispforest:endec:0.1.8")
     forgeRuntimeLibrary("io.wispforest.endec:gson:0.1.5")
     forgeRuntimeLibrary("io.wispforest.endec:netty:0.1.4")
+    forgeRuntimeLibrary("io.wispforest.endec:jankson:0.1.6")
 }
 
 def resourceTargets = ['META-INF/mods.toml', 'pack.mcmeta']
