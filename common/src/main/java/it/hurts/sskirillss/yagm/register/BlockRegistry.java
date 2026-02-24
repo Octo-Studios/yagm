@@ -6,10 +6,10 @@ import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.block.GraveStoneBlock;
 import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.block.shape.GraveStoneShape;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveVariantTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -115,19 +115,19 @@ public final class BlockRegistry {
 
     private static GraveStoneBlockRegistry registry;
 
-    private static String createVariantId(String variant) {
-        return YAGMCommon.MODID + ":" + variant;
+    private static String createVariantId(GraveVariantTypes variant) {
+        return variant.getId();
     }
 
     public static GraveStoneBlockRegistry getRegistry() {
         if (registry == null) {
             Map<String, Map<GraveStoneLevels, RegistrySupplier<Block>>> variants = new HashMap<>();
-            variants.put(createVariantId("cold"), createBlockMap(COLD_GRAVESTONE_1, COLD_GRAVESTONE_2, COLD_GRAVESTONE_3, COLD_GRAVESTONE_4));
-            variants.put(createVariantId("hot"), createBlockMap(HOT_GRAVESTONE_1, HOT_GRAVESTONE_2, HOT_GRAVESTONE_3, HOT_GRAVESTONE_4));
-            variants.put(createVariantId("nether"), createBlockMap(NETHER_GRAVESTONE_1, NETHER_GRAVESTONE_2, NETHER_GRAVESTONE_3, NETHER_GRAVESTONE_4));
-            variants.put(createVariantId("tropics"), createBlockMap(TROPICS_GRAVESTONE_1, TROPICS_GRAVESTONE_2, TROPICS_GRAVESTONE_3, TROPICS_GRAVESTONE_4));
-            variants.put(createVariantId("end"), createBlockMap(END_GRAVESTONE_1, END_GRAVESTONE_2, END_GRAVESTONE_3, END_GRAVESTONE_4));
-            variants.put(createVariantId("ocean"), createBlockMap(OCEAN_GRAVESTONE_1, OCEAN_GRAVESTONE_2, OCEAN_GRAVESTONE_3, OCEAN_GRAVESTONE_4));
+            variants.put(createVariantId(GraveVariantTypes.COLD), createBlockMap(COLD_GRAVESTONE_1, COLD_GRAVESTONE_2, COLD_GRAVESTONE_3, COLD_GRAVESTONE_4));
+            variants.put(createVariantId(GraveVariantTypes.HOT), createBlockMap(HOT_GRAVESTONE_1, HOT_GRAVESTONE_2, HOT_GRAVESTONE_3, HOT_GRAVESTONE_4));
+            variants.put(createVariantId(GraveVariantTypes.NETHER), createBlockMap(NETHER_GRAVESTONE_1, NETHER_GRAVESTONE_2, NETHER_GRAVESTONE_3, NETHER_GRAVESTONE_4));
+            variants.put(createVariantId(GraveVariantTypes.TROPICS), createBlockMap(TROPICS_GRAVESTONE_1, TROPICS_GRAVESTONE_2, TROPICS_GRAVESTONE_3, TROPICS_GRAVESTONE_4));
+            variants.put(createVariantId(GraveVariantTypes.END), createBlockMap(END_GRAVESTONE_1, END_GRAVESTONE_2, END_GRAVESTONE_3, END_GRAVESTONE_4));
+            variants.put(createVariantId(GraveVariantTypes.OCEAN), createBlockMap(OCEAN_GRAVESTONE_1, OCEAN_GRAVESTONE_2, OCEAN_GRAVESTONE_3, OCEAN_GRAVESTONE_4));
 
             registry = GraveStoneBlockRegistry.builder().defaultBlocks(createBlockMap(GRAVESTONE_LEVEL_1, GRAVESTONE_LEVEL_2, GRAVESTONE_LEVEL_3, GRAVESTONE_LEVEL_4)).variantToBlocks(variants).build();
         }

@@ -150,6 +150,7 @@ public class GraveStoneBlock extends Block implements EntityBlock {
         }
     }
 
+
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {

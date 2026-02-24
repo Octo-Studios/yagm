@@ -17,7 +17,7 @@ public class EntityRegistry {
             ENTITIES.register("falling_grave", () ->
                     EntityType.Builder.of(FallingGraveEntity::new, MobCategory.MISC)
                             .sized(0.98f, 0.98f)
-                            .clientTrackingRange(64)
+                            .clientTrackingRange(128)
                             .updateInterval(1)
                             .build("falling_grave"));
 

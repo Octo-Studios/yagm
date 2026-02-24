@@ -17,7 +17,7 @@ public class YAGMCommon {
         ItemsRegistry.init();
         EventRegistry.init();
         CommandRegistry.init();
-        CommandRegistry.init();
+        ParticleRegistry.init();
         CreativeTabsRegistry.init();
         DefaultVariantsRegistry.registerAll();
         YAGMCompat.init();

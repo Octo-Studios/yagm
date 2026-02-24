@@ -2,19 +2,20 @@ package it.hurts.sskirillss.yagm.register;
 
 import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.api.variant.builder.GraveVariantBuilder;
+import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveVariantTypes;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.world.level.biome.Biomes;
 
 public class DefaultVariantsRegistry {
     public static void registerAll() {
         // Default grave (fallback for all biomes)
-        GraveVariantBuilder.create(YAGMCommon.MODID, "default")
+        GraveVariantBuilder.create(YAGMCommon.MODID, GraveVariantTypes.DEFAULT.getPath())
                 .displayName("Default")
                 .priority(0)
                 .buildAndRegister();
 
         // Cold biomes (taiga, snowy)
-        GraveVariantBuilder.create(YAGMCommon.MODID, "cold")
+        GraveVariantBuilder.create(YAGMCommon.MODID, GraveVariantTypes.COLD.getPath())
                 .displayName("Cold")
                 .priority(55)
                 .inOverworldLevel()
@@ -22,7 +23,7 @@ public class DefaultVariantsRegistry {
                 .buildAndRegister();
 
         // Hot biomes (desert, savanna, badlands)
-        GraveVariantBuilder.create(YAGMCommon.MODID, "hot")
+        GraveVariantBuilder.create(YAGMCommon.MODID, GraveVariantTypes.HOT.getPath())
                 .displayName("Hot")
                 .priority(55)
                 .inOverworldLevel()
@@ -30,21 +31,21 @@ public class DefaultVariantsRegistry {
                 .buildAndRegister();
 
         // Nether biomes
-        GraveVariantBuilder.create(YAGMCommon.MODID, "nether")
+        GraveVariantBuilder.create(YAGMCommon.MODID, GraveVariantTypes.NETHER.getPath())
                 .displayName("Nether")
                 .priority(60)
                 .inNetherLevel()
                 .buildAndRegister();
 
         // End biomes
-        GraveVariantBuilder.create(YAGMCommon.MODID, "end")
+        GraveVariantBuilder.create(YAGMCommon.MODID, GraveVariantTypes.END.getPath())
                 .displayName("End")
                 .priority(60)
                 .inEndLevel()
                 .buildAndRegister();
 
         // Tropics biomes (jungle)
-        GraveVariantBuilder.create(YAGMCommon.MODID, "tropics")
+        GraveVariantBuilder.create(YAGMCommon.MODID, GraveVariantTypes.TROPICS.getPath())
                 .displayName("Tropics")
                 .priority(55)
                 .inOverworldLevel()
@@ -52,7 +53,7 @@ public class DefaultVariantsRegistry {
                 .buildAndRegister();
 
         // Ocean biomes
-        GraveVariantBuilder.create(YAGMCommon.MODID, "ocean")
+        GraveVariantBuilder.create(YAGMCommon.MODID, GraveVariantTypes.OCEAN.getPath())
                 .displayName("ocean")
                 .priority(55)
                 .inOverworldLevel()

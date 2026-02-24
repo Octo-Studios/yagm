@@ -2,10 +2,7 @@ package it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave;
 
 import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.events.providers.IGraveVariant;
-import it.hurts.sskirillss.yagm.api.provider.IGravestoneTitlesProvider;
 import it.hurts.sskirillss.yagm.api.variant.context.registry.GraveVariantRegistry;
-import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.block.GraveStoneBlock;
-import it.hurts.sskirillss.yagm.client.titles.renderer.GravestoneTitles;
 import it.hurts.sskirillss.yagm.data.GraveData;
 import it.hurts.sskirillss.yagm.data.GraveDataManager;
 import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
@@ -15,7 +12,6 @@ import it.hurts.sskirillss.yagm.structures.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.structures.cemetery.data.CemeterySavedData;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
@@ -37,7 +33,7 @@ import java.util.Map;
 import java.util.UUID;
 
 
-public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTitlesProvider {
+public class GraveStoneBlockEntity extends BlockEntity {
 
     @Getter
     private final GraveData graveData = new GraveData();
@@ -47,11 +43,10 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
     private NonNullList<ItemStack> playerArmorSlots;
     private NonNullList<ItemStack> playerOffHandSlots;
 
-    private GravestoneTitles gravestoneTitles;
 
     public GraveStoneBlockEntity(BlockPos pos, BlockState state) {
         super(BlockEntityRegistry.GRAVE_STONE.get(), pos, state);
-        this.gravestoneTitles = GravestoneTitles.create();
+
     }
 
     public String getOwnerName() {
@@ -108,7 +103,6 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
 
     public void initializeGrave(UUID playerUUID, String playerName, long deathTime, @Nullable Component deathCause, @Nullable String testament, GraveStoneLevels level) {
         graveData.initialize(playerUUID, playerName, deathTime, deathCause, testament, level);
-        updateTitles();
         setChanged();
         syncToClient();
     }
@@ -130,7 +124,6 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
             this.inventoryData.put("Accessories", data.get("Accessories"));
         }
 
-        updateTitles();
         setChanged();
         syncToClient();
 
@@ -138,69 +131,6 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
             level.setBlockEntity(this);
         }
     }
-
-    public void setDeathCause(Component deathCause) {
-        graveData.setDeathCause(deathCause);
-        updateTitles();
-        setChanged();
-        syncToClient();
-    }
-
-
-    protected void updateTitles() {
-        GraveStoneLevels level = graveData.getGraveLevel();
-        String owner = null;
-        Long time = null;
-        String will = null;
-
-        if (level != null) {
-            if (level.hasFeature(GraveStoneLevels.GraveFeature.OWNER_NAME)) {
-                owner = getOwnerName();
-            }
-            if (level.hasFeature(GraveStoneLevels.GraveFeature.DEATH_TIME)) {
-                time = graveData.getDeathTime();
-            }
-            if (level.hasFeature(GraveStoneLevels.GraveFeature.TESTAMENT)) {
-                will = graveData.getTestament();
-            }
-        }
-        this.gravestoneTitles = GravestoneTitles.forDeathWithLevel(owner, time, will);
-    }
-
-    @Override
-    public GravestoneTitles getGravestoneTitles() {
-        return this.gravestoneTitles;
-    }
-
-    @Override
-    public GravestoneTitles setGravestoneTitles(GravestoneTitles titles) {
-        this.gravestoneTitles = titles;
-        return this.gravestoneTitles;
-    }
-
-    @Override
-    public Direction getTitleFacing() {
-        if (getBlockState().hasProperty(GraveStoneBlock.FACING)) {
-            return getBlockState().getValue(GraveStoneBlock.FACING);
-        }
-        return Direction.NORTH;
-    }
-
-    @Override
-    public float getTitleBaseScale() {
-        return 0.025f;
-    }
-
-    @Override
-    public float getTitleStartY() {
-        return graveData.getTextHeight();
-    }
-
-    @Override
-    public boolean shouldRenderTitles() {
-        return gravestoneTitles != null && gravestoneTitles.getVisibleTitles().length > 0;
-    }
-
 
     protected void syncToClient() {
         if (level != null && !level.isClientSide()) {
@@ -239,8 +169,6 @@ public class GraveStoneBlockEntity extends BlockEntity implements IGravestoneTit
         if (tag.contains("InventoryData", 10)) {
             this.inventoryData = tag.getCompound("InventoryData").copy();
         }
-
-        updateTitles();
     }
 
 
