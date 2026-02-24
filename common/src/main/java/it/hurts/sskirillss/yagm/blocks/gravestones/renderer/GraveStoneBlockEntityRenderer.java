@@ -2,6 +2,7 @@ package it.hurts.sskirillss.yagm.blocks.gravestones.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave.GraveStoneBlockEntity;
+import it.hurts.sskirillss.yagm.client.particles.spawner.CandleFlameSpawner;
 import it.hurts.sskirillss.yagm.client.particles.spawner.Level4GraveParticleSpawner;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -38,6 +39,7 @@ public class GraveStoneBlockEntityRenderer implements BlockEntityRenderer<GraveS
 
         renderText(blockEntity, poseStack, buffer, packedLight);
         Level4GraveParticleSpawner.spawn(level, blockEntity, state, level.getRandom());
+        CandleFlameSpawner.spawn(level, blockEntity.getBlockPos(), state);
     }
 
     private void renderText(GraveStoneBlockEntity blockEntity, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {

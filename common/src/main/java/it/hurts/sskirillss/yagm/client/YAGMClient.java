@@ -7,6 +7,7 @@ import it.hurts.sskirillss.yagm.blocks.gravestones.renderer.FallingGraveEntityRe
 import it.hurts.sskirillss.yagm.blocks.gravestones.renderer.GraveStoneBlockEntityRenderer;
 import it.hurts.sskirillss.yagm.register.BlockEntityRegistry;
 import it.hurts.sskirillss.yagm.register.BlockRegistry;
+import it.hurts.sskirillss.yagm.client.particles.candle.CandleParticleInit;
 import it.hurts.sskirillss.yagm.register.EntityRegistry;
 import net.minecraft.client.renderer.RenderType;
 
@@ -17,6 +18,7 @@ public class YAGMClient {
         registerEntityRenderers();
         registerRenderTypes();
         registerBlockEntityRenderers();
+        CandleParticleInit.init();
     }
 
     private static void registerRenderTypes() {

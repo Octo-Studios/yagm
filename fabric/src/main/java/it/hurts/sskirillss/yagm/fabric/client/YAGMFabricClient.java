@@ -5,6 +5,7 @@ import dev.architectury.registry.client.rendering.BlockEntityRendererRegistry;
 import it.hurts.sskirillss.yagm.blocks.gravestones.renderer.FallingGraveEntityRenderer;
 import it.hurts.sskirillss.yagm.blocks.gravestones.renderer.GraveStoneBlockEntityRenderer;
 import it.hurts.sskirillss.yagm.client.YAGMClient;
+import it.hurts.sskirillss.yagm.client.particles.type.CandleFlameParticle;
 import it.hurts.sskirillss.yagm.client.particles.type.Level4GraveParticle;
 import it.hurts.sskirillss.yagm.register.BlockEntityRegistry;
 import it.hurts.sskirillss.yagm.register.EntityRegistry;
@@ -22,6 +23,8 @@ public class YAGMFabricClient implements ClientModInitializer {
 
     public static void registerParticleFactories() {
         ParticleFactoryRegistry.getInstance().register(ParticleRegistry.LEVEL4_GRAVE.get(), Level4GraveParticle.Provider::new);
+        ParticleFactoryRegistry.getInstance().register(ParticleRegistry.CANDLE_FLAME.get(), CandleFlameParticle.Provider::new);
+        ParticleFactoryRegistry.getInstance().register(ParticleRegistry.SOUL_CANDLE_FLAME.get(), CandleFlameParticle.Provider::new);
     }
 
 
