@@ -41,11 +41,17 @@ public class YAGMNeoForgeClient {
         event.registerSpriteSet(ParticleRegistry.SOUL_CANDLE_FLAME.get(), CandleFlameParticle.Provider::new);
     }
 
-//    @SubscribeEvent
-//    public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
-//        for (ResourceLocation modelId : EmissiveModelRegistry.getModelIds()) {
-//            event.register(new ModelResourceLocation(modelId, ""));
-//        }
-//    }
+    @SubscribeEvent
+    public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
+        EmissiveModelRegistry.init();
+        for (ResourceLocation modelId : EmissiveModelRegistry.getModelIds()) {
+            event.register(new ModelResourceLocation(modelId, "standalone"));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onModelsBaked(ModelEvent.BakingCompleted event) {
+        EmissiveModelRegistry.onResourcesReloaded(event.getModelManager());
+    }
 
 }

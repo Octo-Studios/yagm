@@ -17,8 +17,10 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.core.Direction;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -63,17 +65,46 @@ public class FallingGraveEntityRenderer extends EntityRenderer<FallingGraveEntit
 
     private void renderEmissiveOverlay(PoseStack poseStack, MultiBufferSource buffer, BlockState state) {
         BakedModel emissiveModel = EmissiveModelRegistry.getBakedModel(state.getBlock());
-        if (emissiveModel == null) return;
+        if (emissiveModel == null || !hasAnyQuads(emissiveModel, state)) return;
+
+        poseStack.pushPose();
+        applyEmissiveDepthOffset(poseStack);
 
         blockRenderer.getModelRenderer().renderModel(
                 poseStack.last(),
-                buffer.getBuffer(RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS)),
+                buffer.getBuffer(RenderType.entityTranslucentEmissive(TextureAtlas.LOCATION_BLOCKS)),
                 state,
                 emissiveModel,
                 1.0F, 1.0F, 1.0F,
                 LightTexture.FULL_BRIGHT,
                 OverlayTexture.NO_OVERLAY
         );
+
+        poseStack.popPose();
+    }
+
+    private static boolean hasAnyQuads(BakedModel model, BlockState state) {
+        RandomSource random = RandomSource.create(42L);
+
+        if (!model.getQuads(state, null, random).isEmpty()) {
+            return true;
+        }
+
+        for (Direction direction : Direction.values()) {
+            random.setSeed(42L);
+            if (!model.getQuads(state, direction, random).isEmpty()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void applyEmissiveDepthOffset(PoseStack poseStack) {
+        // Inflate emissive pass slightly to prevent z-fighting against base geometry.
+        poseStack.translate(0.5F, 0.5F, 0.5F);
+        poseStack.scale(1.001F, 1.001F, 1.001F);
+        poseStack.translate(-0.5F, -0.5F, -0.5F);
     }
 
     @Override

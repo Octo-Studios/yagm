@@ -32,12 +32,21 @@ public class EmissiveModelRegistry {
     }
 
     public static void onResourcesReloaded() {
+        onResourcesReloaded(Minecraft.getInstance().getModelManager());
+    }
+
+    public static void onResourcesReloaded(ModelManager modelManager) {
         BAKED_MODELS.clear();
-        ModelManager modelManager = Minecraft.getInstance().getModelManager();
         for (Map.Entry<Block, ResourceLocation> entry : BLOCK_TO_EMISSIVE.entrySet()) {
             ResourceLocation id = entry.getValue();
-            for (String variant : new String[]{"", "inventory", "emissive", "standalone"}) {
-                ModelResourceLocation mrl = new ModelResourceLocation(id, variant);
+            ModelResourceLocation[] candidates = new ModelResourceLocation[]{
+                    new ModelResourceLocation(id, "standalone"),
+                    new ModelResourceLocation(id, ""),
+                    ModelResourceLocation.inventory(id),
+                    new ModelResourceLocation(id, "emissive")
+            };
+
+            for (ModelResourceLocation mrl : candidates) {
                 BakedModel model = modelManager.getModel(mrl);
                 boolean isMissing = (model == modelManager.getMissingModel());
                 System.out.println("Trying: " + mrl + " -> missing: " + isMissing);
