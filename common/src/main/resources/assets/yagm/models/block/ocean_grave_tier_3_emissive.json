@@ -1,0 +1,7 @@
+{
+  "parent": "yagm:block/ocean_grave_tier_3",
+  "textures": {
+    "0": "yagm:block/emissive/emmisive_texture/ocean_grave_tier_3_emissive",
+    "1": "yagm:block/emissive/emmisive_texture/ocean_grave_tier_3_emissive"
+  }
+}

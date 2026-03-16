@@ -1,6 +1,6 @@
 package it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.block;
 
-import it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave.GraveStoneBlockEntity;
+import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.entity.GraveStoneEntity;
 import it.hurts.sskirillss.yagm.structures.cemetery.CemeteryManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -20,14 +20,13 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 
-public class GraveStoneBlock extends Block implements EntityBlock {
+public class GraveStoneBlock extends Block {
 
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
@@ -55,8 +54,8 @@ public class GraveStoneBlock extends Block implements EntityBlock {
     @Override
     public @NotNull InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
         if (!level.isClientSide) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof GraveStoneBlockEntity graveEntity) {
+            GraveStoneEntity graveEntity = findGraveEntity(level, pos);
+            if (graveEntity != null) {
                 graveEntity.interact(player);
             }
         }
@@ -84,8 +83,8 @@ public class GraveStoneBlock extends Block implements EntityBlock {
         super.setPlacedBy(level, pos, state, placer, stack);
 
         if (!level.isClientSide()) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof GraveStoneBlockEntity graveEntity) {
+            GraveStoneEntity graveEntity = findOrCreateGraveEntity(level, pos);
+            if (graveEntity != null) {
                 CustomData customData = stack.getOrDefault(DataComponents.BLOCK_ENTITY_DATA, CustomData.EMPTY);
                 if (!customData.isEmpty()) {
                     CompoundTag tag = customData.copyTag();
@@ -100,8 +99,8 @@ public class GraveStoneBlock extends Block implements EntityBlock {
 
     @Override
     public void spawnAfterBreak(BlockState state, ServerLevel level, BlockPos pos, ItemStack stack, boolean dropExperience) {
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof GraveStoneBlockEntity grave) grave.dropItems(level, pos);
+        GraveStoneEntity grave = findGraveEntity(level, pos);
+        if (grave != null) grave.dropItems(level, pos);
 
         super.spawnAfterBreak(state, level, pos, stack, dropExperience);
     }
@@ -110,10 +109,8 @@ public class GraveStoneBlock extends Block implements EntityBlock {
     @Override
     public @NotNull BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof GraveStoneBlockEntity grave) {
-                grave.giveInventoryToPlayer(serverPlayer);
-            }
+            GraveStoneEntity grave = findGraveEntity(level, pos);
+            if (grave != null) grave.giveInventoryToPlayer(serverPlayer);
         }
 
         super.playerWillDestroy(level, pos, state, player);
@@ -122,7 +119,7 @@ public class GraveStoneBlock extends Block implements EntityBlock {
 
     @Override
     protected @NotNull RenderShape getRenderShape(BlockState state) {
-        return RenderShape.MODEL;
+        return RenderShape.INVISIBLE;
     }
 
     @Override
@@ -131,11 +128,10 @@ public class GraveStoneBlock extends Block implements EntityBlock {
             if (!level.isClientSide()) {
                 CemeteryManager.getInstance().removeGrave(level.dimension(), pos);
             }
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof GraveStoneBlockEntity grave) {
-                if (!level.isClientSide()) {
-                    grave.dropItems(level, pos);
-                }
+            GraveStoneEntity grave = findGraveEntity(level, pos);
+            if (grave != null && !level.isClientSide()) {
+                grave.dropItems(level, pos);
+                grave.discard();
             }
             super.onRemove(state, level, pos, newState, isMoving);
         }
@@ -150,13 +146,6 @@ public class GraveStoneBlock extends Block implements EntityBlock {
         }
     }
 
-
-    @Nullable
-    @Override
-    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new GraveStoneBlockEntity(pos, state);
-    }
-
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(FACING);
@@ -166,5 +155,30 @@ public class GraveStoneBlock extends Block implements EntityBlock {
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+    }
+
+    @Nullable
+    private static GraveStoneEntity findGraveEntity(Level level, BlockPos pos) {
+        AABB box = new AABB(pos);
+        for (GraveStoneEntity entity : level.getEntitiesOfClass(GraveStoneEntity.class, box.inflate(0.1D))) {
+            if (entity.isBoundTo(pos)) {
+                return entity;
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    private static GraveStoneEntity findOrCreateGraveEntity(Level level, BlockPos pos) {
+        GraveStoneEntity existing = findGraveEntity(level, pos);
+        if (existing != null) {
+            return existing;
+        }
+        if (level.isClientSide()) {
+            return null;
+        }
+        GraveStoneEntity created = GraveStoneEntity.create(level, pos);
+        level.addFreshEntity(created);
+        return created;
     }
 }

@@ -1,6 +1,6 @@
 package it.hurts.sskirillss.yagm.client.particles.spawner;
 
-import it.hurts.sskirillss.yagm.blocks.gravestones.fallinggrave.GraveStoneBlockEntity;
+import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.entity.GraveStoneEntity;
 import it.hurts.sskirillss.yagm.register.BlockRegistry;
 import it.hurts.sskirillss.yagm.register.ParticleRegistry;
 import net.minecraft.client.Minecraft;
@@ -42,8 +42,8 @@ public final class Level4GraveParticleSpawner {
     private Level4GraveParticleSpawner() {
     }
 
-    public static void spawn(Level level, GraveStoneBlockEntity blockEntity, BlockState state, RandomSource rand) {
-        if (level == null || !level.isClientSide || blockEntity == null || state == null) return;
+    public static void spawn(Level level, GraveStoneEntity entity, BlockState state, RandomSource rand) {
+        if (level == null || !level.isClientSide || entity == null || state == null) return;
 
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.isPaused()) return;
@@ -51,7 +51,7 @@ public final class Level4GraveParticleSpawner {
 
         if (!isLevel4Block(state)) return;
 
-        BlockPos pos = blockEntity.getBlockPos();
+        BlockPos pos = entity.getBoundPos();
         long gameTime = level.getGameTime();
         long posKey = pos.asLong();
         Long lastTick = LAST_SPAWN_TICK_BY_POS.put(posKey, gameTime);
@@ -66,8 +66,8 @@ public final class Level4GraveParticleSpawner {
         double centerZ = pos.getZ() + 0.5D;
 
         ParticleOptions particle = ParticleRegistry.LEVEL4_GRAVE.get();
-        if (blockEntity.getVariant() != null && blockEntity.getVariant().getId() != null) {
-            String id = blockEntity.getVariant().getId().toString().toLowerCase(Locale.ROOT);
+        if (entity.getVariant() != null && entity.getVariant().getId() != null) {
+            String id = entity.getVariant().getId().toString().toLowerCase(Locale.ROOT);
             ParticleOptions custom = CUSTOM_VARIANT_PARTICLES.get(id);
             if (custom != null) particle = custom;
         }

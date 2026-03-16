@@ -4,22 +4,17 @@ import it.hurts.sskirillss.yagm.api.events.providers.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.context.GraveVariantContext;
 import it.hurts.sskirillss.yagm.api.variant.context.registry.GraveVariantRegistry;
 import it.hurts.sskirillss.yagm.api.variant.context.AbstractGraveVariant;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
-import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
-@ApiStatus.Internal
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class GraveVariantBuilder {
 
     private final ResourceLocation id;
@@ -29,12 +24,16 @@ public class GraveVariantBuilder {
     private int textColor = 0xFFFFFFFF;
     private float textHeightOffset = 0f;
 
-    public static GraveVariantBuilder create(ResourceLocation id) {
-        return new GraveVariantBuilder(id);
+    private GraveVariantBuilder(ResourceLocation id) {
+        this.id = id;
     }
 
-    public static GraveVariantBuilder create(String modId, String name) {
-        return new GraveVariantBuilder(ResourceLocation.fromNamespaceAndPath(modId, name));
+    public static GraveVariantBuilder create(String modId, String path) {
+        return new GraveVariantBuilder(ResourceLocation.fromNamespaceAndPath(modId, path));
+    }
+
+    public static GraveVariantBuilder create(ResourceLocation id) {
+        return new GraveVariantBuilder(id);
     }
 
     public GraveVariantBuilder displayName(String name) {
@@ -98,7 +97,6 @@ public class GraveVariantBuilder {
         return this;
     }
 
-
     public GraveVariantBuilder textColor(int color) {
         this.textColor = color;
         return this;
@@ -111,12 +109,7 @@ public class GraveVariantBuilder {
 
     public IGraveVariant build() {
         String name = displayName != null ? displayName : id.getPath();
-
-        return new BuiltGraveVariant(
-                id, name, priority,
-                List.copyOf(conditions),
-                textColor, textHeightOffset
-        );
+        return new BuiltGraveVariant(id, name, priority, List.copyOf(conditions), textColor, textHeightOffset);
     }
 
     public IGraveVariant buildAndRegister() {
@@ -124,7 +117,6 @@ public class GraveVariantBuilder {
         GraveVariantRegistry.register(variant);
         return variant;
     }
-
 
     private static class BuiltGraveVariant extends AbstractGraveVariant {
 

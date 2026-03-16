@@ -1,0 +1,20 @@
+{
+  "textures": {
+    "0": "yagm:block/emissive/emmisive_texture/nether_grave_tier_4_emissive",
+    "particle": "yagm:block/emissive/emmisive_texture/nether_grave_tier_4_emissive"
+  },
+  "elements": [
+    {
+      "from": [2, 6, 2],
+      "to": [14, 12, 14],
+      "faces": {
+        "north": {"uv": [15.875, 10.25, 16, 16], "texture": "#0"},
+        "east": {"uv": [15.875, 10.25, 16, 16], "texture": "#0"},
+        "south": {"uv": [15.875, 10.25, 16, 16], "texture": "#0"},
+        "west": {"uv": [15.875, 10.25, 16, 16], "texture": "#0"},
+        "up": {"uv": [14.5, 1.5, 13, 0], "texture": "#0"},
+        "down": {"uv": [16, 0, 14.5, 1.5], "texture": "#0"}
+      }
+    }
+  ]
+}

@@ -12,7 +12,6 @@ public class YAGMCommon {
 
     public static void init(){
         BlockRegistry.init();
-        BlockEntityRegistry.init();
         EntityRegistry.init();
         ItemsRegistry.init();
         EventRegistry.init();

@@ -8,9 +8,6 @@ import org.jetbrains.annotations.ApiStatus;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Registry of item value providers.
- */
 public final class ValueProviderRegistry {
 
     private static final Map<String, IItemValueProvider> PROVIDERS = new ConcurrentHashMap<>();
@@ -25,17 +22,12 @@ public final class ValueProviderRegistry {
         needsSort = true;
     }
 
-    /**
-     * Gets the value of an item from all providers
-     */
     public static void registerModifier(IValueModifier modifier) {
         MODIFIERS.add(modifier);
         MODIFIERS.sort(Comparator.comparingInt(IValueModifier::getPriority).reversed());
     }
 
-    /**
-     * Gets the value of an item from all providers
-     */
+
     public static OptionalDouble getValue(ItemStack stack) {
         if (stack.isEmpty()) {
             return OptionalDouble.of(0);
@@ -53,16 +45,11 @@ public final class ValueProviderRegistry {
         return OptionalDouble.empty();
     }
 
-    /**
-     * Gets the value of the item or the default
-     */
+
     public static double getValueOrDefault(ItemStack stack, double defaultValue) {
         return getValue(stack).orElse(defaultValue);
     }
 
-    /**
-     * apply your modifier for value
-     */
     public static double applyModifiers(ItemStack stack, double value) {
         for (IValueModifier modifier : MODIFIERS) {
             value = modifier.modify(stack, value);

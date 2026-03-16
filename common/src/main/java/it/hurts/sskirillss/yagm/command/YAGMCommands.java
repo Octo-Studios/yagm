@@ -41,9 +41,7 @@ public class YAGMCommands {
                                 ServerPlayer targetPlayer = context.getSource().getServer().getPlayerList().getPlayerByName(playerName);
                                 if (targetPlayer != null) {
                                     List<String> saves = GraveSaveManager.listSaves(worldName, targetPlayer.getUUID());
-                                    saves.stream()
-                                        .filter(save -> save.toLowerCase().startsWith(builder.getRemaining().toLowerCase()))
-                                        .forEach(builder::suggest);
+                                    saves.stream().filter(save -> save.toLowerCase().startsWith(builder.getRemaining().toLowerCase())).forEach(builder::suggest);
                                 }
                                 return builder.buildFuture();
                             })

@@ -48,12 +48,7 @@ public final class AccessoryManager {
         return !handlers.isEmpty();
     }
 
-    /**
-     * Collect all accessory items from player using all handlers.
-     *
-     * @param player The player
-     * @return Map: handler name -> (slot key -> item)
-     */
+
     public static Map<String, Map<String, ItemStack>> collectAllAccessories(ServerPlayer player) {
         Map<String, Map<String, ItemStack>> allAccessories = new HashMap<>();
 
@@ -89,13 +84,7 @@ public final class AccessoryManager {
         return list;
     }
 
-    /**
-     * Save all accessory data to NBT.
-     *
-     * @param allAccessories Map from collectAllAccessories
-     * @param registryAccess Registry access
-     * @return NBT with data from all handlers
-     */
+
     public static CompoundTag saveAllToNBT(Map<String, Map<String, ItemStack>> allAccessories, RegistryAccess registryAccess) {
         CompoundTag root = new CompoundTag();
 
@@ -115,13 +104,7 @@ public final class AccessoryManager {
         return root;
     }
 
-    /**
-     * Load all accessory data from NBT.
-     *
-     * @param tag NBT with handler data
-     * @param registryAccess Registry access
-     * @return Map: handler name -> (slot key -> item)
-     */
+
     public static Map<String, Map<String, ItemStack>> loadAllFromNBT(CompoundTag tag, RegistryAccess registryAccess) {
         Map<String, Map<String, ItemStack>> allAccessories = new HashMap<>();
 
@@ -138,13 +121,7 @@ public final class AccessoryManager {
         return allAccessories;
     }
 
-    /**
-     * Restore all accessories to player.
-     *
-     * @param player The player
-     * @param allAccessories Map from loadAllFromNBT
-     * @param dropIfFull Whether to drop items that don't fit
-     */
+
     public static void restoreAllAccessories(ServerPlayer player, Map<String, Map<String, ItemStack>> allAccessories, boolean dropIfFull) {
         for (Map.Entry<String, Map<String, ItemStack>> entry : allAccessories.entrySet()) {
             String handlerName = entry.getKey();

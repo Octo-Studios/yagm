@@ -18,10 +18,6 @@ public class NeoForgeCompatImpl {
         }
     }
 
-    /**
-     * Register DataComponents for Curios support.
-     * Should be called during mod construction with the mod event bus.
-     */
     public static void registerDataComponents(IEventBus modEventBus) {
         if (Platform.isModLoaded("curios")) {
             CurioSlotData.register(modEventBus);

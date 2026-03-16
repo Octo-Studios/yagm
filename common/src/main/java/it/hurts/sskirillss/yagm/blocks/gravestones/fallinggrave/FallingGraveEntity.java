@@ -7,6 +7,7 @@ import it.hurts.sskirillss.yagm.register.BlockRegistry;
 import it.hurts.sskirillss.yagm.register.EntityRegistry;
 import it.hurts.sskirillss.yagm.structures.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.utils.GraveStoneHelper;
+import it.hurts.sskirillss.yagm.blocks.gravestones.gravestone.entity.GraveStoneEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -168,17 +169,18 @@ public class FallingGraveEntity extends Entity {
         BlockState graveState = graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
 
         if (GraveStoneHelper.placeGraveStone(level(), gravePos, graveState)) {
-            if (level().getBlockEntity(gravePos) instanceof GraveStoneBlockEntity graveEntity) {
+            if (!level().isClientSide()) {
+                GraveStoneEntity graveEntity = GraveStoneEntity.create(level(), gravePos);
                 if (graveData != null) {
                     graveEntity.loadGraveData(graveData);
                 }
                 graveEntity.initializeGrave(ownerUUID, ownerName, System.currentTimeMillis(), null, null, graveLevel);
 
                 if (variantId != null) {
-                    graveEntity.getGraveData().setVariantId(variantId);
+                    graveEntity.setVariant(GraveVariantRegistry.get(variantId));
                 }
+                level().addFreshEntity(graveEntity);
             }
-
             CemeteryManager.getInstance().addGrave(level().dimension(), gravePos);
         }
 
