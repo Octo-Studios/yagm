@@ -16,9 +16,6 @@ public final class AccessoryManager {
     private static final Map<String, IAccessoryHandler> handlers = new ConcurrentHashMap<>();
     private static boolean initialized = false;
 
-    private AccessoryManager() {}
-
-
     public static void registerHandler(IAccessoryHandler handler) {
         if (handler == null) return;
 

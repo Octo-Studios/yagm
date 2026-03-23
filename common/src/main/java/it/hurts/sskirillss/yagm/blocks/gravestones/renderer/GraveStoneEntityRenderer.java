@@ -144,8 +144,7 @@ public class GraveStoneEntityRenderer extends EntityRenderer<GraveStoneEntity> {
         poseStack.translate(-0.5F, -0.5F, -0.5F);
     }
 
-    private void renderText(GraveStoneEntity entity, PoseStack poseStack,
-                            MultiBufferSource buffer, int packedLight) {
+    private void renderText(GraveStoneEntity entity, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
         String ownerName = entity.getOwnerName();
         if (ownerName == null || ownerName.isEmpty() || ownerName.equals("Unknown")) return;
         if (entity.isRemoved()) return;
@@ -156,10 +155,7 @@ public class GraveStoneEntityRenderer extends EntityRenderer<GraveStoneEntity> {
         poseStack.scale(0.025F, -0.025F, 0.025F);
 
         int textWidth = font.width(ownerName);
-        font.drawInBatch(ownerName, -textWidth / 2.0F, 0F,
-                entity.getTextColor() | 0xFF000000,
-                false, poseStack.last().pose(), buffer,
-                Font.DisplayMode.NORMAL, 0, packedLight);
+        font.drawInBatch(ownerName, -textWidth / 2.0F, 0F, entity.getTextColor() | 0xFF000000, false, poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, 0, packedLight);
 
         poseStack.popPose();
     }
@@ -170,8 +166,7 @@ public class GraveStoneEntityRenderer extends EntityRenderer<GraveStoneEntity> {
     }
 
     @Override
-    public boolean shouldRender(GraveStoneEntity entity, Frustum frustum,
-                                double x, double y, double z) {
+    public boolean shouldRender(GraveStoneEntity entity, Frustum frustum, double x, double y, double z) {
         return true;
     }
 }
