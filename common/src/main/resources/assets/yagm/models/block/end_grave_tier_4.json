@@ -4,7 +4,6 @@
 	"texture_size": [128, 128],
 	"textures": {
 		"0": "yagm:block/end_grave_tier_4",
-		"1": "yagm:block/emissive/emmisive_texture/end_grave_tier_4_emissive",
 		"particle": "yagm:block/end_grave_tier_4"
 	},
 	"elements": [
@@ -350,19 +349,6 @@
 				"up": {"uv": [0.625, 8.25, 0, 8.875], "texture": "#0"},
 				"down": {"uv": [1.25, 8.875, 0.625, 8.25], "texture": "#0"}
 			}
-		},
-		{
-			"from": [2, 6, 2],
-			"to": [14, 12, 14],
-			"rotation": {"angle": 0, "axis": "y", "origin": [2, 6, 0]},
-			"faces": {
-				"north": {"uv": [15.875, 10.25, 16, 16], "texture": "#1"},
-				"east": {"uv": [15.875, 10.25, 16, 16], "texture": "#1"},
-				"south": {"uv": [15.875, 10.25, 16, 16], "texture": "#1"},
-				"west": {"uv": [15.875, 10.25, 16, 16], "texture": "#1"},
-				"up": {"uv": [14.5, 1.5, 13, 0], "texture": "#1"},
-				"down": {"uv": [16, 0, 14.5, 1.5], "texture": "#1"}
-			}
 		}
 	],
 	"display": {
@@ -420,7 +406,6 @@
 			"origin": [8, 8, 8],
 			"color": 0,
 			"children": [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
-		},
-		25
+		}
 	]
 }

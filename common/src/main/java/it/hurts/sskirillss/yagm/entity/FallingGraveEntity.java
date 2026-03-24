@@ -105,30 +105,24 @@ public class FallingGraveEntity extends Entity {
             updateChunkTickets();
         }
 
-        // Track previous rotation for smooth client-side lerp in getGraveRotation(partialTick).
         prevRotation = entityData.get(DATA_ROTATION);
         if (!onGround()) {
             entityData.set(DATA_ROTATION, (prevRotation + rotationSpeed) % 360f);
         }
 
-        // End void teleport — server-only to avoid double side-effects.
-        if (!level().isClientSide()
-                && this.getY() < level().getMinBuildHeight() - 10
-                && level().dimension() == Level.END) {
-            BlockPos safePos = findEndIslandPosition(blockPosition());
-            this.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
-            this.setDeltaMovement(Vec3.ZERO);
-            level().playSound(null, safePos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.BLOCKS, 1.0F, 1.0F);
-        }
-
-        // Physics runs on BOTH sides so the client simulates movement locally and the
-        // entity renders at the correct interpolated position between server sync packets.
-        Vec3 motion = getDeltaMovement();
-        setDeltaMovement(MOTION.applyPhysics(motion));
-        move(MoverType.SELF, getDeltaMovement());
-
-        // Placement check is server-only.
         if (!level().isClientSide()) {
+            if (this.getY() < level().getMinBuildHeight() - 10
+                    && level().dimension() == Level.END) {
+                BlockPos safePos = findEndIslandPosition(blockPosition());
+                this.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
+                this.setDeltaMovement(Vec3.ZERO);
+                level().playSound(null, safePos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.BLOCKS, 1.0F, 1.0F);
+            }
+
+            Vec3 motion = getDeltaMovement();
+            setDeltaMovement(MOTION.applyPhysics(motion));
+            move(MoverType.SELF, getDeltaMovement());
+
             boolean shouldPlace = onGround();
 
             if (!shouldPlace && motion.y < 0) {
@@ -356,9 +350,6 @@ public class FallingGraveEntity extends Entity {
     }
 
     /**
-     * Returns the visually interpolated rotation for the current frame.
-     * Uses shortest-path angle lerp between {@code prevRotation} and the current
-     * synced value so the grave spins smoothly at any frame rate without snapping
      * at the 0°/360° boundary.
      */
     public float getGraveRotation(float partialTick) {
@@ -368,7 +359,7 @@ public class FallingGraveEntity extends Entity {
         return lerpAngle(partialTick, prevRotation, entityData.get(DATA_ROTATION));
     }
 
-    /** Lerps along the shortest arc between two angles (in degrees). */
+
     private static float lerpAngle(float t, float from, float to) {
         float diff = ((to - from) % 360f + 540f) % 360f - 180f;
         return from + diff * t;
