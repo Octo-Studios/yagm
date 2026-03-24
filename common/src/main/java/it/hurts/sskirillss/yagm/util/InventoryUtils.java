@@ -2,8 +2,8 @@ package it.hurts.sskirillss.yagm.util;
 
 import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.valuator.ItemValuator;
-import it.hurts.sskirillss.yagm.data.GraveDataManager;
 import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.data.GraveDataManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
@@ -26,6 +26,7 @@ public class InventoryUtils {
     private static final String MAIN = "MainInventory";
     private static final String ARMOR = "ArmorInventory";
     private static final String OFFHAND = "OffhandInventory";
+
 
     public static CompoundTag savePlayerInventory(Player player) {
         CompoundTag nbt = new CompoundTag();
@@ -62,7 +63,6 @@ public class InventoryUtils {
             ServerLevel serverLevel = serverPlayer.serverLevel();
             GraveDataManager manager = GraveDataManager.get(serverLevel);
             UUID graveId = nbt.getUUID("Id");
-
             manager.putTransientGrave(graveId, copyInventoryList(inventory.items), copyInventoryList(inventory.armor), copyInventoryList(inventory.offhand));
         }
 
@@ -71,16 +71,16 @@ public class InventoryUtils {
 
 
     public static NonNullList<ItemStack> getAllItemsFromNBT(HolderLookup.Provider provider, CompoundTag nbt) {
-        NonNullList<ItemStack> main = NonNullList.withSize(36, ItemStack.EMPTY);
-        NonNullList<ItemStack> armor = NonNullList.withSize(4,  ItemStack.EMPTY);
-        NonNullList<ItemStack> offhand = NonNullList.withSize(1, ItemStack.EMPTY);
+        NonNullList<ItemStack> mainList = NonNullList.withSize(36, ItemStack.EMPTY);
+        NonNullList<ItemStack> armorList = NonNullList.withSize(4, ItemStack.EMPTY);
+        NonNullList<ItemStack> offhandList = NonNullList.withSize(1, ItemStack.EMPTY);
 
-        ItemUtils.readInventory(provider, nbt, MAIN,    main);
-        ItemUtils.readInventory(provider, nbt, ARMOR,   armor);
-        ItemUtils.readInventory(provider, nbt, OFFHAND, offhand);
+        ItemUtils.readInventory(provider, nbt, MAIN, mainList);
+        ItemUtils.readInventory(provider, nbt, ARMOR, armorList);
+        ItemUtils.readInventory(provider, nbt, OFFHAND, offhandList);
 
         NonNullList<ItemStack> result = NonNullList.create();
-        for (NonNullList<ItemStack> list : new NonNullList[]{main, armor, offhand}) {
+        for (NonNullList<ItemStack> list : new NonNullList[]{mainList, armorList, offhandList}) {
             for (ItemStack stack : list) {
                 if (!stack.isEmpty()) result.add(stack);
             }
@@ -88,18 +88,6 @@ public class InventoryUtils {
         return result;
     }
 
-    public static boolean dropItemList(Level level, BlockPos pos, NonNullList<ItemStack> items) {
-        if (items == null || !hasNonEmptyItems(items)) return false;
-        double x = pos.getX() + 0.5;
-        double y = pos.getY() + 0.5;
-        double z = pos.getZ() + 0.5;
-        for (ItemStack item : items) {
-            if (!item.isEmpty()) {
-                Containers.dropItemStack(level, x, y, z, item);
-            }
-        }
-        return true;
-    }
 
     public static void restoreInventory(NonNullList<ItemStack> playerInv, NonNullList<ItemStack> graveInv, ServerPlayer player) {
         for (int i = 0; i < Math.min(graveInv.size(), playerInv.size()); i++) {
@@ -139,6 +127,19 @@ public class InventoryUtils {
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }
+    }
+
+    public static boolean dropItemList(Level level, BlockPos pos, NonNullList<ItemStack> items) {
+        if (!hasNonEmptyItems(items)) return false;
+        double x = pos.getX() + 0.5;
+        double y = pos.getY() + 0.5;
+        double z = pos.getZ() + 0.5;
+        for (ItemStack stack : items) {
+            if (!stack.isEmpty()) {
+                Containers.dropItemStack(level, x, y, z, stack);
+            }
+        }
+        return true;
     }
 
     public static NonNullList<ItemStack> getOrThrowInventory(NonNullList<ItemStack> cached, Supplier<NonNullList<ItemStack>> supplier) {
