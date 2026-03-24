@@ -77,11 +77,4 @@ public final class ValueProviderRegistry {
             }
         }
     }
-
-    public static void clear() {
-        PROVIDERS.clear();
-        SORTED_PROVIDERS.clear();
-        MODIFIERS.clear();
-        needsSort = true;
-    }
 }

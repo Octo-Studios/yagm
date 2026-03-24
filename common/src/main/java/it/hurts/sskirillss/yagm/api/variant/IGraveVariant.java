@@ -38,29 +38,4 @@ public interface IGraveVariant {
     default float getTextHeightOffset() {
         return 0f;
     }
-
-    /**
-     * Returns the resource location for the emissive texture overlay.
-     * Return null if this variant doesn't have an emissive texture.
-     */
-    default ResourceLocation getEmissiveTexture() {
-        return null;
-    }
-
-    /**
-     * Returns the light level for the emissive texture (0-15).
-     * Default is 15 (maximum brightness).
-     */
-    default int getEmissiveLightLevel() {
-        return 15;
-    }
-
-    /**
-     * Returns an array of colors for the base glow gradient effect.
-     * Each color is in 0xRRGGBB format.
-     * Return null or empty array to disable the effect.
-     */
-    default int[] getBaseGlowColors() {
-        return null;
-    }
 }
