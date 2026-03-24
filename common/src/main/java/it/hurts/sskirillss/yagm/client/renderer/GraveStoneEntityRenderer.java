@@ -3,8 +3,6 @@ package it.hurts.sskirillss.yagm.client.renderer;
 import com.mojang.blaze3d.vertex.PoseStack;
 import it.hurts.sskirillss.yagm.entity.GraveStoneEntity;
 import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
-import it.hurts.sskirillss.yagm.client.EmissiveFilteredModel;
-import it.hurts.sskirillss.yagm.client.EmissiveModelRegistry;
 import it.hurts.sskirillss.yagm.client.particle.spawner.CandleFlameSpawner;
 import it.hurts.sskirillss.yagm.client.particle.spawner.Level4GraveParticleSpawner;
 import it.hurts.sskirillss.yagm.init.BlockRegistry;
@@ -54,8 +52,6 @@ public class GraveStoneEntityRenderer extends EntityRenderer<GraveStoneEntity> {
         renderEmissiveOverlay(poseStack, buffer, state, model);
 
         renderText(entity, poseStack, buffer, packedLight);
-        Level4GraveParticleSpawner.spawn(level, entity, state, level.getRandom());
-        CandleFlameSpawner.spawn(level, entity.getBoundPos(), state);
 
         super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);
     }

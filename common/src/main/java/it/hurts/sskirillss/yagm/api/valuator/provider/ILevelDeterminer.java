@@ -1,6 +1,5 @@
 package it.hurts.sskirillss.yagm.api.valuator.provider;
 
-import org.jetbrains.annotations.ApiStatus;
 
 /**
  * Determines a level based on a value.
