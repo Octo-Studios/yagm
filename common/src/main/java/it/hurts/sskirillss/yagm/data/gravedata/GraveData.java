@@ -1,4 +1,4 @@
-package it.hurts.sskirillss.yagm.data;
+package it.hurts.sskirillss.yagm.data.gravedata;
 
 import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
 import lombok.Data;

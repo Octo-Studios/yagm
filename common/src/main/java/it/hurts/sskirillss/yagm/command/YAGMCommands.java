@@ -3,7 +3,7 @@ package it.hurts.sskirillss.yagm.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
-import it.hurts.sskirillss.yagm.data.GraveSaveManager;
+import it.hurts.sskirillss.yagm.data.gravedata.GraveSaveManager;
 import lombok.extern.slf4j.Slf4j;
 import it.hurts.sskirillss.yagm.util.InventoryUtils;
 import net.minecraft.commands.CommandSourceStack;

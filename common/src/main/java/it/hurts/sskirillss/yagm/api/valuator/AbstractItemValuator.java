@@ -3,7 +3,7 @@ package it.hurts.sskirillss.yagm.api.valuator;
 import it.hurts.sskirillss.yagm.api.valuator.provider.ILevelDeterminer;
 import lombok.extern.slf4j.Slf4j;
 import it.hurts.sskirillss.yagm.api.valuator.config.ValuatorConfig;
-import it.hurts.sskirillss.yagm.api.valuator.provider.ValueProviderRegistry;
+import it.hurts.sskirillss.yagm.api.valuator.registry.ValueProviderRegistry;
 import lombok.Getter;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.Registry;

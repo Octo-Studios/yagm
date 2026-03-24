@@ -3,7 +3,7 @@ package it.hurts.sskirillss.yagm.api.valuator;
 import it.hurts.sskirillss.yagm.YAGMCommon;
 import lombok.extern.slf4j.Slf4j;
 import it.hurts.sskirillss.yagm.api.valuator.config.ValuatorConfig;
-import it.hurts.sskirillss.yagm.api.valuator.provider.ValueProviderRegistry;
+import it.hurts.sskirillss.yagm.api.valuator.registry.ValueProviderRegistry;
 import it.hurts.sskirillss.yagm.api.valuator.provider.ILevelDeterminer;
 import it.hurts.sskirillss.yagm.api.valuator.provider.IValueModifier;
 import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
@@ -25,7 +25,7 @@ public class ItemValuator extends AbstractItemValuator {
 
     private static ItemValuator INSTANCE;
 
-    private static final double[] LIST_THRESHOLDS = {0, 100, 500, 4000};
+    private static final double[] LIST_THRESHOLDS = {0, 100, 500, 2000};
     private static final double DEFAULT_VALUE = 1.0;
     private static final double DEFAULT_RARITY_MULTIPLIER = 0.1;
 
@@ -98,7 +98,7 @@ public class ItemValuator extends AbstractItemValuator {
     }
 
 
-    private static class GraveLevelDeterminer implements ILevelDeterminer<GraveStoneLevels> {
+    private class GraveLevelDeterminer implements ILevelDeterminer<GraveStoneLevels> {
 
         @Override
         public GraveStoneLevels determine(double value) {
@@ -120,11 +120,20 @@ public class ItemValuator extends AbstractItemValuator {
 
         @Override
         public double getThreshold(GraveStoneLevels level) {
+            if (level == GraveStoneLevels.GRAVESTONE_LEVEL_1) {
+                return 0;
+            }
+
+            double configured = config.getThreshold(level.ordinal());
+            if (configured > 0) {
+                return configured;
+            }
+
             return switch (level) {
                 case GRAVESTONE_LEVEL_1 -> 0;
                 case GRAVESTONE_LEVEL_2 -> 100;
                 case GRAVESTONE_LEVEL_3 -> 500;
-                case GRAVESTONE_LEVEL_4 -> 4000;
+                case GRAVESTONE_LEVEL_4 -> 2000;
             };
         }
 

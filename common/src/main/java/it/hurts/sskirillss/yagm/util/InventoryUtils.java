@@ -3,7 +3,7 @@ package it.hurts.sskirillss.yagm.util;
 import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.valuator.ItemValuator;
 import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
-import it.hurts.sskirillss.yagm.data.GraveDataManager;
+import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
