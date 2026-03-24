@@ -19,23 +19,15 @@ import net.minecraft.world.phys.Vec3;
 @Value
 public class FallingGraveMotionConfig {
 
-    // --- in-flight physics ---
     Vec3 drag;
     double gravity;
-
-    // --- rotation ---
     float rotSpeedMin;
     float rotSpeedMax;
-
-    // --- launch (applied once at spawn) ---
-    /** Horizontal travel distance range in blocks. The required launch speed is derived automatically. */
     float minDistance;
     float maxDistance;
-    /** Upward velocity range (blocks/tick). */
     float launchUpMin;
     float launchUpMax;
 
-    // --- lifetime ---
     int maxLifetime;
 
     public static final FallingGraveMotionConfig DEFAULT = new FallingGraveMotionConfig(
@@ -47,7 +39,7 @@ public class FallingGraveMotionConfig {
             200
     );
 
-    /** Returns the velocity after applying drag and gravity for one tick. */
+
     public Vec3 applyPhysics(Vec3 motion) {
         return new Vec3(
                 motion.x * drag.x,
@@ -56,16 +48,12 @@ public class FallingGraveMotionConfig {
         );
     }
 
-    /** Picks a random rotation speed within [{@code rotSpeedMin}, {@code rotSpeedMax}]. */
+
     public float randomRotSpeed(RandomSource random) {
         return rotSpeedMin + random.nextFloat() * (rotSpeedMax - rotSpeedMin);
     }
 
     /**
-     * Generates a launch velocity that will travel exactly {@code targetDist} horizontal blocks
-     * before landing, where {@code targetDist} is sampled uniformly from
-     * [{@code minDistance}, {@code maxDistance}].
-     *
      * <p>The required horizontal speed is derived analytically from the discrete physics:
      * <pre>
      *   distance = speed × Σ drag^i  (i = 0..landingTick-1)
@@ -84,26 +72,19 @@ public class FallingGraveMotionConfig {
         return new Vec3(Math.cos(angle) * speed, up, Math.sin(angle) * speed);
     }
 
-    /**
-     * Calculates the initial horizontal speed (blocks/tick) required to travel exactly
-     * {@code distance} blocks given {@code upVelocity}, the configured drag and gravity.
-     */
+
     private double horizontalSpeedForDistance(double distance, double upVelocity) {
-        // Discrete landing tick: y(T) = 0.5 + up·T + gravity·T(T−1)/2 = 0
+        // y(T) = 0.5 + up·T + gravity·T(T−1)/2 = 0
         // → gravity/2·T² + (up − gravity/2)·T + 0.5 = 0  (rearranged)
         double a = gravity / 2.0;
         double b = upVelocity - gravity / 2.0;
-        double c = 0.5; // entity spawns 0.5 blocks above the ground
+        double c = 0.5;
         double discriminant = b * b - 4.0 * a * c;
-        int landingTick = (discriminant < 0) ? maxLifetime
-                : (int) ((-b - Math.sqrt(discriminant)) / (2.0 * a));
+        int landingTick = (discriminant < 0) ? maxLifetime : (int) ((-b - Math.sqrt(discriminant)) / (2.0 * a));
         landingTick = Math.max(1, Math.min(landingTick, maxLifetime));
 
-        // Geometric sum of drag^i over the flight
         double d = drag.x;
-        double geomSum = (Math.abs(1.0 - d) < 1e-9)
-                ? landingTick
-                : (1.0 - Math.pow(d, landingTick)) / (1.0 - d);
+        double geomSum = (Math.abs(1.0 - d) < 1e-9) ? landingTick : (1.0 - Math.pow(d, landingTick)) / (1.0 - d);
 
         return distance / geomSum;
     }
