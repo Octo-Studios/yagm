@@ -41,6 +41,8 @@ public class FallingGraveEntity extends Entity {
     private static final EntityDataAccessor<Integer> DATA_LEVEL = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> DATA_ROTATION = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<String> DATA_VARIANT = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Integer> DATA_FACING = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Float> DATA_ROT_SPEED = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.FLOAT);
 
     private CompoundTag graveData;
     private UUID ownerUUID;
@@ -85,6 +87,8 @@ public class FallingGraveEntity extends Entity {
 
         entity.entityData.set(DATA_LEVEL, graveLevel.ordinal());
         entity.entityData.set(DATA_ROTATION, 0f);
+        entity.entityData.set(DATA_FACING, facing.get2DDataValue());
+        entity.entityData.set(DATA_ROT_SPEED, entity.rotationSpeed);
 
         return entity;
     }
@@ -94,6 +98,8 @@ public class FallingGraveEntity extends Entity {
         builder.define(DATA_LEVEL, 0);
         builder.define(DATA_ROTATION, 0f);
         builder.define(DATA_VARIANT, "");
+        builder.define(DATA_FACING, Direction.NORTH.get2DDataValue());
+        builder.define(DATA_ROT_SPEED, 20f);
     }
 
     @Override
@@ -353,10 +359,14 @@ public class FallingGraveEntity extends Entity {
      * at the 0°/360° boundary.
      */
     public float getGraveRotation(float partialTick) {
-        if (onGround()) {
-            return entityData.get(DATA_ROTATION);
+        float speed = entityData.get(DATA_ROT_SPEED);
+        if (speed == 0f) {
+            speed = rotationSpeed;
         }
-        return lerpAngle(partialTick, prevRotation, entityData.get(DATA_ROTATION));
+
+        // Real-time based rotation for maximum visual smoothness (not limited by 20 TPS).
+        double nowTicks = System.nanoTime() / 50_000_000.0;
+        return (float) ((nowTicks * speed) % 360.0);
     }
 
 
@@ -372,6 +382,10 @@ public class FallingGraveEntity extends Entity {
             return levels[ordinal];
         }
         return GraveStoneLevels.GRAVESTONE_LEVEL_1;
+    }
+
+    public Direction getFacing() {
+        return Direction.from2DDataValue(entityData.get(DATA_FACING));
     }
 
 
@@ -415,6 +429,8 @@ public class FallingGraveEntity extends Entity {
 
         entityData.set(DATA_LEVEL, graveLevel.ordinal());
         entityData.set(DATA_ROTATION, tag.getFloat("Rotation"));
+        entityData.set(DATA_FACING, this.facing.get2DDataValue());
+        entityData.set(DATA_ROT_SPEED, this.rotationSpeed);
     }
 
     @Override
