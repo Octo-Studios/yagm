@@ -1,0 +1,49 @@
+package it.hurts.sskirillss.yagm.client.particle.options;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import io.netty.buffer.ByteBuf;
+import it.hurts.sskirillss.yagm.init.ParticleRegistry;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.network.codec.StreamCodec;
+import org.jetbrains.annotations.NotNull;
+import org.joml.Vector3f;
+
+@Getter
+@AllArgsConstructor
+public class GroundDustParticleOptions implements ParticleOptions {
+    private final Vector3f color;
+    private final float scale;
+
+    public GroundDustParticleOptions(float r, float g, float b, float scale) {
+        this(new Vector3f(r, g, b), scale);
+    }
+
+    public static final StreamCodec<? super ByteBuf, GroundDustParticleOptions> STREAM_CODEC = StreamCodec.of(
+            (buf, option) -> {
+                buf.writeFloat(option.color.x());
+                buf.writeFloat(option.color.y());
+                buf.writeFloat(option.color.z());
+                buf.writeFloat(option.scale);
+            },
+            (buf) -> new GroundDustParticleOptions(buf.readFloat(), buf.readFloat(), buf.readFloat(), buf.readFloat())
+    );
+
+    public static final MapCodec<GroundDustParticleOptions> MAP_CODEC = RecordCodecBuilder.mapCodec(object ->
+            object.group(
+                    Codec.FLOAT.optionalFieldOf("r", 0.82f).forGetter(p -> p.color.x()),
+                    Codec.FLOAT.optionalFieldOf("g", 0.82f).forGetter(p -> p.color.y()),
+                    Codec.FLOAT.optionalFieldOf("b", 0.82f).forGetter(p -> p.color.z()),
+                    Codec.FLOAT.optionalFieldOf("scale", 1.0f).forGetter(p -> p.scale)
+            ).apply(object, GroundDustParticleOptions::new)
+    );
+
+    @Override
+    public @NotNull ParticleType<GroundDustParticleOptions> getType() {
+        return ParticleRegistry.GRAVE_DUST_FLAT.get();
+    }
+}
