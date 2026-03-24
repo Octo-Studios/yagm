@@ -1,9 +1,7 @@
 package it.hurts.sskirillss.yagm.data;
 
-import it.hurts.sskirillss.yagm.data_components.gravestones_types.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -15,8 +13,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
-@Getter
-@Setter
 @Data
 public class GraveData {
 

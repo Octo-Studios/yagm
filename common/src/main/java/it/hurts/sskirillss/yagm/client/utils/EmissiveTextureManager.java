@@ -1,7 +1,7 @@
 package it.hurts.sskirillss.yagm.client.utils;
 
-
 import com.mojang.blaze3d.platform.NativeImage;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 public class EmissiveTextureManager {
 
     private static final Map<ResourceLocation, ResourceLocation> EMISSIVE_CACHE = new HashMap<>();
@@ -52,25 +53,23 @@ public class EmissiveTextureManager {
 
                     int brightness = (red + green + blue) / 3;
 
-                    if (alpha > 0 && brightness > BRIGHTNESS_THRESHOLD) {
-                        emissiveImage.setPixelRGBA(x, y, pixel);
-                    } else {
-                        emissiveImage.setPixelRGBA(x, y, 0x00000000);
-                    }
+                    emissiveImage.setPixelRGBA(x, y,
+                            alpha > 0 && brightness > BRIGHTNESS_THRESHOLD ? pixel : 0x00000000);
                 }
             }
 
-            DynamicTexture dynamicTexture = new DynamicTexture(emissiveImage);
+            ResourceLocation emissiveLocation = ResourceLocation.fromNamespaceAndPath(
+                    original.getNamespace(),
+                    "dynamic/emissive/" + original.getPath().replace("/", "_").replace(".png", "")
+            );
 
-            ResourceLocation emissiveLocation = ResourceLocation.fromNamespaceAndPath(original.getNamespace(), "dynamic/emissive/" + original.getPath().replace("/", "_").replace(".png", ""));
-
-            mc.getTextureManager().register(emissiveLocation, dynamicTexture);
+            mc.getTextureManager().register(emissiveLocation, new DynamicTexture(emissiveImage));
             originalImage.close();
 
             return emissiveLocation;
 
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("[YAGM] Failed to generate emissive texture for {}: {}", original, e.getMessage(), e);
             return original;
         }
     }

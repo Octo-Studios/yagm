@@ -1,74 +1,41 @@
 package it.hurts.sskirillss.yagm.api.compat.provider;
 
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.Map;
 
+/**
+ * Full contract for an accessory system integration.
+ * Combines collection, serialization, equipping, and restoration capabilities.
+ *
+ * <p>Implement this interface to add support for a new accessory mod.
+ * Register the implementation via {@link it.hurts.sskirillss.yagm.api.compat.AccessoryManager#registerHandler}.
+ *
+ * @see IAccessoryCollector
+ * @see IAccessorySerializer
+ * @see IAccessoryEquipper
+ * @see IAccessoryRestorer
+ */
 @ApiStatus.Internal
-public interface IAccessoryHandler {
+public interface IAccessoryHandler extends IAccessoryCollector, IAccessorySerializer, IAccessoryEquipper, IAccessoryRestorer {
 
     /**
-     * Checks if the accessory mod is loaded.
+     * @return true if the target accessory mod is present in this game instance
      */
     boolean isModLoaded();
 
     /**
-     * Gets the mod name (for logs).
+     * @return the display name of the mod this handler integrates with (used for logging and NBT keys)
      */
     String getModName();
 
     /**
-     * Collects all items from the player's accessory slots.
-     * Called when the player dies BEFORE clearing the inventory.
+     * Converts the accessory map into a flat list, useful for cost calculations and loot tables.
      *
-     * @param player
-     * @return map: slot key -> item (e.g. "ring/0", "necklace/cosmetic/1")
-     */
-    Map<String, ItemStack> collectAccessories(ServerPlayer player);
-
-    /**
-     * Clears all player accessory slots.
-     * Called after collecting items.
-     *
-     * @param player
-     */
-    void clearAccessories(ServerPlayer player);
-
-    /**
-     * Restores items to accessory slots.
-     * If the original slot is occupied, the item goes to inventory or is dropped.
-     *
-     * @param player
-     * @param accessories map: slot key -> item
-     * @param dropIfFull if true, drop items that didn't fit
-     */
-    void restoreAccessories(ServerPlayer player, Map<String, ItemStack> accessories, boolean dropIfFull);
-
-    /**
-     * Сохраняет аксессуары в NBT тег.
-     *
-     * @param accessories карта аксессуаров
-     * @param registryAccess доступ к реестрам
-     * @return NBT тег с сохранёнными данными
-     */
-    CompoundTag saveToNBT(Map<String, ItemStack> accessories, RegistryAccess registryAccess);
-
-    /**
-     * Loads accessories from an NBT tag.
-     *
-     * @param tag NBT tag
-     * @param registryAccess registry access
-     * @return map: slot key -> item
-     */
-    Map<String, ItemStack> loadFromNBT(CompoundTag tag, RegistryAccess registryAccess);
-
-    /**
-     * Converts the accessory map into a flat list (for cost calculations, etc.)
+     * @param accessories map produced by {@link IAccessoryCollector#collectAccessories}
+     * @return flat list of all non-empty item stacks
      */
     default NonNullList<ItemStack> toList(Map<String, ItemStack> accessories) {
         NonNullList<ItemStack> list = NonNullList.create();
@@ -79,16 +46,4 @@ public interface IAccessoryHandler {
         }
         return list;
     }
-
-    /**
-     * Проверяет, может ли предмет быть экипирован как аксессуар.
-     */
-    boolean canEquipAsAccessory(ServerPlayer player, ItemStack stack);
-
-    /**
-     *Attempts to equip an item into the first available available slot.
-     *
-     * @return true if successfully equipped
-     */
-    boolean tryEquipAccessory(ServerPlayer player, ItemStack stack);
 }

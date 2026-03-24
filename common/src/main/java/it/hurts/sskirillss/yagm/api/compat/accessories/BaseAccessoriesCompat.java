@@ -1,10 +1,13 @@
 package it.hurts.sskirillss.yagm.api.compat.accessories;
 
-import it.hurts.sskirillss.yagm.api.compat.provider.IAccessoryHandler;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
+import io.wispforest.accessories.api.AccessoriesAPI;
+import io.wispforest.accessories.api.AccessoriesCapability;
+import io.wispforest.accessories.api.AccessoriesContainer;
+import io.wispforest.accessories.impl.ExpandedSimpleContainer;
+import it.hurts.sskirillss.yagm.api.compat.BaseAccessoryCompat;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Value;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
@@ -12,11 +15,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public abstract class BaseAccessoriesCompat implements IAccessoryHandler {
+/**
+ * Base implementation for the <a href="https://github.com/wisp-forest/accessories">Accessories</a> mod.
+ *
+ * <p>The Accessories API ships identical classes on both Fabric and NeoForge
+ * ({@code io.wispforest.accessories.*}), so the full integration logic lives here in common.
+ * Platform subclasses only need to implement {@link #isModLoaded()}.
+ *
+ * <p>NBT serialization and inventory fallback are inherited from {@link BaseAccessoryCompat}.
+ */
+public abstract class BaseAccessoriesCompat extends BaseAccessoryCompat {
 
-    private static final String TAG_ACCESSORIES = "AccessoriesAccessories";
-    private static final String TAG_SLOT_KEY = "SlotKey";
-    private static final String TAG_ITEM = "Item";
+    @Override
+    protected String getNbtTag() {
+        return "AccessoriesData";
+    }
 
     @Override
     public String getModName() {
@@ -26,11 +39,9 @@ public abstract class BaseAccessoriesCompat implements IAccessoryHandler {
     @Override
     public Map<String, ItemStack> collectAccessories(ServerPlayer player) {
         Map<String, ItemStack> accessories = new HashMap<>();
-        Optional<Map<String, AccessoryContainerView>> containersOpt = getContainers(player);
 
-        if (containersOpt.isEmpty()) {
-            return accessories;
-        }
+        Optional<Map<String, AccessoryContainerView>> containersOpt = getContainers(player);
+        if (containersOpt.isEmpty()) return accessories;
 
         for (AccessoryContainerView container : containersOpt.get().values()) {
             String slotName = container.slotName();
@@ -39,8 +50,7 @@ public abstract class BaseAccessoriesCompat implements IAccessoryHandler {
             for (int i = 0; i < size; i++) {
                 ItemStack stack = container.getMain(i);
                 if (!stack.isEmpty()) {
-                    String key = slotName + "/" + i;
-                    accessories.put(key, stack.copy());
+                    accessories.put(slotName + "/" + i, stack.copy());
                 }
             }
 
@@ -48,8 +58,7 @@ public abstract class BaseAccessoriesCompat implements IAccessoryHandler {
                 for (int i = 0; i < size; i++) {
                     ItemStack stack = container.getCosmetic(i);
                     if (!stack.isEmpty()) {
-                        String key = slotName + "/cosmetic/" + i;
-                        accessories.put(key, stack.copy());
+                        accessories.put(slotName + "/cosmetic/" + i, stack.copy());
                     }
                 }
             }
@@ -61,33 +70,22 @@ public abstract class BaseAccessoriesCompat implements IAccessoryHandler {
     @Override
     public void clearAccessories(ServerPlayer player) {
         Optional<Map<String, AccessoryContainerView>> containersOpt = getContainers(player);
-
-        if (containersOpt.isEmpty()) {
-            return;
-        }
+        if (containersOpt.isEmpty()) return;
 
         for (AccessoryContainerView container : containersOpt.get().values()) {
             int size = container.size();
-
-            for (int i = 0; i < size; i++) {
-                container.setMain(i, ItemStack.EMPTY);
-            }
-
+            for (int i = 0; i < size; i++) container.setMain(i, ItemStack.EMPTY);
             if (container.hasCosmetic()) {
-                for (int i = 0; i < size; i++) {
-                    container.setCosmetic(i, ItemStack.EMPTY);
-                }
+                for (int i = 0; i < size; i++) container.setCosmetic(i, ItemStack.EMPTY);
             }
-
             container.markChanged();
         }
     }
 
+
     @Override
     public void restoreAccessories(ServerPlayer player, Map<String, ItemStack> accessories, boolean dropIfFull) {
-        if (accessories.isEmpty()) {
-            return;
-        }
+        if (accessories.isEmpty()) return;
 
         Optional<Map<String, AccessoryContainerView>> containersOpt = getContainers(player);
         if (containersOpt.isEmpty()) {
@@ -98,27 +96,25 @@ public abstract class BaseAccessoriesCompat implements IAccessoryHandler {
         Map<String, AccessoryContainerView> containers = containersOpt.get();
 
         for (Map.Entry<String, ItemStack> entry : accessories.entrySet()) {
-            String key = entry.getKey();
             ItemStack stack = entry.getValue();
+            if (stack.isEmpty()) continue;
 
-            if (stack.isEmpty()) {
-                continue;
-            }
-
-            SlotInfo slotInfo = parseSlotKey(key);
+            SlotInfo slotInfo = parseSlotKey(entry.getKey());
             boolean restored = false;
 
             if (slotInfo != null) {
-                AccessoryContainerView container = containers.get(slotInfo.slotName);
-                if (container != null && slotInfo.index >= 0 && slotInfo.index < container.size()) {
-                    ItemStack existing = slotInfo.cosmetic ? container.getCosmetic(slotInfo.index) : container.getMain(slotInfo.index);
-                    boolean hasTarget = !slotInfo.cosmetic || container.hasCosmetic();
+                AccessoryContainerView container = containers.get(slotInfo.getSlotName());
+                if (container != null && slotInfo.getIndex() >= 0 && slotInfo.getIndex() < container.size()) {
+                    ItemStack existing = slotInfo.isCosmetic()
+                            ? container.getCosmetic(slotInfo.getIndex())
+                            : container.getMain(slotInfo.getIndex());
+                    boolean hasTarget = !slotInfo.isCosmetic() || container.hasCosmetic();
 
                     if (hasTarget && existing.isEmpty()) {
-                        if (slotInfo.cosmetic) {
-                            container.setCosmetic(slotInfo.index, stack.copy());
+                        if (slotInfo.isCosmetic()) {
+                            container.setCosmetic(slotInfo.getIndex(), stack.copy());
                         } else {
-                            container.setMain(slotInfo.index, stack.copy());
+                            container.setMain(slotInfo.getIndex(), stack.copy());
                         }
                         container.markChanged();
                         restored = true;
@@ -134,112 +130,43 @@ public abstract class BaseAccessoriesCompat implements IAccessoryHandler {
         }
     }
 
-    @Override
-    public CompoundTag saveToNBT(Map<String, ItemStack> accessories, RegistryAccess registryAccess) {
-        CompoundTag tag = new CompoundTag();
-        ListTag itemsList = new ListTag();
-
-        for (Map.Entry<String, ItemStack> entry : accessories.entrySet()) {
-            if (entry.getValue().isEmpty()) {
-                continue;
-            }
-
-            CompoundTag itemTag = new CompoundTag();
-            itemTag.putString(TAG_SLOT_KEY, entry.getKey());
-            itemTag.put(TAG_ITEM, entry.getValue().save(registryAccess));
-            itemsList.add(itemTag);
-        }
-
-        tag.put(TAG_ACCESSORIES, itemsList);
-        return tag;
-    }
-
-    @Override
-    public Map<String, ItemStack> loadFromNBT(CompoundTag tag, RegistryAccess registryAccess) {
-        Map<String, ItemStack> accessories = new HashMap<>();
-
-        if (!tag.contains(TAG_ACCESSORIES, Tag.TAG_LIST)) {
-            return accessories;
-        }
-
-        ListTag itemsList = tag.getList(TAG_ACCESSORIES, Tag.TAG_COMPOUND);
-
-        for (int i = 0; i < itemsList.size(); i++) {
-            CompoundTag itemTag = itemsList.getCompound(i);
-            String slotKey = itemTag.getString(TAG_SLOT_KEY);
-            ItemStack stack = ItemStack.parseOptional(registryAccess, itemTag.getCompound(TAG_ITEM));
-
-            if (!stack.isEmpty() && !slotKey.isEmpty()) {
-                accessories.put(slotKey, stack);
-            }
-        }
-
-        return accessories;
-    }
 
     @Override
     public boolean canEquipAsAccessory(ServerPlayer player, ItemStack stack) {
-        if (stack.isEmpty()) {
-            return false;
-        }
-
-        return canEquipAccessory(player, stack);
+        return !stack.isEmpty() && !AccessoriesAPI.getStackSlotTypes(player, stack).isEmpty();
     }
 
     @Override
     public boolean tryEquipAccessory(ServerPlayer player, ItemStack stack) {
-        if (stack.isEmpty()) {
-            return false;
-        }
+        if (stack.isEmpty()) return false;
 
-        return tryEquipAccessoryInternal(player, stack);
+        Optional<AccessoriesCapability> capabilityOpt = AccessoriesCapability.getOptionally(player);
+        if (capabilityOpt.isEmpty()) return false;
+
+        var slotReference = capabilityOpt.get().attemptToEquipAccessory(stack.copy());
+        return slotReference != null && slotReference.isValid();
     }
 
-    protected abstract Optional<Map<String, AccessoryContainerView>> getContainers(ServerPlayer player);
 
-    protected abstract boolean canEquipAccessory(ServerPlayer player, ItemStack stack);
+    private Optional<Map<String, AccessoryContainerView>> getContainers(ServerPlayer player) {
+        Optional<AccessoriesCapability> capabilityOpt = AccessoriesCapability.getOptionally(player);
+        if (capabilityOpt.isEmpty()) return Optional.empty();
 
-    protected abstract boolean tryEquipAccessoryInternal(ServerPlayer player, ItemStack stack);
-
-    private void fallbackToInventoryOrDrop(ServerPlayer player, Iterable<ItemStack> stacks, boolean dropIfFull) {
-        for (ItemStack stack : stacks) {
-            fallbackToInventoryOrDrop(player, stack, dropIfFull);
+        Map<String, AccessoryContainerView> views = new HashMap<>();
+        for (Map.Entry<String, AccessoriesContainer> entry : capabilityOpt.get().getContainers().entrySet()) {
+            views.put(entry.getKey(), AccessoriesContainerAdapter.of(entry.getValue()));
         }
-    }
-
-    private void fallbackToInventoryOrDrop(ServerPlayer player, ItemStack stack, boolean dropIfFull) {
-        if (stack.isEmpty()) {
-            return;
-        }
-
-        if (!player.getInventory().add(stack.copy()) && dropIfFull) {
-            player.drop(stack.copy(), false);
-        }
-    }
-
-    private static class SlotInfo {
-        final String slotName;
-        final int index;
-        final boolean cosmetic;
-
-        SlotInfo(String slotName, int index, boolean cosmetic) {
-            this.slotName = slotName;
-            this.index = index;
-            this.cosmetic = cosmetic;
-        }
+        return Optional.of(views);
     }
 
     private SlotInfo parseSlotKey(String key) {
-        if (key == null || key.isEmpty()) {
-            return null;
-        }
+        if (key == null || key.isEmpty()) return null;
 
         String[] parts = key.split("/");
+
         if (parts.length == 2) {
             try {
-                String slotName = parts[0];
-                int index = Integer.parseInt(parts[1]);
-                return new SlotInfo(slotName, index, false);
+                return new SlotInfo(parts[0], Integer.parseInt(parts[1]), false);
             } catch (NumberFormatException e) {
                 return null;
             }
@@ -247,14 +174,48 @@ public abstract class BaseAccessoriesCompat implements IAccessoryHandler {
 
         if (parts.length == 3 && "cosmetic".equals(parts[1])) {
             try {
-                String slotName = parts[0];
-                int index = Integer.parseInt(parts[2]);
-                return new SlotInfo(slotName, index, true);
+                return new SlotInfo(parts[0], Integer.parseInt(parts[2]), true);
             } catch (NumberFormatException e) {
                 return null;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Adapts an {@link AccessoriesContainer} to the generic {@link AccessoryContainerView} interface.
+     * Used internally by {@link #getContainers}.
+     */
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    private static final class AccessoriesContainerAdapter implements AccessoryContainerView {
+
+        private final AccessoriesContainer container;
+        private final ExpandedSimpleContainer main;
+        private final ExpandedSimpleContainer cosmetic;
+
+        static AccessoriesContainerAdapter of(AccessoriesContainer container) {
+            return new AccessoriesContainerAdapter(
+                    container,
+                    container.getAccessories(),
+                    container.getCosmeticAccessories()
+            );
+        }
+
+        @Override public String slotName() { return container.getSlotName(); }
+        @Override public int size() { return container.getSize(); }
+        @Override public ItemStack getMain(int index) { return main.getItem(index); }
+        @Override public void setMain(int index, ItemStack stack) { main.setItem(index, stack); }
+        @Override public boolean hasCosmetic() { return cosmetic != null; }
+        @Override public ItemStack getCosmetic(int index) { return cosmetic == null ? ItemStack.EMPTY : cosmetic.getItem(index); }
+        @Override public void setCosmetic(int index, ItemStack stack) { if (cosmetic != null) cosmetic.setItem(index, stack); }
+        @Override public void markChanged() { container.markChanged(); }
+    }
+
+    @Value
+    private static class SlotInfo {
+        String slotName;
+        int index;
+        boolean cosmetic;
     }
 }

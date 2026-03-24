@@ -7,13 +7,11 @@ public class YAGMCompat {
 
     private static boolean initialized = false;
 
-    private YAGMCompat() {}
-
     public static void init() {
         if (initialized) return;
         initialized = true;
         registerPlatformHandlers();
-        AccessoryManager.initialize();
+        AccessoryManager.init();
     }
 
     @ExpectPlatform

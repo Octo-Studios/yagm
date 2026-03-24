@@ -1,14 +1,14 @@
 package it.hurts.sskirillss.yagm.neoforge.client;
 
 
-import it.hurts.sskirillss.yagm.blocks.gravestones.renderer.FallingGraveEntityRenderer;
-import it.hurts.sskirillss.yagm.blocks.gravestones.renderer.GraveStoneEntityRenderer;
+import it.hurts.sskirillss.yagm.client.renderer.FallingGraveEntityRenderer;
+import it.hurts.sskirillss.yagm.client.renderer.GraveStoneEntityRenderer;
 import it.hurts.sskirillss.yagm.client.EmissiveModelRegistry;
 import it.hurts.sskirillss.yagm.client.YAGMClient;
-import it.hurts.sskirillss.yagm.client.particles.type.CandleFlameParticle;
-import it.hurts.sskirillss.yagm.client.particles.type.Level4GraveParticle;
-import it.hurts.sskirillss.yagm.register.EntityRegistry;
-import it.hurts.sskirillss.yagm.register.ParticleRegistry;
+import it.hurts.sskirillss.yagm.client.particle.type.CandleFlameParticle;
+import it.hurts.sskirillss.yagm.client.particle.type.Level4GraveParticle;
+import it.hurts.sskirillss.yagm.init.EntityRegistry;
+import it.hurts.sskirillss.yagm.init.ParticleRegistry;
 import it.hurts.sskirillss.yagm.YAGMCommon;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.resources.ResourceLocation;

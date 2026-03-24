@@ -71,7 +71,7 @@ public class GraveDataManager extends SavedData {
     }
 
     @Override
-    public @NotNull CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    public @NotNull CompoundTag save(CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         ListTag gravesList = new ListTag();
         gravesList.addAll(playerGraves.values());
         tag.put("Graves", gravesList);
@@ -125,47 +125,5 @@ public class GraveDataManager extends SavedData {
     public Map<UUID, CompoundTag> getAllGraves() {
         return new HashMap<>(playerGraves);
     }
-    
-    public void clearAllGraves() {
-        playerGraves.clear();
-        setDirty();
-    }
-    
-    public int getGraveCount() {
-        return playerGraves.size();
-    }
-    
 
-    public Map<UUID, CompoundTag> getPlayerGraves(UUID playerUuid) {
-        Map<UUID, CompoundTag> result = new HashMap<>();
-        for (Map.Entry<UUID, CompoundTag> entry : playerGraves.entrySet()) {
-            if (entry.getValue().hasUUID("PlayerUuid") && 
-                entry.getValue().getUUID("PlayerUuid").equals(playerUuid)) {
-                result.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return result;
-    }
-
-    public void removePlayerGraves(UUID playerUuid) {
-        playerGraves.entrySet().removeIf(entry -> {
-            CompoundTag grave = entry.getValue();
-            return grave.hasUUID("PlayerUuid") && grave.getUUID("PlayerUuid").equals(playerUuid);
-        });
-        setDirty();
-    }
-
-
-    public void cleanupOldGraves(long maxAge) {
-        long currentTime = System.currentTimeMillis();
-        playerGraves.entrySet().removeIf(entry -> {
-            CompoundTag grave = entry.getValue();
-            if (grave.contains("DeathTime")) {
-                long deathTime = grave.getLong("DeathTime");
-                return (currentTime - deathTime) > maxAge;
-            }
-            return false;
-        });
-        setDirty();
-    }
 }

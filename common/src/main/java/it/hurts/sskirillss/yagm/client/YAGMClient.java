@@ -1,10 +1,10 @@
 package it.hurts.sskirillss.yagm.client;
 
 import dev.architectury.registry.client.level.entity.EntityRendererRegistry;
-import it.hurts.sskirillss.yagm.blocks.gravestones.renderer.FallingGraveEntityRenderer;
-import it.hurts.sskirillss.yagm.blocks.gravestones.renderer.GraveStoneEntityRenderer;
-import it.hurts.sskirillss.yagm.client.particles.candle.CandleParticleInit;
-import it.hurts.sskirillss.yagm.register.EntityRegistry;
+import it.hurts.sskirillss.yagm.client.renderer.FallingGraveEntityRenderer;
+import it.hurts.sskirillss.yagm.client.renderer.GraveStoneEntityRenderer;
+import it.hurts.sskirillss.yagm.client.particle.candle.CandleParticleInit;
+import it.hurts.sskirillss.yagm.init.EntityRegistry;
 
 public class YAGMClient {
 

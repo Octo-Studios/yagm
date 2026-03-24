@@ -1,9 +1,10 @@
 package it.hurts.sskirillss.yagm.api.variant.builder;
 
-import it.hurts.sskirillss.yagm.api.events.providers.IGraveVariant;
+import it.hurts.sskirillss.yagm.api.variant.AbstractGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.context.GraveVariantContext;
-import it.hurts.sskirillss.yagm.api.variant.context.registry.GraveVariantRegistry;
-import it.hurts.sskirillss.yagm.api.variant.context.AbstractGraveVariant;
+import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
+import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
+import lombok.Getter;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -118,6 +119,7 @@ public class GraveVariantBuilder {
         return variant;
     }
 
+    @Getter
     private static class BuiltGraveVariant extends AbstractGraveVariant {
 
         private final List<Predicate<GraveVariantContext>> conditions;
@@ -135,16 +137,6 @@ public class GraveVariantBuilder {
         public boolean matches(GraveVariantContext context) {
             if (conditions.isEmpty()) return false;
             return conditions.stream().allMatch(c -> c.test(context));
-        }
-
-        @Override
-        public int getTextColor() {
-            return textColor;
-        }
-
-        @Override
-        public float getTextHeightOffset() {
-            return textHeightOffset;
         }
     }
 }

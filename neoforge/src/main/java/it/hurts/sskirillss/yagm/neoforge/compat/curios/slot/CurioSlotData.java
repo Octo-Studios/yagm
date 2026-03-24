@@ -4,6 +4,7 @@ package it.hurts.sskirillss.yagm.neoforge.compat.curios.slot;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.hurts.sskirillss.yagm.YAGMCommon;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -14,6 +15,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 
+@Slf4j
 public class CurioSlotData {
 
     public static final DeferredRegister<DataComponentType<?>> DATA_COMPONENTS = DeferredRegister.create(Registries.DATA_COMPONENT_TYPE, YAGMCommon.MODID);
@@ -40,6 +42,6 @@ public class CurioSlotData {
 
     public static void register(IEventBus modEventBus) {
         DATA_COMPONENTS.register(modEventBus);
-        YAGMCommon.LOGGER.info("[YAGM] CurioSlotData component type registered: {}", CURIO_SLOT_DATA.getId());
+        log.info("[YAGM] CurioSlotData component type registered: {}", CURIO_SLOT_DATA.getId());
     }
 }

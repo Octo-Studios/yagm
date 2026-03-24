@@ -1,7 +1,7 @@
 package it.hurts.sskirillss.yagm.api.compat;
 
-import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.api.compat.provider.IAccessoryHandler;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public final class AccessoryManager {
 
     private static final Map<String, IAccessoryHandler> handlers = new ConcurrentHashMap<>();
@@ -21,13 +22,13 @@ public final class AccessoryManager {
 
         if (handler.isModLoaded()) {
             handlers.put(handler.getModName(), handler);
-            YAGMCommon.LOGGER.info("[YAGM] Registered accessory handler: {}", handler.getModName());
+            log.info("[YAGM] Registered accessory handler: {}", handler.getModName());
         } else {
-            YAGMCommon.LOGGER.debug("[YAGM] Skipped unavailable handler: {}", handler.getModName());
+            log.debug("[YAGM] Skipped unavailable handler: {}", handler.getModName());
         }
     }
 
-    public static void initialize() {
+    public static void init () {
         if (initialized) return;
         initialized = true;
     }

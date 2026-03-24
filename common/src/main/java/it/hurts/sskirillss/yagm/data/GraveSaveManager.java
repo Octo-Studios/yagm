@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.data;
 
 import it.hurts.sskirillss.yagm.YAGMCommon;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
@@ -20,6 +21,7 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+@Slf4j
 public class GraveSaveManager {
 
     private static final DateTimeFormatter FILENAME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
@@ -53,7 +55,7 @@ public class GraveSaveManager {
             Path filePath = basePath.resolve(saveName);
 
             if (!Files.exists(filePath)) {
-                YAGMCommon.LOGGER.warn("Grave save file not found: {}", filePath);
+                log.warn("Grave save file not found: {}", filePath);
                 return null;
             }
 

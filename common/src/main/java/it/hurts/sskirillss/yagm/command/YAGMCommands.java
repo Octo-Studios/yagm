@@ -3,9 +3,9 @@ package it.hurts.sskirillss.yagm.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
-import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.data.GraveSaveManager;
-import it.hurts.sskirillss.yagm.network.handlers.InventoryHelper;
+import lombok.extern.slf4j.Slf4j;
+import it.hurts.sskirillss.yagm.util.InventoryUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.nbt.CompoundTag;
@@ -15,8 +15,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
 
 import java.util.List;
-import java.util.UUID;
 
+@Slf4j
 public class YAGMCommands {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -77,13 +77,13 @@ public class YAGMCommands {
         }
 
         try {
-            InventoryHelper.restoreFromNBT(targetPlayer, graveData, true);
+            InventoryUtils.restoreFromNBT(targetPlayer, graveData, true);
             context.getSource().sendSuccess(() -> Component.literal("Successfully restored grave for player " + playerName + " from save " + finalSaveName), true);
-            YAGMCommon.LOGGER.info("Restored grave data for player {} from save {}", playerName, finalSaveName);
+            log.info("Restored grave data for player {} from save {}", playerName, finalSaveName);
             return 1;
         } catch (Exception e) {
             context.getSource().sendFailure(Component.literal("Failed to restore grave: " + e.getMessage()));
-            YAGMCommon.LOGGER.error("Failed to restore grave for player {} from save {}: {}", playerName, saveName, e.getMessage(), e);
+            log.error("Failed to restore grave for player {} from save {}: {}", playerName, saveName, e.getMessage(), e);
             return 0;
         }
     }

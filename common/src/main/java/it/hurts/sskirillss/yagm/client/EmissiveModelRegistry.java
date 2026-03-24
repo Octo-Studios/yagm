@@ -1,7 +1,8 @@
 package it.hurts.sskirillss.yagm.client;
 
 import dev.architectury.registry.registries.RegistrySupplier;
-import it.hurts.sskirillss.yagm.register.BlockRegistry;
+import it.hurts.sskirillss.yagm.init.BlockRegistry;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelManager;
@@ -12,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
+@Slf4j
 public class EmissiveModelRegistry {
 
     private static final Map<Block, ResourceLocation> BLOCK_TO_EMISSIVE = new HashMap<>();
@@ -39,7 +41,7 @@ public class EmissiveModelRegistry {
         BAKED_MODELS.clear();
         for (Map.Entry<Block, ResourceLocation> entry : BLOCK_TO_EMISSIVE.entrySet()) {
             ResourceLocation id = entry.getValue();
-            ModelResourceLocation[] candidates = new ModelResourceLocation[]{
+            ModelResourceLocation[] candidates = {
                     new ModelResourceLocation(id, "standalone"),
                     new ModelResourceLocation(id, ""),
                     ModelResourceLocation.inventory(id),
@@ -48,16 +50,14 @@ public class EmissiveModelRegistry {
 
             for (ModelResourceLocation mrl : candidates) {
                 BakedModel model = modelManager.getModel(mrl);
-                boolean isMissing = (model == modelManager.getMissingModel());
-                System.out.println("Trying: " + mrl + " -> missing: " + isMissing);
-                if (!isMissing) {
+                if (model != modelManager.getMissingModel()) {
                     BAKED_MODELS.put(id, model);
-                    System.out.println("SUCCESS: " + mrl);
+                    log.debug("[YAGM] Loaded emissive model: {}", mrl);
                     break;
                 }
             }
         }
-        System.out.println("Total baked emissive models: " + BAKED_MODELS.size());
+        log.debug("[YAGM] Total baked emissive models: {}", BAKED_MODELS.size());
     }
 
     @Nullable
