@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import it.hurts.sskirillss.yagm.api.event.IServerEvent;
 import it.hurts.sskirillss.yagm.entity.FallingGraveEntity;
 import it.hurts.sskirillss.yagm.vec3.FallingGraveMotionConfig;
-import it.hurts.sskirillss.yagm.data.GraveDataManager;
+import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.util.InventoryUtils;
 import net.minecraft.core.Direction;

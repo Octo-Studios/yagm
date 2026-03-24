@@ -3,14 +3,17 @@ package it.hurts.sskirillss.yagm.entity;
 import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
-import it.hurts.sskirillss.yagm.data.GraveData;
-import it.hurts.sskirillss.yagm.data.GraveDataManager;
+import it.hurts.sskirillss.yagm.data.gravedata.GraveData;
+import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.util.InventoryUtils;
+import it.hurts.sskirillss.yagm.client.particle.options.GroundDustParticleOptions;
+import it.hurts.sskirillss.yagm.client.particle.options.GraveTrailParticleOptions;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeterySavedData;
 import lombok.Getter;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
@@ -216,6 +219,8 @@ public class GraveStoneEntity extends Entity {
                 discard();
                 return;
             }
+        } else if (getGraveLevel() == GraveStoneLevels.GRAVESTONE_LEVEL_4) {
+            spawnLoopingTier4Trails();
         }
 
         BlockPos pos = getBoundPos();
@@ -227,6 +232,56 @@ public class GraveStoneEntity extends Entity {
                 setPos(targetX, targetY, targetZ);
             }
         }
+    }
+
+    private void spawnLoopingTier4Trails() {
+        if (!(level() instanceof ClientLevel clientLevel) || tickCount % 10 != 0) {
+            return;
+        }
+
+        BlockPos pos = getBoundPos();
+        if (pos == null) {
+            return;
+        }
+
+        float[] base = getTier4TrailBaseColor();
+        for (int i = 0; i < 6; i++) {
+            double x = pos.getX() + 0.5 + (random.nextDouble() * 2.0 - 1.0) * 1.5;
+            double y = pos.getY() - 0.15 + random.nextDouble() * 0.08;
+            double z = pos.getZ() + 0.5 + (random.nextDouble() * 2.0 - 1.0) * 1.5;
+
+            float variance = 0.08f;
+            float r = clamp01(base[0] + (random.nextFloat() * 2 - 1) * variance);
+            float g = clamp01(base[1] + (random.nextFloat() * 2 - 1) * variance);
+            float b = clamp01(base[2] + (random.nextFloat() * 2 - 1) * variance);
+
+            double vx = (random.nextDouble() * 2.0 - 1.0) * 0.02;
+            double vy = 0.20 + random.nextDouble() * 0.08;
+            double vz = (random.nextDouble() * 2.0 - 1.0) * 0.02;
+
+            clientLevel.addParticle(new GraveTrailParticleOptions(r, g, b, 0.55f), x, y, z, vx, vy, vz);
+        }
+    }
+
+    private float[] getTier4TrailBaseColor() {
+        IGraveVariant variant = getVariant();
+        String path = variant != null && variant.getId() != null ? variant.getId().getPath() : "default";
+
+        return switch (path) {
+            case "cold" -> new float[]{0.72f, 0.82f, 0.92f};
+            case "hot" -> new float[]{0.96f, 0.57f, 0.28f};
+            case "nether" -> new float[]{0.83f, 0.24f, 0.24f};
+            case "end" -> new float[]{0.74f, 0.66f, 0.96f};
+            case "ocean" -> new float[]{0.34f, 0.74f, 0.93f};
+            case "tropics" -> new float[]{0.43f, 0.88f, 0.58f};
+            default -> new float[]{0.82f, 0.82f, 0.82f};
+        };
+    }
+
+    private static float clamp01(float value) {
+        if (value < 0f) return 0f;
+        if (value > 1f) return 1f;
+        return value;
     }
 
     public void interact(Player player) {
@@ -432,3 +487,4 @@ public class GraveStoneEntity extends Entity {
         return false;
     }
 }
+

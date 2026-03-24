@@ -1,7 +1,8 @@
-package it.hurts.sskirillss.yagm.api.valuator.provider;
+package it.hurts.sskirillss.yagm.api.valuator.registry;
 
+import it.hurts.sskirillss.yagm.api.valuator.provider.IItemValueProvider;
+import it.hurts.sskirillss.yagm.api.valuator.provider.IValueModifier;
 import net.minecraft.world.item.ItemStack;
-import org.jetbrains.annotations.ApiStatus;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,8 +13,6 @@ public final class ValueProviderRegistry {
     private static final List<IItemValueProvider> SORTED_PROVIDERS = new ArrayList<>();
     private static final List<IValueModifier> MODIFIERS = new ArrayList<>();
     private static boolean needsSort = true;
-
-    private ValueProviderRegistry() {}
 
     public static void registerProvider(IItemValueProvider provider) {
         PROVIDERS.put(provider.getId(), provider);

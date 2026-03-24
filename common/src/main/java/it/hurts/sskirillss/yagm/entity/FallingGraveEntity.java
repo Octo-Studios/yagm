@@ -5,6 +5,7 @@ import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
 import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.init.BlockRegistry;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
+import it.hurts.sskirillss.yagm.client.particle.options.GroundDustParticleOptions;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.util.GraveStoneUtils;
 import it.hurts.sskirillss.yagm.vec3.FallingGraveMotionConfig;
@@ -117,8 +118,7 @@ public class FallingGraveEntity extends Entity {
         }
 
         if (!level().isClientSide()) {
-            if (this.getY() < level().getMinBuildHeight() - 10
-                    && level().dimension() == Level.END) {
+            if (this.getY() < level().getMinBuildHeight() - 10 && level().dimension() == Level.END) {
                 BlockPos safePos = findEndIslandPosition(blockPosition());
                 this.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
                 this.setDeltaMovement(Vec3.ZERO);
@@ -152,6 +152,11 @@ public class FallingGraveEntity extends Entity {
             if (shouldPlace) {
                 placeGrave();
             }
+        } else {
+            if (!onGround()) {
+                setDeltaMovement(MOTION.applyPhysics(getDeltaMovement()));
+                move(MoverType.SELF, getDeltaMovement());
+            }
         }
     }
 
@@ -183,11 +188,65 @@ public class FallingGraveEntity extends Entity {
                     graveEntity.setVariant(GraveVariantRegistry.get(variantId));
                 }
                 level().addFreshEntity(graveEntity);
+                spawnLandingDustBurst(gravePos);
+                level().levelEvent(2001, gravePos, Block.getId(graveState));
             }
             CemeteryManager.getInstance().addGrave(level().dimension(), gravePos);
         }
 
         discard();
+    }
+
+    private void spawnLandingDustBurst(BlockPos gravePos) {
+        if (!(level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        float[] base = getDustBaseColor();
+        float baseScale = switch (graveLevel) {
+            case GRAVESTONE_LEVEL_1 -> 1.0f;
+            case GRAVESTONE_LEVEL_2 -> 1.0f;
+            case GRAVESTONE_LEVEL_3 -> 1.0f;
+            case GRAVESTONE_LEVEL_4 -> 1.0f;
+        };
+
+        // Spawn from under the grave in a 3x3 footprint and launch upward.
+        for (int i = 0; i < 56; i++) {
+            double x = gravePos.getX() + 0.5 + (random.nextDouble() * 3.0 - 1.5);
+            double y = gravePos.getY() + 0.01 + random.nextDouble() * 0.04;
+            double z = gravePos.getZ() + 0.5 + (random.nextDouble() * 3.0 - 1.5);
+
+            float variance = 0.09f;
+            float r = clamp01(base[0] + (random.nextFloat() * 2 - 1) * variance);
+            float g = clamp01(base[1] + (random.nextFloat() * 2 - 1) * variance);
+            float b = clamp01(base[2] + (random.nextFloat() * 2 - 1) * variance);
+            float scale = baseScale * (0.9f + random.nextFloat() * 0.55f);
+
+            GroundDustParticleOptions options = new GroundDustParticleOptions(r, g, b, scale);
+            double vx = (random.nextDouble() * 2.0 - 1.0) * 0.03;
+            double vy = random.nextDouble() * 0.01;
+            double vz = (random.nextDouble() * 2.0 - 1.0) * 0.03;
+            serverLevel.sendParticles(options, x, y, z, 0, vx, vy, vz, 1.0);
+        }
+    }
+
+    private float[] getDustBaseColor() {
+        String path = variantId != null ? variantId.getPath() : "default";
+        return switch (path) {
+            case "cold" -> new float[]{0.72f, 0.82f, 0.92f};
+            case "hot" -> new float[]{0.96f, 0.57f, 0.28f};
+            case "nether" -> new float[]{0.83f, 0.24f, 0.24f};
+            case "end" -> new float[]{0.74f, 0.66f, 0.96f};
+            case "ocean" -> new float[]{0.34f, 0.74f, 0.93f};
+            case "tropics" -> new float[]{0.43f, 0.88f, 0.58f};
+            default -> new float[]{0.82f, 0.82f, 0.82f};
+        };
+    }
+
+    private static float clamp01(float value) {
+        if (value < 0f) return 0f;
+        if (value > 1f) return 1f;
+        return value;
     }
 
     private void updateChunkTickets() {
@@ -364,7 +423,6 @@ public class FallingGraveEntity extends Entity {
             speed = rotationSpeed;
         }
 
-        // Real-time based rotation for maximum visual smoothness (not limited by 20 TPS).
         double nowTicks = System.nanoTime() / 50_000_000.0;
         return (float) ((nowTicks * speed) % 360.0);
     }
@@ -465,3 +523,4 @@ public class FallingGraveEntity extends Entity {
         return false;
     }
 }
+
