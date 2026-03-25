@@ -210,7 +210,6 @@ public class FallingGraveEntity extends Entity {
             case GRAVESTONE_LEVEL_4 -> 1.0f;
         };
 
-        // Spawn from under the grave in a 3x3 footprint and launch upward.
         for (int i = 0; i < 56; i++) {
             double x = gravePos.getX() + 0.5 + (random.nextDouble() * 3.0 - 1.5);
             double y = gravePos.getY() + 0.01 + random.nextDouble() * 0.04;
@@ -471,9 +470,11 @@ public class FallingGraveEntity extends Entity {
         if (tag.contains("GraveData")) {
             this.graveData = tag.getCompound("GraveData");
         }
+
         if (tag.hasUUID("OwnerUUID")) {
             this.ownerUUID = tag.getUUID("OwnerUUID");
         }
+
         this.ownerName = tag.getString("OwnerName");
         this.graveLevel = GraveStoneLevels.CODEC.byName(tag.getString("GraveLevel"), GraveStoneLevels.GRAVESTONE_LEVEL_1);
         this.facing = Direction.from2DDataValue(tag.getInt("Facing"));

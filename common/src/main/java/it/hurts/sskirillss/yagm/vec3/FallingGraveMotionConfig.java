@@ -53,18 +53,9 @@ public class FallingGraveMotionConfig {
         return rotSpeedMin + random.nextFloat() * (rotSpeedMax - rotSpeedMin);
     }
 
-    /**
-     * <p>The required horizontal speed is derived analytically from the discrete physics:
-     * <pre>
-     *   distance = speed × Σ drag^i  (i = 0..landingTick-1)
-     *            = speed × (1 − drag^T) / (1 − drag)
-     * </pre>
-     * Landing tick T is estimated from the upward velocity and gravity using the discrete
-     * kinematic sum  y(T) = initialOffset + up·T + gravity·T(T−1)/2 = 0.
-     */
     public Vec3 randomLaunchVelocity(RandomSource random) {
-        double angle  = random.nextDouble() * Math.PI * 2;
-        double up     = launchUpMin + random.nextDouble() * (launchUpMax - launchUpMin);
+        double angle = random.nextDouble() * Math.PI * 2;
+        double up = launchUpMin + random.nextDouble() * (launchUpMax - launchUpMin);
         double target = minDistance  + random.nextDouble() * (maxDistance  - minDistance);
 
         double speed = horizontalSpeedForDistance(target, up);

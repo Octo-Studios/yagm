@@ -21,7 +21,7 @@ public class ParticleRegistry {
     public static final RegistrySupplier<SimpleParticleType> CANDLE_FLAME = PARTICLE_TYPES.register("candle_flame", () -> new SimpleParticleType(false));
     public static final RegistrySupplier<SimpleParticleType> SOUL_CANDLE_FLAME = PARTICLE_TYPES.register("soul_candle_flame", () -> new SimpleParticleType(false));
     public static final RegistrySupplier<ParticleType<GroundDustParticleOptions>> GRAVE_DUST_FLAT = PARTICLE_TYPES.register("grave_dust_flat", GroundDustParticleType::new);
-    public static final RegistrySupplier<ParticleType<GraveTrailParticleOptions>> GRAVE_TRAIL_SMOKE = PARTICLE_TYPES.register("grave_trail_smoke", GraveTrailParticleType::new);
+    public static final RegistrySupplier<ParticleType<GraveTrailParticleOptions>> GRAVE_TRAIL = PARTICLE_TYPES.register("grave_trail", GraveTrailParticleType::new);
 
     public static void init() {
         PARTICLE_TYPES.register();

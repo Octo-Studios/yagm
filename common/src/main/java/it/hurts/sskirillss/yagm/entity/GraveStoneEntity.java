@@ -25,7 +25,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -134,11 +136,11 @@ public class GraveStoneEntity extends Entity {
     }
 
     public float getTextHeight() {
-        float base = switch (graveData.getGraveLevel()) {
+        float base = switch (getGraveLevel()) {
             case GRAVESTONE_LEVEL_1 -> 1.4F;
             case GRAVESTONE_LEVEL_2 -> 1.4F;
-            case GRAVESTONE_LEVEL_3 -> 2.1F;
-            case GRAVESTONE_LEVEL_4 -> 2.9F;
+            case GRAVESTONE_LEVEL_3 -> 2.3F;
+            case GRAVESTONE_LEVEL_4 -> 3.2F;
         };
 
         IGraveVariant variant = getVariant();
@@ -153,7 +155,7 @@ public class GraveStoneEntity extends Entity {
         if (variant != null) {
             return variant.getTextColor();
         }
-        return switch (graveData.getGraveLevel()) {
+        return switch (getGraveLevel()) {
             case GRAVESTONE_LEVEL_1 -> 0xFFFFFFFF;
             case GRAVESTONE_LEVEL_2 -> 0xFFFFFFFF;
             case GRAVESTONE_LEVEL_3 -> 0xFFFFFFFF;
@@ -164,6 +166,7 @@ public class GraveStoneEntity extends Entity {
     public void initializeGrave(UUID playerUUID, String playerName, long deathTime, @Nullable net.minecraft.network.chat.Component deathCause, @Nullable String testament, GraveStoneLevels level) {
         graveData.initialize(playerUUID, playerName, deathTime, deathCause, testament, level);
         syncClientData();
+        refreshDimensions();
     }
 
     public void loadGraveData(CompoundTag data) {
@@ -206,6 +209,26 @@ public class GraveStoneEntity extends Entity {
         builder.define(DATA_BOUND_POS, 0L);
     }
 
+
+    @Override
+    public @NotNull EntityDimensions getDimensions(@NotNull Pose pose) {
+        float height = switch (getGraveLevel()) {
+            case GRAVESTONE_LEVEL_1 -> 1.5f;
+            case GRAVESTONE_LEVEL_2 -> 1.8f;
+            case GRAVESTONE_LEVEL_3 -> 2.0f;
+            case GRAVESTONE_LEVEL_4 -> 2.0f;
+        };
+        return EntityDimensions.scalable(0.98f, height);
+    }
+
+    @Override
+    public void onSyncedDataUpdated(@NotNull EntityDataAccessor<?> key) {
+        super.onSyncedDataUpdated(key);
+        if (DATA_LEVEL.equals(key)) {
+            refreshDimensions();
+        }
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -245,19 +268,21 @@ public class GraveStoneEntity extends Entity {
         }
 
         float[] base = getTier4TrailBaseColor();
-        for (int i = 0; i < 6; i++) {
-            double x = pos.getX() + 0.5 + (random.nextDouble() * 2.0 - 1.0) * 1.5;
+        for (int i = 0; i < 2; i++) {
+            double angle = random.nextDouble() * (Math.PI * 2.0);
+            double radius = Math.sqrt(random.nextDouble()) * 1.0;
+            double x = pos.getX() + 0.5 + Math.cos(angle) * radius;
             double y = pos.getY() - 0.15 + random.nextDouble() * 0.08;
-            double z = pos.getZ() + 0.5 + (random.nextDouble() * 2.0 - 1.0) * 1.5;
+            double z = pos.getZ() + 0.5 + Math.sin(angle) * radius;
 
             float variance = 0.08f;
             float r = clamp01(base[0] + (random.nextFloat() * 2 - 1) * variance);
             float g = clamp01(base[1] + (random.nextFloat() * 2 - 1) * variance);
             float b = clamp01(base[2] + (random.nextFloat() * 2 - 1) * variance);
 
-            double vx = (random.nextDouble() * 2.0 - 1.0) * 0.02;
-            double vy = 0.20 + random.nextDouble() * 0.08;
-            double vz = (random.nextDouble() * 2.0 - 1.0) * 0.02;
+            double vx = 0.0;
+            double vy = 0.040 + random.nextDouble() * 0.015;
+            double vz = 0.0;
 
             clientLevel.addParticle(new GraveTrailParticleOptions(r, g, b, 0.55f), x, y, z, vx, vy, vz);
         }

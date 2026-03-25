@@ -44,6 +44,6 @@ public class GraveTrailParticleOptions implements ParticleOptions {
 
     @Override
     public @NotNull ParticleType<GraveTrailParticleOptions> getType() {
-        return ParticleRegistry.GRAVE_TRAIL_SMOKE.get();
+        return ParticleRegistry.GRAVE_TRAIL.get();
     }
 }

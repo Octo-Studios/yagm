@@ -28,7 +28,7 @@ dependencies {
     modImplementation "dev.architectury:architectury-neoforge:${architectury_version}"
     common(project(path: ":common", configuration: "namedElements")) { transitive = false }
     shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive = false }
-    modImplementation ("it.hurts.octostudios.octolib:octolib-neoforge:$rootProject.octolib_version")
+    implementation ("it.hurts.octostudios.octolib:octolib-neoforge:$rootProject.octolib_version")
     compileOnly ("top.theillusivec4.curios:curios-neoforge:${rootProject.curios_api_version}:api")
     compileOnly ("top.theillusivec4.curios:curios-neoforge:${rootProject.curios_api_version}")
     compileOnly ("io.wispforest:accessories-neoforge:${rootProject.accessories_version}")

@@ -27,7 +27,7 @@ public class FallingGraveEntityRenderer extends EntityRenderer<FallingGraveEntit
     public FallingGraveEntityRenderer(EntityRendererProvider.Context context) {
         super(context);
         this.blockRenderer = context.getBlockRenderDispatcher();
-        this.shadowRadius = 0.5f;
+        this.shadowRadius = 0.0f;
     }
 
     @Override
@@ -47,21 +47,14 @@ public class FallingGraveEntityRenderer extends EntityRenderer<FallingGraveEntit
 
         Block block = BlockRegistry.getBlockForVariant(variantStr, level);
         BlockState state = block.defaultBlockState();
+
         if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
             state = state.setValue(BlockStateProperties.HORIZONTAL_FACING, entity.getFacing());
         }
+
         BakedModel model = blockRenderer.getBlockModel(state);
 
-        blockRenderer.getModelRenderer().renderModel(
-                poseStack.last(),
-                buffer.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)),
-                state,
-                model,
-                1.0F, 1.0F, 1.0F,
-                packedLight,
-                OverlayTexture.NO_OVERLAY
-        );
-
+        blockRenderer.getModelRenderer().renderModel(poseStack.last(), buffer.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)), state, model, 1.0F, 1.0F, 1.0F, packedLight, OverlayTexture.NO_OVERLAY);
         poseStack.popPose();
 
         super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);

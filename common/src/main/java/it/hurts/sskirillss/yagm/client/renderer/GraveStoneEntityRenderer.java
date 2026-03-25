@@ -37,10 +37,12 @@ public class GraveStoneEntityRenderer extends EntityRenderer<GraveStoneEntity> {
     @Override
     public void render(GraveStoneEntity entity, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
         Level level = entity.level();
-        if (level == null) return;
 
         BlockState state = resolveRenderState(entity, level);
-        if (state == null || state.isAir()) return;
+
+        if (state.isAir()) {
+            return;
+        }
 
         renderBaseModel(poseStack, buffer, state, blockRenderer.getBlockModel(state), packedLight);
         renderOwnerName(entity, poseStack, buffer, packedLight);
@@ -50,7 +52,10 @@ public class GraveStoneEntityRenderer extends EntityRenderer<GraveStoneEntity> {
 
     private BlockState resolveRenderState(GraveStoneEntity entity, Level level) {
         BlockState worldState = level.getBlockState(entity.getBoundPos());
-        if (!worldState.isAir()) return worldState;
+
+        if (!worldState.isAir()) {
+            return worldState;
+        }
 
         String variantId = null;
         IGraveVariant variant = entity.getVariant();

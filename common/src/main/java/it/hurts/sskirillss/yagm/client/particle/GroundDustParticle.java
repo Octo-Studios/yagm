@@ -17,7 +17,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 public class GroundDustParticle extends TextureSheetParticle {
-    private static final float HALF_PI = Mth.PI / 2f;
+
     private final SpriteSet spriteSet;
     private final float sourceScale;
 
@@ -42,6 +42,7 @@ public class GroundDustParticle extends TextureSheetParticle {
 
         this.setSpriteFromAge(this.spriteSet);
     }
+
 
     @Override
     public float getQuadSize(float partialTick) {
@@ -81,20 +82,22 @@ public class GroundDustParticle extends TextureSheetParticle {
     }
 
     private void renderHorizontal(VertexConsumer consumer, Camera camera, float partialTick, boolean backFace) {
-        Vec3 cam = camera.getPosition();
-        float x = (float) (Mth.lerp(partialTick, this.xo, this.x) - cam.x());
-        float y = (float) (Mth.lerp(partialTick, this.yo, this.y) - cam.y());
-        float z = (float) (Mth.lerp(partialTick, this.zo, this.z) - cam.z());
+        Vec3 cameraPosition = camera.getPosition();
 
-        Quaternionf q = new Quaternionf();
+        float x = (float) (Mth.lerp(partialTick, this.xo, this.x) - cameraPosition.x());
+        float y = (float) (Mth.lerp(partialTick, this.yo, this.y) - cameraPosition.y());
+        float z = (float) (Mth.lerp(partialTick, this.zo, this.z) - cameraPosition.z());
+
+        Quaternionf quaternion = new Quaternionf();
+
         if (backFace) {
-            q.mul(Axis.YP.rotation(-(float) Math.PI));
-            q.mul(Axis.XP.rotation(HALF_PI));
+            quaternion.mul(Axis.YP.rotation(-(float) Math.PI));
+            quaternion.mul(Axis.XP.rotation((float) (Math.PI / 2)));
         } else {
-            q.mul(Axis.XP.rotation(-HALF_PI));
+            quaternion.mul(Axis.XP.rotation((float) (-Math.PI / 2)));
         }
 
-        Vector3f[] corners = new Vector3f[]{
+        Vector3f[] flats = new Vector3f[]{
                 new Vector3f(-1.0F, -1.0F, 0.0F),
                 new Vector3f(-1.0F, 1.0F, 0.0F),
                 new Vector3f(1.0F, 1.0F, 0.0F),
@@ -102,20 +105,22 @@ public class GroundDustParticle extends TextureSheetParticle {
         };
 
         float size = this.getQuadSize(partialTick);
-        for (Vector3f corner : corners) {
-            corner.rotate(q);
+
+        for (Vector3f corner : flats) {
+            corner.rotate(quaternion);
             corner.mul(size);
             corner.add(x, y, z);
         }
 
         int light = this.getLightColor(partialTick);
-        makeCornerVertex(consumer, corners[0], this.getU1(), this.getV1(), light);
-        makeCornerVertex(consumer, corners[1], this.getU1(), this.getV0(), light);
-        makeCornerVertex(consumer, corners[2], this.getU0(), this.getV0(), light);
-        makeCornerVertex(consumer, corners[3], this.getU0(), this.getV1(), light);
+
+        addVertex(consumer, flats[0], this.getU1(), this.getV1(), light);
+        addVertex(consumer, flats[1], this.getU1(), this.getV0(), light);
+        addVertex(consumer, flats[2], this.getU0(), this.getV0(), light);
+        addVertex(consumer, flats[3], this.getU0(), this.getV1(), light);
     }
 
-    private void makeCornerVertex(VertexConsumer consumer, Vector3f vec, float u, float v, int light) {
+    private void addVertex(VertexConsumer consumer, Vector3f vec, float u, float v, int light) {
         consumer.addVertex(vec.x(), vec.y(), vec.z()).setUv(u, v).setColor(this.rCol, this.gCol, this.bCol, this.alpha).setLight(light);
     }
 

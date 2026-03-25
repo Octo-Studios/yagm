@@ -1,10 +1,10 @@
 package it.hurts.sskirillss.yagm.client.particle.type;
 
 import it.hurts.octostudios.octolib.module.particle.trail.ParticleTrailProvider;
-import net.minecraft.client.particle.Particle;
+import it.hurts.sskirillss.yagm.client.particle.GraveTrailParticle;
 
-public class GraveDustParticleTrail extends ParticleTrailProvider<Particle> {
-    public GraveDustParticleTrail(Particle particle) {
+public class GraveDustParticleTrail extends ParticleTrailProvider<GraveTrailParticle> {
+    public GraveDustParticleTrail(GraveTrailParticle particle) {
         super(particle);
     }
 
@@ -15,21 +15,21 @@ public class GraveDustParticleTrail extends ParticleTrailProvider<Particle> {
 
     @Override
     public int getTrailMaxLength() {
-        return 9;
+        return 16;
     }
 
     @Override
     public int getTrailFadeInColor() {
-        return 0xFFFFFFFF;
+        return particle.getTrailColorIn();
     }
 
     @Override
     public int getTrailFadeOutColor() {
-        return 0xFFB35A18;
+        return particle.getTrailColorOut();
     }
 
     @Override
     public double getTrailScale() {
-        return 0.045;
+        return 0.02;
     }
 }

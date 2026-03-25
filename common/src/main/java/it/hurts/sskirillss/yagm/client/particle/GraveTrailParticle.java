@@ -2,6 +2,7 @@ package it.hurts.sskirillss.yagm.client.particle;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import it.hurts.sskirillss.yagm.client.particle.options.GraveTrailParticleOptions;
+import lombok.Getter;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
@@ -14,16 +15,24 @@ import org.jetbrains.annotations.NotNull;
 
 public class GraveTrailParticle extends TextureSheetParticle {
     private final SpriteSet spriteSet;
+    private final double startY;
+
+    @Getter
+    private final int trailColorIn;
+
+    @Getter
+    private final int trailColorOut;
 
     public GraveTrailParticle(ClientLevel level, double x, double y, double z, double xdIn, double ydIn, double zdIn, GraveTrailParticleOptions options, SpriteSet spriteSet) {
         super(level, x, y, z, xdIn, ydIn, zdIn);
         this.spriteSet = spriteSet;
+        this.startY = y;
 
-        this.xd = xdIn + (random.nextFloat() - 0.5f) * 0.01f;
-        this.yd = ydIn + 0.03f + random.nextFloat() * 0.05f;
-        this.zd = zdIn + (random.nextFloat() - 0.5f) * 0.01f;
-        this.quadSize = (0.8f + random.nextFloat() * 0.35f) * options.getScale();
-        this.lifetime = 26 + random.nextInt(16);
+        this.xd = 0.0;
+        this.yd = ydIn + random.nextFloat() * 0.002f;
+        this.zd = 0.0;
+        this.quadSize = 0.001f;
+        this.lifetime = 28 + random.nextInt(53);
         this.gravity = 0f;
         this.friction = 0.98f;
 
@@ -33,15 +42,22 @@ public class GraveTrailParticle extends TextureSheetParticle {
         this.bCol = Mth.clamp(options.getColor().z() * tint, 0f, 1f);
         this.alpha = 0.0f;
 
+        int r = Mth.floor(this.rCol * 255f);
+        int g = Mth.floor(this.gCol * 255f);
+        int b = Mth.floor(this.bCol * 255f);
+        this.trailColorIn = 0xFF000000 | (r << 16) | (g << 8) | b;
+
+        int rOut = Mth.floor(this.rCol * 0.7f * 255f);
+        int gOut = Mth.floor(this.gCol * 0.7f * 255f);
+        int bOut = Mth.floor(this.bCol * 0.7f * 255f);
+        this.trailColorOut = 0x99000000 | (rOut << 16) | (gOut << 8) | bOut;
+
         this.setSpriteFromAge(this.spriteSet);
     }
 
     @Override
     public float getQuadSize(float partialTick) {
-        float age01 = (this.age + partialTick) / (float) this.lifetime;
-        float fadeIn = Mth.clamp(age01 * 3.2f, 0f, 1f);
-        float fadeOut = 1f - Mth.clamp((age01 - 0.55f) / 0.45f, 0f, 1f);
-        return this.quadSize * (0.9f + fadeIn * 0.2f) * fadeOut;
+        return 0.001f;
     }
 
     @Override
@@ -55,22 +71,21 @@ public class GraveTrailParticle extends TextureSheetParticle {
             return;
         }
 
-        float age01 = this.age / (float) this.lifetime;
-        float fadeIn = Mth.clamp(age01 * 4f, 0f, 1f);
-        float fadeOut = 1f - Mth.clamp((age01 - 0.55f) / 0.45f, 0f, 1f);
-        this.alpha = 0.9f * fadeIn * fadeOut;
+        this.alpha = 0.0f;
         this.setSpriteFromAge(this.spriteSet);
 
         this.move(this.xd, this.yd, this.zd);
-        this.yd *= 0.988f;
-        this.xd *= 0.985f;
-        this.zd *= 0.985f;
+        this.yd *= 0.986f;
+        this.xd *= 0.986f;
+        this.zd *= 0.986f;
+
+        if (this.y - this.startY >= 3.0) {
+            this.remove();
+        }
     }
 
     @Override
-    public void render(VertexConsumer buffer, Camera camera, float partialTick) {
-        super.render(buffer, camera, partialTick);
-    }
+    public void render(VertexConsumer buffer, Camera camera, float partialTick) {}
 
     @Override
     public int getLightColor(float partialTick) {
