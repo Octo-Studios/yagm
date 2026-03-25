@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.entity;
 
+import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
 import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
@@ -8,7 +9,11 @@ import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.client.particle.options.GroundDustParticleOptions;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.util.GraveStoneUtils;
+import it.hurts.sskirillss.yagm.util.InventoryUtils;
 import it.hurts.sskirillss.yagm.vec3.FallingGraveMotionConfig;
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.Containers;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -28,11 +33,13 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -192,9 +199,35 @@ public class FallingGraveEntity extends Entity {
                 level().levelEvent(2001, gravePos, Block.getId(graveState));
             }
             CemeteryManager.getInstance().addGrave(level().dimension(), gravePos);
+        } else if (!level().isClientSide()) {
+            dropGraveDataAsItems(gravePos);
         }
 
         discard();
+    }
+
+    private void dropGraveDataAsItems(BlockPos pos) {
+        if (graveData == null) return;
+        double x = pos.getX() + 0.5, y = pos.getY() + 0.5, z = pos.getZ() + 0.5;
+
+        NonNullList<ItemStack> items = InventoryUtils.getAllItemsFromNBT(level().registryAccess(), graveData);
+        for (ItemStack item : items) {
+            if (!item.isEmpty()) {
+                Containers.dropItemStack(level(), x, y, z, item);
+            }
+        }
+
+        if (AccessoryManager.hasAnyHandler() && graveData.contains("Accessories", 10)) {
+            CompoundTag accessoriesNBT = graveData.getCompound("Accessories");
+            Map<String, Map<String, ItemStack>> allAccessories = AccessoryManager.loadAllFromNBT(accessoriesNBT, level().registryAccess());
+            for (Map<String, ItemStack> handlerAccessories : allAccessories.values()) {
+                for (ItemStack accessory : handlerAccessories.values()) {
+                    if (!accessory.isEmpty()) {
+                        Containers.dropItemStack(level(), x, y, z, accessory);
+                    }
+                }
+            }
+        }
     }
 
     private void spawnLandingDustBurst(BlockPos gravePos) {
@@ -326,70 +359,42 @@ public class FallingGraveEntity extends Entity {
     }
 
     private BlockPos findEndIslandPosition(BlockPos deathPos) {
-        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
         BlockPos bestPos = null;
         double bestDistance = Double.MAX_VALUE;
 
-        for (int radius = 0; radius <= 200; radius += 4) {
+        for (int radius = 0; radius <= 64; radius += 2) {
             for (int x = -radius; x <= radius; x += 2) {
                 for (int z = -radius; z <= radius; z += 2) {
                     if (radius > 0 && Math.abs(x) != radius && Math.abs(z) != radius) continue;
 
-                    for (int y = 0; y < level().getMaxBuildHeight(); y++) {
-                        mutable.set(deathPos.getX() + x, y, deathPos.getZ() + z);
+                    int wx = deathPos.getX() + x;
+                    int wz = deathPos.getZ() + z;
 
-                        BlockState block = level().getBlockState(mutable);
-                        BlockState above = level().getBlockState(mutable.above());
+                    int surfaceY = level().getHeight(Heightmap.Types.MOTION_BLOCKING, wx, wz);
+                    if (surfaceY <= level().getMinBuildHeight()) continue;
 
-                        if (block.isSolid() && (above.isAir() || above.canBeReplaced())) {
-                            BlockPos candidate = mutable.above();
-
-                            if (hasSpaceForGrave(candidate)) {
-                                double distance = calculateDistance(deathPos, candidate);
-
-                                if (distance < bestDistance) {
-                                    bestDistance = distance;
-                                    bestPos = candidate.immutable();
-
-                                    if (distance < 50) {
-                                        return bestPos;
-                                    }
-                                }
-                            }
+                    BlockPos candidate = new BlockPos(wx, surfaceY, wz);
+                    if (hasSpaceForGrave(candidate)) {
+                        double distance = calculateDistance(deathPos, candidate);
+                        if (distance < bestDistance) {
+                            bestDistance = distance;
+                            bestPos = candidate;
+                            if (distance < 16) return bestPos;
                         }
                     }
                 }
             }
-            if (bestPos != null && radius > 20) {
-                return bestPos;
-            }
+            if (bestPos != null && radius > 16) return bestPos;
         }
 
         if (bestPos == null) {
-            bestPos = findMainEndIslandPosition();
+            int mainY = level().getHeight(Heightmap.Types.MOTION_BLOCKING, 0, 0);
+            if (mainY > level().getMinBuildHeight()) {
+                bestPos = new BlockPos(0, mainY, 0);
+            }
         }
 
         return bestPos != null ? bestPos : new BlockPos(0, 65, 0);
-    }
-
-    private BlockPos findMainEndIslandPosition() {
-        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
-
-        for (int x = -20; x <= 20; x++) {
-            for (int z = -20; z <= 20; z++) {
-                for (int y = 50; y < 100; y++) {
-                    mutable.set(x, y, z);
-
-                    BlockState block = level().getBlockState(mutable);
-                    BlockState above = level().getBlockState(mutable.above());
-
-                    if (block.isSolid() && above.isAir()) {
-                        return mutable.above().immutable();
-                    }
-                }
-            }
-        }
-        return null;
     }
 
     private boolean hasSpaceForGrave(BlockPos pos) {

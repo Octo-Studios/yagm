@@ -6,6 +6,7 @@ import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveData;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.component.type.GraveVariantTypes;
 import it.hurts.sskirillss.yagm.util.InventoryUtils;
 import it.hurts.sskirillss.yagm.client.particle.options.GroundDustParticleOptions;
 import it.hurts.sskirillss.yagm.client.particle.options.GraveTrailParticleOptions;
@@ -16,6 +17,7 @@ import lombok.Getter;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -54,6 +56,7 @@ public class GraveStoneEntity extends Entity {
     private NonNullList<ItemStack> playerOffHandSlots;
 
     private BlockPos boundPos = BlockPos.ZERO;
+    private boolean graveManagerCleaned = false;
 
     public GraveStoneEntity(EntityType<?> type, Level level) {
         super(type, level);
@@ -71,7 +74,7 @@ public class GraveStoneEntity extends Entity {
         this.boundPos = pos.immutable();
         this.setPos(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
         if (!level().isClientSide()) {
-            entityData.set(DATA_BOUND_POS, boundPos.asLong());
+            syncClientData();
         }
     }
 
@@ -96,14 +99,29 @@ public class GraveStoneEntity extends Entity {
     }
 
     public GraveStoneLevels getGraveLevel() {
+        GraveStoneLevels level;
+
         if (level().isClientSide()) {
             int ordinal = entityData.get(DATA_LEVEL);
             GraveStoneLevels[] levels = GraveStoneLevels.values();
             if (ordinal >= 0 && ordinal < levels.length) {
-                return levels[ordinal];
+                level = levels[ordinal];
+            } else {
+                level = GraveStoneLevels.GRAVESTONE_LEVEL_1;
             }
+        } else {
+            level = graveData.getGraveLevel();
         }
-        return graveData.getGraveLevel();
+
+        GraveStoneLevels inferred = inferLevelFromBoundBlock();
+        if (inferred != null && inferred != GraveStoneLevels.GRAVESTONE_LEVEL_1) {
+            if (!level().isClientSide()) {
+                graveData.setGraveLevel(inferred);
+            }
+            return inferred;
+        }
+
+        return level;
     }
 
     @Nullable
@@ -117,6 +135,11 @@ public class GraveStoneEntity extends Entity {
                 variantId = null;
             }
         }
+
+        if (variantId == null) {
+            variantId = inferVariantFromBoundBlock();
+        }
+
         if (variantId != null) {
             IGraveVariant variant = GraveVariantRegistry.get(variantId);
             if (variant != null) {
@@ -133,6 +156,61 @@ public class GraveStoneEntity extends Entity {
             graveData.setVariantId(null);
         }
         syncClientData();
+    }
+
+    @Nullable
+    private GraveStoneLevels inferLevelFromBoundBlock() {
+        BlockPos pos = getBoundPos();
+        if (pos == null || level() == null) {
+            return null;
+        }
+
+        var state = level().getBlockState(pos);
+        if (state.isAir()) {
+            return null;
+        }
+
+        var key = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        if (key == null) {
+            return null;
+        }
+
+        String path = key.getPath();
+        if (path.contains("tier_4")) return GraveStoneLevels.GRAVESTONE_LEVEL_4;
+        if (path.contains("tier_3")) return GraveStoneLevels.GRAVESTONE_LEVEL_3;
+        if (path.contains("tier_2")) return GraveStoneLevels.GRAVESTONE_LEVEL_2;
+        if (path.contains("tier_1")) return GraveStoneLevels.GRAVESTONE_LEVEL_1;
+
+        return null;
+    }
+
+    @Nullable
+    private ResourceLocation inferVariantFromBoundBlock() {
+        BlockPos pos = getBoundPos();
+        if (pos == null || level() == null) {
+            return null;
+        }
+
+        var state = level().getBlockState(pos);
+        if (state.isAir()) {
+            return null;
+        }
+
+        var key = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        if (key == null) {
+            return null;
+        }
+
+        String path = key.getPath();
+        if (path.startsWith("cold_")) return GraveVariantTypes.COLD.getResourceLocation();
+        if (path.startsWith("hot_")) return GraveVariantTypes.HOT.getResourceLocation();
+        if (path.startsWith("nether_")) return GraveVariantTypes.NETHER.getResourceLocation();
+        if (path.startsWith("end_")) return GraveVariantTypes.END.getResourceLocation();
+        if (path.startsWith("tropics_")) return GraveVariantTypes.TROPICS.getResourceLocation();
+        if (path.startsWith("ocean_")) return GraveVariantTypes.OCEAN.getResourceLocation();
+        if (path.contains("grave_tier_")) return GraveVariantTypes.DEFAULT.getResourceLocation();
+
+        return null;
     }
 
     public float getTextHeight() {
@@ -192,8 +270,14 @@ public class GraveStoneEntity extends Entity {
     private void syncClientData() {
         if (!level().isClientSide()) {
             entityData.set(DATA_OWNER_NAME, getOwnerName());
-            entityData.set(DATA_LEVEL, graveData.getGraveLevel().ordinal());
+            entityData.set(DATA_LEVEL, getGraveLevel().ordinal());
             ResourceLocation variantId = graveData.getVariantId();
+            if (variantId == null) {
+                variantId = inferVariantFromBoundBlock();
+                if (variantId != null) {
+                    graveData.setVariantId(variantId);
+                }
+            }
             entityData.set(DATA_VARIANT, variantId != null ? variantId.toString() : "");
             if (boundPos != null) {
                 entityData.set(DATA_BOUND_POS, boundPos.asLong());
@@ -238,7 +322,7 @@ public class GraveStoneEntity extends Entity {
                 discard();
                 return;
             }
-            if (level().getBlockState(boundPos).isAir()) {
+            if (tickCount % 20 == 0 && level().getBlockState(boundPos).isAir()) {
                 discard();
                 return;
             }
@@ -310,23 +394,13 @@ public class GraveStoneEntity extends Entity {
     }
 
     public void interact(Player player) {
-        if (!level().isClientSide) {
-            if (canPlayerOpen(player)) {
-                if (player instanceof ServerPlayer serverPlayer) {
-                    giveInventoryToPlayer(serverPlayer);
-                    level().removeBlock(boundPos, false);
-                    if (level() instanceof ServerLevel serverLevel) {
-                        CemeterySavedData.markDirty(serverLevel);
-                    }
-                }
+        if (!level().isClientSide && player instanceof ServerPlayer serverPlayer) {
+            giveInventoryToPlayer(serverPlayer);
+            level().removeBlock(boundPos, false);
+            if (level() instanceof ServerLevel serverLevel) {
+                CemeterySavedData.markDirty(serverLevel);
             }
         }
-    }
-
-    private boolean canPlayerOpen(Player player) {
-        UUID ownerUUID = graveData.getOwnerUUID();
-        if (ownerUUID == null) return true;
-        return ownerUUID.equals(player.getUUID()) || player.hasPermissions(2);
     }
 
     public void giveInventoryToPlayer(ServerPlayer player) {
@@ -350,8 +424,14 @@ public class GraveStoneEntity extends Entity {
                 NonNullList<ItemStack> armor = InventoryUtils.getOrThrowInventory(this.playerArmorSlots, () -> graveDataManager.getTransientArmor(graveId));
                 NonNullList<ItemStack> offhand = InventoryUtils.getOrThrowInventory(this.playerOffHandSlots, () -> graveDataManager.getTransientOffhand(graveId));
 
-                if (main != null && InventoryUtils.hasNonEmptyItems(main)) {
-                    InventoryUtils.restoreInventory(player.getInventory().items, main, player);
+                boolean hasAnyTransient = InventoryUtils.hasNonEmptyItems(main)
+                        || InventoryUtils.hasNonEmptyItems(armor)
+                        || InventoryUtils.hasNonEmptyItems(offhand);
+
+                if (hasAnyTransient) {
+                    if (main != null && InventoryUtils.hasNonEmptyItems(main)) {
+                        InventoryUtils.restoreInventory(player.getInventory().items, main, player);
+                    }
 
                     if (armor != null && InventoryUtils.hasNonEmptyItems(armor)) {
                         InventoryUtils.restoreInventory(player.getInventory().armor, armor, player);
@@ -442,25 +522,16 @@ public class GraveStoneEntity extends Entity {
     }
 
     private void removeFromGraveManager() {
+        if (graveManagerCleaned) return;
+        graveManagerCleaned = true;
+
         UUID graveId = graveData.getGraveId();
         if (level() instanceof ServerLevel serverLevel && graveId != null) {
             GraveDataManager manager = GraveDataManager.get(serverLevel);
-            var all = manager.getAllGraves();
-            UUID keyToRemove = null;
-            for (var entry : all.entrySet()) {
-                CompoundTag tag = entry.getValue();
-                if (tag != null && tag.hasUUID("Id") && tag.getUUID("Id").equals(graveId)) {
-                    keyToRemove = entry.getKey();
-                    break;
-                }
-            }
-            if (keyToRemove != null) {
-                manager.removeGrave(keyToRemove);
-                manager.removeTransientGrave(graveId);
-            }
+            manager.removeGrave(graveId);
+            manager.removeTransientGrave(graveId);
 
             CemeteryManager.getInstance().removeGrave(serverLevel.dimension(), boundPos);
-
             CemeterySavedData.markDirty(serverLevel);
         }
     }

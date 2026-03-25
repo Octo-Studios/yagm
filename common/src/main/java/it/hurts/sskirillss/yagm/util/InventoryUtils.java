@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+@SuppressWarnings("all")
 public class InventoryUtils {
 
     private static final String MAIN = "MainInventory";
@@ -82,7 +83,9 @@ public class InventoryUtils {
         NonNullList<ItemStack> result = NonNullList.create();
         for (NonNullList<ItemStack> list : new NonNullList[]{mainList, armorList, offhandList}) {
             for (ItemStack stack : list) {
-                if (!stack.isEmpty()) result.add(stack);
+                if (!stack.isEmpty()) {
+                    result.add(stack);
+                }
             }
         }
         return result;

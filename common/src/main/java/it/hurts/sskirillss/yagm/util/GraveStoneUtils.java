@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.UUID;
 
@@ -16,19 +17,19 @@ public class GraveStoneUtils {
 
     public static BlockPos getGraveStoneBlockPosition(Level level, BlockPos pos) {
         if (level.dimension() == Level.END && pos.getY() < 0) {
-            return findEndPosition(level, pos);
+            return findEndPos(level, pos);
         }
 
         if (isValidGravePosition(level, pos)) {
             return pos.immutable();
         }
 
-        BlockPos fluidPos = findPositionAboveFluid(level, pos);
+        BlockPos fluidPos = findPosAboveFluid(level, pos);
         if (fluidPos != null) {
             return fluidPos;
         }
 
-        BlockPos airPos = findPositionInAir(level, pos);
+        BlockPos airPos = findPosInAir(level, pos);
         if (airPos != null) {
             return airPos;
         }
@@ -36,56 +37,54 @@ public class GraveStoneUtils {
         return searchNearbyPosition(level, pos, MAX_SEARCH_RADIUS, MAX_SEARCH_HEIGHT);
     }
 
-    private static BlockPos findEndPosition(Level level, BlockPos pos) {
-        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
+    private static BlockPos findEndPos(Level level, BlockPos pos) {
         BlockPos bestPos = null;
         double bestDistance = Double.MAX_VALUE;
 
-        for (int radius = 0; radius <= 200; radius++) {
+        for (int radius = 0; radius <= 64; radius++) {
             for (int x = -radius; x <= radius; x++) {
                 for (int z = -radius; z <= radius; z++) {
-                    if (Math.abs(x) != radius && Math.abs(z) != radius) continue;
+                    if (radius > 0 && Math.abs(x) != radius && Math.abs(z) != radius) continue;
 
-                    for (int y = level.getMinBuildHeight(); y < level.getMaxBuildHeight(); y++) {
-                        mutable.set(pos.getX() + x, y, pos.getZ() + z);
+                    int wx = pos.getX() + x;
+                    int wz = pos.getZ() + z;
 
-                        BlockState block = level.getBlockState(mutable);
-                        BlockState above = level.getBlockState(mutable.above());
+                    int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, wx, wz);
+                    if (surfaceY <= level.getMinBuildHeight()) continue;
 
-                        if (block.isSolid() && (above.isAir() || above.canBeReplaced())) {
-                            if (hasEnoughSpace(level, mutable.above(), 2)) {
-                                double distance = Math.sqrt(
-                                    (double) x * x +
-                                    (double) (y - pos.getY()) * (y - pos.getY()) +
-                                    (double) z * z
-                                );
+                    BlockPos blockPos = new BlockPos(wx, surfaceY, wz);
+                    if (hasEnoughSpace(level, blockPos, 2)) {
+                        double distance = Math.sqrt((double) x * x + (double) (surfaceY - pos.getY()) * (surfaceY - pos.getY()) + (double) z * z);
 
-                                if (distance < bestDistance) {
-                                    bestDistance = distance;
-                                    bestPos = mutable.above().immutable();
-                                }
-                            }
+                        if (distance < bestDistance) {
+                            bestDistance = distance;
+                            bestPos = blockPos;
+                            if (distance < 16) return bestPos;
                         }
                     }
                 }
             }
+            if (bestPos != null && radius > 16) return bestPos;
         }
 
-        if (bestPos != null) {
-            return bestPos;
+        if (bestPos == null) {
+            int mainY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, 0, 0);
+            if (mainY > level.getMinBuildHeight()) {
+                bestPos = new BlockPos(0, mainY, 0);
+            }
         }
 
-        return new BlockPos(0, 65, 0);
+        return bestPos != null ? bestPos : new BlockPos(0, 65, 0);
     }
 
-    private static BlockPos findPositionAboveFluid(Level level, BlockPos startPos) {
+    private static BlockPos findPosAboveFluid(Level level, BlockPos startPos) {
         if (!level.getFluidState(startPos).isEmpty()) {
             BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos(startPos.getX(), startPos.getY(), startPos.getZ());
 
             for (int y = startPos.getY(); y < level.getMaxBuildHeight(); y++) {
                 mutable.setY(y);
 
-                if (level.getFluidState(mutable).isEmpty() && level.getBlockState(mutable).isAir() && isValidBlockBelow(level, mutable.below())) {
+                if (level.getFluidState(mutable).isEmpty() && level.getBlockState(mutable).isAir() && isFluidBelow(level, mutable.below())) {
                     return mutable.immutable();
                 }
             }
@@ -93,7 +92,7 @@ public class GraveStoneUtils {
         return null;
     }
 
-    private static BlockPos findPositionInAir(Level level, BlockPos startPos) {
+    private static BlockPos findPosInAir(Level level, BlockPos startPos) {
         if (level.getBlockState(startPos).isAir()) {
             BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos(startPos.getX(), startPos.getY(), startPos.getZ());
 
@@ -108,7 +107,7 @@ public class GraveStoneUtils {
                 }
 
                 if (!level.getFluidState(mutable).isEmpty()) {
-                    return findPositionAboveFluid(level, mutable.immutable());
+                    return findPosAboveFluid(level, mutable.immutable());
                 }
             }
         }
@@ -145,9 +144,9 @@ public class GraveStoneUtils {
         return (state.isAir() || state.canBeReplaced()) && below.isSolid() && level.getFluidState(pos).isEmpty() && hasEnoughSpace(level, pos, 1);
     }
 
-    private static boolean isValidBlockBelow(Level level, BlockPos pos) {
-        BlockState below = level.getBlockState(pos);
-        return !below.isAir() && !level.getFluidState(pos).isEmpty();
+
+    private static boolean isFluidBelow(Level level, BlockPos pos) {
+        return !level.getBlockState(pos).isAir() && !level.getFluidState(pos).isEmpty();
     }
 
     private static boolean hasEnoughSpace(Level level, BlockPos pos, int height) {
@@ -164,7 +163,7 @@ public class GraveStoneUtils {
             return false;
         }
 
-        if (tryPlaceAtPosition(level, pos, graveState)) {
+        if (pPosition(level, pos, graveState)) {
             return true;
         }
 
@@ -172,11 +171,13 @@ public class GraveStoneUtils {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
                 for (int dz = -1; dz <= 1; dz++) {
-                    if (dx == 0 && dy == 0 && dz == 0) continue;
+                    if (dx == 0 && dy == 0 && dz == 0) {
+                        continue;
+                    }
 
                     mutable.set(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz);
 
-                    if (isValidGravePosition(level, mutable) && tryPlaceAtPosition(level, mutable, graveState)) {
+                    if (isValidGravePosition(level, mutable) && pPosition(level, mutable, graveState)) {
                         return true;
                     }
                 }
@@ -186,7 +187,7 @@ public class GraveStoneUtils {
         return !level.isClientSide() && level.setBlock(pos, graveState, 3);
     }
 
-    private static boolean tryPlaceAtPosition(Level level, BlockPos pos, BlockState graveState) {
+    private static boolean pPosition(Level level, BlockPos pos, BlockState graveState) {
         BlockState current = level.getBlockState(pos);
         if (current.isAir() || current.canBeReplaced()) {
             return level.setBlock(pos, graveState, 3);

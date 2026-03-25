@@ -9,7 +9,6 @@ import net.minecraft.world.item.ItemStack;
 
 public class ItemUtils {
 
-
     public static void saveInventory(HolderLookup.Provider provider, CompoundTag compound, String key, NonNullList<ItemStack> inventory) {
         ListTag listTag = new ListTag();
 

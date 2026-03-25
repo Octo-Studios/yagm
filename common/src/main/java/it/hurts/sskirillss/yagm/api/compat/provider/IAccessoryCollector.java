@@ -8,9 +8,6 @@ import java.util.Map;
 public interface IAccessoryCollector {
 
     /**
-     * Collects all items from the player's accessory slots.
-     * Called when the player dies BEFORE clearing the inventory.
-     *
      * @return map: slot key → item (e.g. "ring/0", "necklace/cosmetic/1", "chest/necklace/0")
      */
     Map<String, ItemStack> collectAccessories(ServerPlayer player);

@@ -39,7 +39,7 @@ public class GraveStoneEvent {
         graveData.putUUID("Id", graveId);
 
         GraveDataManager manager = GraveDataManager.get(serverLevel);
-        manager.addGrave(player.getUUID(), graveData);
+        manager.addGrave(graveId, graveData);
 
         serverLevel.getServer().execute(() -> {
             FallingGraveEntity fallingGrave = FallingGraveEntity.create(serverLevel, deathPos, velocity, graveData, graveLevel, player.getUUID(), player.getName().getString(), facing);

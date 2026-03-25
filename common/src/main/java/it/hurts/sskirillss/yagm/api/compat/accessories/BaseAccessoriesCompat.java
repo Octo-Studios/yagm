@@ -97,9 +97,7 @@ public abstract class BaseAccessoriesCompat extends BaseAccessoryCompat {
             if (slotInfo != null) {
                 AccessoryContainerView container = containers.get(slotInfo.getSlotName());
                 if (container != null && slotInfo.getIndex() >= 0 && slotInfo.getIndex() < container.size()) {
-                    ItemStack existing = slotInfo.isCosmetic()
-                            ? container.getCosmetic(slotInfo.getIndex())
-                            : container.getMain(slotInfo.getIndex());
+                    ItemStack existing = slotInfo.isCosmetic() ? container.getCosmetic(slotInfo.getIndex()) : container.getMain(slotInfo.getIndex());
                     boolean hasTarget = !slotInfo.isCosmetic() || container.hasCosmetic();
 
                     if (hasTarget && existing.isEmpty()) {
@@ -175,10 +173,7 @@ public abstract class BaseAccessoriesCompat extends BaseAccessoryCompat {
         return null;
     }
 
-    /**
-     * Adapts an {@link AccessoriesContainer} to the generic {@link AccessoryContainerView} interface.
-     * Used internally by {@link #getContainers}.
-     */
+
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     private static final class AccessoriesContainerAdapter implements AccessoryContainerView {
 
@@ -187,21 +182,50 @@ public abstract class BaseAccessoriesCompat extends BaseAccessoryCompat {
         private final ExpandedSimpleContainer cosmetic;
 
         static AccessoriesContainerAdapter of(AccessoriesContainer container) {
-            return new AccessoriesContainerAdapter(
-                    container,
-                    container.getAccessories(),
-                    container.getCosmeticAccessories()
-            );
+            return new AccessoriesContainerAdapter(container, container.getAccessories(), container.getCosmeticAccessories());
         }
 
-        @Override public String slotName() { return container.getSlotName(); }
-        @Override public int size() { return container.getSize(); }
-        @Override public ItemStack getMain(int index) { return main.getItem(index); }
-        @Override public void setMain(int index, ItemStack stack) { main.setItem(index, stack); }
-        @Override public boolean hasCosmetic() { return cosmetic != null; }
-        @Override public ItemStack getCosmetic(int index) { return cosmetic == null ? ItemStack.EMPTY : cosmetic.getItem(index); }
-        @Override public void setCosmetic(int index, ItemStack stack) { if (cosmetic != null) cosmetic.setItem(index, stack); }
-        @Override public void markChanged() { container.markChanged(); }
+        @Override
+        public String slotName() {
+            return container.getSlotName();
+        }
+
+        @Override
+        public int size() {
+            return container.getSize();
+        }
+
+        @Override
+        public ItemStack getMain(int index) {
+            return main.getItem(index);
+        }
+
+        @Override
+        public void setMain(int index, ItemStack stack) {
+            main.setItem(index, stack);
+        }
+
+        @Override
+        public boolean hasCosmetic() {
+            return cosmetic != null;
+        }
+
+        @Override
+        public ItemStack getCosmetic(int index) {
+            return cosmetic == null ? ItemStack.EMPTY : cosmetic.getItem(index);
+        }
+
+        @Override
+        public void setCosmetic(int index, ItemStack stack) {
+            if (cosmetic != null) {
+                cosmetic.setItem(index, stack);
+            }
+        }
+
+        @Override
+        public void markChanged() {
+            container.markChanged();
+        }
     }
 
     @Value

@@ -25,10 +25,23 @@ import java.util.stream.Stream;
 public class GraveSaveManager {
 
     private static final DateTimeFormatter FILENAME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+    private static final long MAX_NBT_SIZE = 64L * 1024 * 1024; // 64 MB cap
+
+    private static boolean isValidSaveName(String saveName) {
+        if (saveName == null || saveName.isEmpty()) return false;
+        if (saveName.contains("..") || saveName.contains("/") || saveName.contains("\\")) return false;
+        if (!saveName.endsWith(".dat")) return false;
+        Path asPath = Paths.get(saveName);
+        return asPath.getNameCount() == 1 && asPath.toString().equals(saveName);
+    }
+
+    private static Path getBasePath(String worldName, UUID playerUuid) {
+        return Paths.get("saves", worldName, YAGMCommon.MODID.toLowerCase(Locale.ROOT), playerUuid.toString());
+    }
 
     public static boolean saveGraveData(String worldName, UUID playerUuid, String playerName, CompoundTag graveData) {
         try {
-            Path basePath = Paths.get("saves", worldName, YAGMCommon.MODID.toLowerCase(Locale.ROOT), playerUuid.toString());
+            Path basePath = getBasePath(worldName, playerUuid);
             Files.createDirectories(basePath);
 
             String timestamp = LocalDateTime.now().format(FILENAME_FORMATTER);
@@ -44,15 +57,26 @@ public class GraveSaveManager {
             }
             return true;
         } catch (IOException e) {
+            log.error("Failed to save grave data for player {}", playerUuid, e);
             return false;
         }
     }
 
     @Nullable
     public static CompoundTag loadGraveData(String worldName, UUID playerUuid, String saveName) {
+        if (!isValidSaveName(saveName)) {
+            log.warn("Rejected invalid save name: {}", saveName);
+            return null;
+        }
+
         try {
-            Path basePath = Paths.get("saves", worldName, YAGMCommon.MODID.toLowerCase(Locale.ROOT), playerUuid.toString());
+            Path basePath = getBasePath(worldName, playerUuid);
             Path filePath = basePath.resolve(saveName);
+
+            if (!filePath.normalize().startsWith(basePath.normalize())) {
+                log.warn("Path traversal attempt detected: {}", saveName);
+                return null;
+            }
 
             if (!Files.exists(filePath)) {
                 log.warn("Grave save file not found: {}", filePath);
@@ -61,18 +85,19 @@ public class GraveSaveManager {
 
             CompoundTag saveTag;
             try (BufferedInputStream stream = new BufferedInputStream(Files.newInputStream(filePath))) {
-                saveTag = NbtIo.readCompressed(stream, NbtAccounter.unlimitedHeap());
+                saveTag = NbtIo.readCompressed(stream, NbtAccounter.create(MAX_NBT_SIZE));
             }
 
             return saveTag.getCompound("GraveData");
         } catch (IOException e) {
+            log.error("Failed to load grave data: {}", saveName, e);
             return null;
         }
     }
 
     public static List<String> listSaves(String worldName, UUID playerUuid) {
         List<String> saves = new ArrayList<>();
-        Path basePath = Paths.get("saves", worldName, YAGMCommon.MODID.toLowerCase(Locale.ROOT), playerUuid.toString());
+        Path basePath = getBasePath(worldName, playerUuid);
 
         if (!Files.exists(basePath)) {
             return saves;
@@ -89,9 +114,19 @@ public class GraveSaveManager {
     }
 
     public static boolean deleteSave(String worldName, UUID playerUuid, String saveName) {
+        if (!isValidSaveName(saveName)) {
+            log.warn("Rejected invalid save name for deletion: {}", saveName);
+            return false;
+        }
+
         try {
-            Path basePath = Paths.get("saves", worldName, YAGMCommon.MODID.toLowerCase(Locale.ROOT), playerUuid.toString());
+            Path basePath = getBasePath(worldName, playerUuid);
             Path filePath = basePath.resolve(saveName);
+
+            if (!filePath.normalize().startsWith(basePath.normalize())) {
+                log.warn("Path traversal attempt detected: {}", saveName);
+                return false;
+            }
 
             if (!Files.exists(filePath)) {
                 return false;
@@ -100,6 +135,7 @@ public class GraveSaveManager {
             Files.delete(filePath);
             return true;
         } catch (IOException e) {
+            log.error("Failed to delete grave save: {}", saveName, e);
             return false;
         }
     }

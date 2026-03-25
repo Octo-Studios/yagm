@@ -21,14 +21,14 @@ public class GroundDustParticle extends TextureSheetParticle {
     private final SpriteSet spriteSet;
     private final float sourceScale;
 
-    public GroundDustParticle(ClientLevel level, double x, double y, double z, double xdIn, double ydIn, double zdIn, GroundDustParticleOptions options, SpriteSet spriteSet) {
-        super(level, x, y, z, xdIn, ydIn, zdIn);
+    public GroundDustParticle(ClientLevel level, double x, double y, double z, double xdR, double ydR, double zdR, GroundDustParticleOptions options, SpriteSet spriteSet) {
+        super(level, x, y, z, xdR, ydR, zdR);
         this.spriteSet = spriteSet;
         this.sourceScale = options.getScale();
 
-        this.xd = xdIn + (random.nextFloat() - 0.5f) * 0.006f;
-        this.yd = ydIn + random.nextFloat() * 0.004f;
-        this.zd = zdIn + (random.nextFloat() - 0.5f) * 0.006f;
+        this.xd = xdR + (random.nextFloat() - 0.5f) * 0.006f;
+        this.yd = ydR + random.nextFloat() * 0.004f;
+        this.zd = zdR + (random.nextFloat() - 0.5f) * 0.006f;
         this.quadSize = (0.9f + random.nextFloat() * 0.45f) * options.getScale();
         this.lifetime = this.sourceScale <= 0.8f ? 16 + random.nextInt(11) : 34 + random.nextInt(20);
         this.gravity = 0f;
@@ -46,9 +46,9 @@ public class GroundDustParticle extends TextureSheetParticle {
 
     @Override
     public float getQuadSize(float partialTick) {
-        float age01 = (this.age + partialTick) / (float) this.lifetime;
-        float fadeIn = Mth.clamp(age01 * 3.2f, 0f, 1f);
-        float fadeOut = 1f - Mth.clamp((age01 - 0.55f) / 0.45f, 0f, 1f);
+        float lastage = (this.age + partialTick) / (float) this.lifetime;
+        float fadeIn = Mth.clamp(lastage * 3.2f, 0f, 1f);
+        float fadeOut = 1f - Mth.clamp((lastage - 0.55f) / 0.45f, 0f, 1f);
         return this.quadSize * (0.9f + fadeIn * 0.2f) * fadeOut;
     }
 
