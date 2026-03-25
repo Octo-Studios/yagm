@@ -15,15 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Base implementation for the <a href="https://github.com/wisp-forest/accessories">Accessories</a> mod.
- *
- * <p>The Accessories API ships identical classes on both Fabric and NeoForge
- * ({@code io.wispforest.accessories.*}), so the full integration logic lives here in common.
- * Platform subclasses only need to implement {@link #isModLoaded()}.
- *
- * <p>NBT serialization and inventory fallback are inherited from {@link BaseAccessoryCompat}.
- */
+
 public abstract class BaseAccessoriesCompat extends BaseAccessoryCompat {
 
     @Override

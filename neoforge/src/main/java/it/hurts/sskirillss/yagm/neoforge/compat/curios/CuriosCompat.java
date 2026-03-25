@@ -15,15 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Accessory handler for the <a href="https://github.com/TheIllusiveC4/Curios">Curios</a> mod (NeoForge only).
- *
- * <p>Slot key format: {@code "slotType/index"} or {@code "slotType/cosmetic/index"}.
- *
- * <p>Curios-specific slot metadata ({@link CurioSlotData.SlotInfo}) is attached as a data component
- * to each collected ItemStack so that the original slot position can be restored precisely.
- * The component is removed from the stack before it is placed back or handed to the player.
- */
+
 public class CuriosCompat extends BaseAccessoryCompat {
 
     @Override

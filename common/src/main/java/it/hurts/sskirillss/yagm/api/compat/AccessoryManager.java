@@ -28,7 +28,7 @@ public final class AccessoryManager {
         }
     }
 
-    public static void init () {
+    public static void init() {
         if (initialized) return;
         initialized = true;
     }

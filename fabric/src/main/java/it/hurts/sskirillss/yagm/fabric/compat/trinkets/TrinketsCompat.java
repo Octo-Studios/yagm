@@ -16,11 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Accessory handler for the <a href="https://github.com/emilyploszaj/trinkets">Trinkets</a> mod (Fabric only).
- *
- * <p>Slot key format: {@code "group/slot/index"} — e.g. {@code "chest/necklace/0"}.
- */
+
 public class TrinketsCompat extends BaseAccessoryCompat {
 
     @Override

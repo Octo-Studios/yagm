@@ -198,7 +198,6 @@ public abstract class AbstractItemValuator {
     }
 
 
-
     protected void exportValues() {
         Registry<Item> registry = getItemRegistry();
         Map<ResourceLocation, Double> values = new LinkedHashMap<>();
