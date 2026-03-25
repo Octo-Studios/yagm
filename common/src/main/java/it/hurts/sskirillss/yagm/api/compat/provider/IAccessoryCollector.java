@@ -5,9 +5,6 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.Map;
 
-/**
- * Responsible for collecting and clearing accessories from a player's slots.
- */
 public interface IAccessoryCollector {
 
     /**
@@ -18,9 +15,6 @@ public interface IAccessoryCollector {
      */
     Map<String, ItemStack> collectAccessories(ServerPlayer player);
 
-    /**
-     * Clears all player accessory slots.
-     * Called after collecting items.
-     */
+
     void clearAccessories(ServerPlayer player);
 }

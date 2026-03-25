@@ -4,7 +4,6 @@ import it.hurts.sskirillss.yagm.api.variant.context.GraveVariantContext;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.ApiStatus;
 
-@ApiStatus.Internal
 public interface IGraveVariant {
 
     /**
@@ -23,17 +22,11 @@ public interface IGraveVariant {
     boolean matches(GraveVariantContext context);
 
 
-    /**
-     * Optional color value for your text
-     */
 
     default int getTextColor() {
         return 0xFFFFFFFF;
     }
 
-    /**
-     * Optional value for your text height
-     */
 
     default float getTextHeightOffset() {
         return 0f;
