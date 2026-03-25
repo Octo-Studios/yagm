@@ -1,7 +1,5 @@
 package it.hurts.sskirillss.yagm.neoforge.client;
 
-
-import dev.architectury.registry.client.particle.ParticleProviderRegistry;
 import it.hurts.sskirillss.yagm.client.renderer.FallingGraveEntityRenderer;
 import it.hurts.sskirillss.yagm.client.renderer.GraveStoneEntityRenderer;
 import it.hurts.sskirillss.yagm.client.particle.GroundDustParticle;
@@ -28,7 +26,7 @@ public class YAGMNeoForgeClient {
     @SubscribeEvent
     public static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ParticleRegistry.GRAVE_DUST_FLAT.get(), GroundDustParticle.Provider::new);
-        event.registerSpriteSet(ParticleRegistry.GRAVE_TRAIL_SMOKE.get(), GraveTrailParticle.Provider::new);
+        event.registerSpriteSet(ParticleRegistry.GRAVE_TRAIL.get(), GraveTrailParticle.Provider::new);
     }
 
     @SubscribeEvent

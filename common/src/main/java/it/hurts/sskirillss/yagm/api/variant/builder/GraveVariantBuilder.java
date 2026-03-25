@@ -22,8 +22,6 @@ public class GraveVariantBuilder {
     private String displayName;
     private int priority = 50;
     private final List<Predicate<GraveVariantContext>> conditions = new ArrayList<>();
-    private int textColor = 0xFFFFFFFF;
-    private float textHeightOffset = 0f;
 
     private GraveVariantBuilder(ResourceLocation id) {
         this.id = id;
@@ -83,34 +81,9 @@ public class GraveVariantBuilder {
         return this;
     }
 
-    public GraveVariantBuilder belowY(int y) {
-        conditions.add(ctx -> ctx.isBelow(y));
-        return this;
-    }
-
-    public GraveVariantBuilder aboveY(int y) {
-        conditions.add(ctx -> ctx.isAbove(y));
-        return this;
-    }
-
-    public GraveVariantBuilder betweenY(int minY, int maxY) {
-        conditions.add(ctx -> ctx.isBetween(minY, maxY));
-        return this;
-    }
-
-    public GraveVariantBuilder textColor(int color) {
-        this.textColor = color;
-        return this;
-    }
-
-    public GraveVariantBuilder textHeightOffset(float offset) {
-        this.textHeightOffset = offset;
-        return this;
-    }
-
     public IGraveVariant build() {
         String name = displayName != null ? displayName : id.getPath();
-        return new BuiltGraveVariant(id, name, priority, List.copyOf(conditions), textColor, textHeightOffset);
+        return new BuiltGraveVariant(id, name, priority, List.copyOf(conditions));
     }
 
     public IGraveVariant buildAndRegister() {
@@ -123,14 +96,10 @@ public class GraveVariantBuilder {
     private static class BuiltGraveVariant extends AbstractGraveVariant {
 
         private final List<Predicate<GraveVariantContext>> conditions;
-        private final int textColor;
-        private final float textHeightOffset;
 
-        BuiltGraveVariant(ResourceLocation id, String displayName, int priority, List<Predicate<GraveVariantContext>> conditions, int textColor, float textHeightOffset) {
+        BuiltGraveVariant(ResourceLocation id, String displayName, int priority, List<Predicate<GraveVariantContext>> conditions) {
             super(id, displayName, priority);
             this.conditions = conditions;
-            this.textColor = textColor;
-            this.textHeightOffset = textHeightOffset;
         }
 
         @Override

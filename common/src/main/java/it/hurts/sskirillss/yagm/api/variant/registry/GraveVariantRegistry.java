@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApiStatus.Internal
+
 public class GraveVariantRegistry {
 
     private static final Map<ResourceLocation, IGraveVariant> GRAVESTONE_VARIANTS = new ConcurrentHashMap<>();
@@ -48,13 +48,6 @@ public class GraveVariantRegistry {
         return get(ResourceLocation.tryParse(id));
     }
 
-    public static Collection<IGraveVariant> getAll() {
-        return Collections.unmodifiableCollection(GRAVESTONE_VARIANTS.values());
-    }
-
-    public static Set<ResourceLocation> getAllIds() {
-        return Collections.unmodifiableSet(GRAVESTONE_VARIANTS.keySet());
-    }
 
     public static IGraveVariant getFor(Level level, BlockPos pos) {
         ensureSorted();
@@ -70,17 +63,6 @@ public class GraveVariantRegistry {
         return defaultVariant;
     }
 
-    public static IGraveVariant getFor(Level level, int x, int y, int z) {
-        return getFor(level, new BlockPos(x, y, z));
-    }
-
-    public static boolean isRegistered(ResourceLocation id) {
-        return GRAVESTONE_VARIANTS.containsKey(id);
-    }
-
-    public static int count() {
-        return GRAVESTONE_VARIANTS.size();
-    }
 
     private static void ensureSorted() {
         if (needsSort) {

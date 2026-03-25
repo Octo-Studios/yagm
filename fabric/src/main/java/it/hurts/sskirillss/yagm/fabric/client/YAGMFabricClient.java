@@ -20,7 +20,7 @@ public class YAGMFabricClient implements ClientModInitializer {
 
     public static void registerParticles() {
         ParticleFactoryRegistry.getInstance().register(ParticleRegistry.GRAVE_DUST_FLAT.get(), GroundDustParticle.Provider::new);
-        ParticleFactoryRegistry.getInstance().register(ParticleRegistry.GRAVE_TRAIL_SMOKE.get(), GraveTrailParticle.Provider::new);
+        ParticleFactoryRegistry.getInstance().register(ParticleRegistry.GRAVE_TRAIL.get(), GraveTrailParticle.Provider::new);
     }
 
     @Override

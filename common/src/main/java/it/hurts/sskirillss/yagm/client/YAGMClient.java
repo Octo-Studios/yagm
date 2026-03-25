@@ -26,9 +26,10 @@ public class YAGMClient {
 
     private static void registerParticleProviders() {
         ParticleProviderRegistry.register(ParticleRegistry.GRAVE_DUST_FLAT, GroundDustParticle.Provider::new);
-        ParticleProviderRegistry.register(ParticleRegistry.GRAVE_TRAIL_SMOKE, GraveTrailParticle.Provider::new);
+        ParticleProviderRegistry.register(ParticleRegistry.GRAVE_TRAIL, GraveTrailParticle.Provider::new);
     }
+
     private static void registerTrailProviders() {
-        ParticleTrailRegistry.registerProvider(ParticleRegistry.GRAVE_TRAIL_SMOKE.get(), GraveDustParticleTrail::new);
+        ParticleTrailRegistry.registerProvider(ParticleRegistry.GRAVE_TRAIL.get(), GraveDustParticleTrail::new);
     }
 }
