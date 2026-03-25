@@ -15,9 +15,6 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-/**
- * Data on graves in ONLY one dimension.
- */
 public class DimensionGraveData {
 
     @Getter

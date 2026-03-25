@@ -32,16 +32,9 @@ public class CemeteryInfo {
         return graves.contains(pos);
     }
 
-    public boolean isWithinBounds(BlockPos pos) {
-        return bounds.contains(pos.getX(), pos.getY(), pos.getZ());
-    }
 
     public double distanceTo(BlockPos pos) {
         return Math.sqrt(center.distSqr(pos));
-    }
-
-    public double getDiameter() {
-        return Math.sqrt(Math.pow(bounds.maxX - bounds.minX, 2) + Math.pow(bounds.maxZ - bounds.minZ, 2));
     }
 
     static BlockPos calculateCenter(Set<BlockPos> graves) {
