@@ -54,6 +54,7 @@ public class GhostEntity extends PathfinderMob {
     private static final EntityDataAccessor<Optional<UUID>> DATA_OWNER_UUID = SynchedEntityData.defineId(GhostEntity.class, EntityDataSerializers.OPTIONAL_UUID);
     @Getter
     private BehaviorMode behaviorMode = BehaviorMode.FOLLOW;
+    @Getter
     private int shyTimer = 0;
     private int feedCount = 0;
     @Nullable
@@ -276,9 +277,6 @@ public class GhostEntity extends PathfinderMob {
             flyToTarget();
         } else {
             pickNextGrave();
-            if (targetGravePos == null) {
-                applyIdleHover();
-            }
         }
     }
 
@@ -323,10 +321,6 @@ public class GhostEntity extends PathfinderMob {
         homePos = targetGravePos;
         targetGravePos = null;
         pickNextGrave();
-
-        if (targetGravePos == null) {
-            applyIdleHover();
-        }
     }
 
     private void stealFromGraveAt(BlockPos pos) {
@@ -388,26 +382,16 @@ public class GhostEntity extends PathfinderMob {
         cachedGraves = graves != null ? new ArrayList<>(graves) : new ArrayList<>();
     }
 
-    private void applyIdleHover() {
-        double bobY = Math.sin(tickCount * 0.05) * 0.008;
-        Vec3 idle = new Vec3(0, bobY, 0);
-        smoothVelocity = lerpVec3(smoothVelocity, idle, 0.05);
-        setDeltaMovement(smoothVelocity);
-    }
-
-
     private void tickTamedBehavior() {
         switch (behaviorMode) {
             case FOLLOW -> tickFollow();
             case WANDER -> tickWander();
-            case STAY -> tickStay();
         }
     }
 
     private void tickFollow() {
         Player owner = getOwner();
         if (owner == null || owner.isSpectator()) {
-            applyIdleHover();
             return;
         }
 
@@ -436,8 +420,6 @@ public class GhostEntity extends PathfinderMob {
                 yHeadRot = getYRot();
                 yBodyRot = getYRot();
             }
-        } else {
-            applyIdleHover();
         }
     }
 
@@ -453,7 +435,6 @@ public class GhostEntity extends PathfinderMob {
         double dist = toTarget.horizontalDistance();
 
         if (dist < 2.0) {
-            applyIdleHover();
             return;
         }
 
@@ -461,11 +442,6 @@ public class GhostEntity extends PathfinderMob {
         smoothVelocity = lerpVec3(smoothVelocity, desired, GhostEntityData.SMOOTH_FACTOR * 0.8);
         setDeltaMovement(smoothVelocity);
     }
-
-    private void tickStay() {
-        applyIdleHover();
-    }
-
 
     private void updateTamedMood() {
         if (shyTimer > 0) return;
