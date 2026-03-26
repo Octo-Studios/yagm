@@ -6,7 +6,7 @@ import it.hurts.sskirillss.yagm.api.valuator.config.ValuatorConfig;
 import it.hurts.sskirillss.yagm.api.valuator.registry.ValueProviderRegistry;
 import it.hurts.sskirillss.yagm.api.valuator.provider.ILevelDeterminer;
 import it.hurts.sskirillss.yagm.api.valuator.provider.IValueModifier;
-import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;

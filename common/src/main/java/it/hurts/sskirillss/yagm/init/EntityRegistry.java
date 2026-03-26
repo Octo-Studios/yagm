@@ -2,9 +2,11 @@ package it.hurts.sskirillss.yagm.init;
 
 import it.hurts.sskirillss.yagm.YAGMCommon;
 
+import dev.architectury.registry.level.entity.EntityAttributeRegistry;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import it.hurts.sskirillss.yagm.entity.FallingGraveEntity;
+import it.hurts.sskirillss.yagm.entity.GhostEntity;
 import it.hurts.sskirillss.yagm.entity.GraveStoneEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
@@ -30,7 +32,21 @@ public class EntityRegistry {
                             .updateInterval(1)
                             .build("grave_stone"));
 
+    public static final RegistrySupplier<EntityType<GhostEntity>> GHOST =
+            ENTITIES.register("ghost", () ->
+                    EntityType.Builder.of(GhostEntity::new, MobCategory.MONSTER)
+                            .sized(0.6f, 1.8f)
+                            .clientTrackingRange(64)
+                            .updateInterval(3)
+                            .build("ghost"));
+
+
     public static void init() {
         ENTITIES.register();
+        registerAttributes();
+    }
+
+    private static void registerAttributes() {
+        EntityAttributeRegistry.register(GHOST, GhostEntity::setCustomAttributes);
     }
 }

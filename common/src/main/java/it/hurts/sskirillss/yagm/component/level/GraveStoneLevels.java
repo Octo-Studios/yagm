@@ -1,4 +1,4 @@
-package it.hurts.sskirillss.yagm.component.type;
+package it.hurts.sskirillss.yagm.component.level;
 
 import lombok.Getter;
 import net.minecraft.util.StringRepresentable;

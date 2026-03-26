@@ -1,7 +1,7 @@
 package it.hurts.sskirillss.yagm.init;
 
 import dev.architectury.registry.registries.RegistrySupplier;
-import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import lombok.Builder;
 import lombok.Getter;
 import net.minecraft.world.level.block.Block;

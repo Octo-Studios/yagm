@@ -7,6 +7,7 @@ import it.hurts.sskirillss.yagm.client.particle.GroundDustParticle;
 import it.hurts.sskirillss.yagm.client.particle.GraveTrailParticle;
 import it.hurts.sskirillss.yagm.client.particle.type.GraveDustParticleTrail;
 import it.hurts.sskirillss.yagm.client.renderer.FallingGraveEntityRenderer;
+import it.hurts.sskirillss.yagm.client.renderer.GhostEntityRenderer;
 import it.hurts.sskirillss.yagm.client.renderer.GraveStoneEntityRenderer;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.init.ParticleRegistry;
@@ -22,6 +23,7 @@ public class YAGMClient {
     private static void registerEntityRenderers() {
         EntityRendererRegistry.register(EntityRegistry.FALLING_GRAVE, FallingGraveEntityRenderer::new);
         EntityRendererRegistry.register(EntityRegistry.GRAVE_STONE, GraveStoneEntityRenderer::new);
+        EntityRendererRegistry.register(EntityRegistry.GHOST, GhostEntityRenderer::new);
     }
 
     private static void registerParticleProviders() {

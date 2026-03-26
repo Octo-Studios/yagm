@@ -2,7 +2,7 @@ package it.hurts.sskirillss.yagm.util;
 
 import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.valuator.ItemValuator;
-import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -21,13 +21,11 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
-@SuppressWarnings("all")
 public class InventoryUtils {
 
     private static final String MAIN = "MainInventory";
     private static final String ARMOR = "ArmorInventory";
     private static final String OFFHAND = "OffhandInventory";
-
 
     public static CompoundTag savePlayerInventory(Player player) {
         CompoundTag nbt = new CompoundTag();
@@ -70,7 +68,7 @@ public class InventoryUtils {
         return nbt;
     }
 
-
+    @SuppressWarnings("unchecked")
     public static NonNullList<ItemStack> getAllItemsFromNBT(HolderLookup.Provider provider, CompoundTag nbt) {
         NonNullList<ItemStack> mainList = NonNullList.withSize(36, ItemStack.EMPTY);
         NonNullList<ItemStack> armorList = NonNullList.withSize(4, ItemStack.EMPTY);
@@ -133,7 +131,10 @@ public class InventoryUtils {
     }
 
     public static boolean dropItemList(Level level, BlockPos pos, NonNullList<ItemStack> items) {
-        if (!hasNonEmptyItems(items)) return false;
+        if (!hasNonEmptyItems(items)){
+            return false;
+        }
+
         double x = pos.getX() + 0.5;
         double y = pos.getY() + 0.5;
         double z = pos.getZ() + 0.5;
@@ -158,7 +159,10 @@ public class InventoryUtils {
     }
 
     public static NonNullList<ItemStack> copyInventoryList(NonNullList<ItemStack> source) {
-        if (source == null) return null;
+        if (source == null){
+            return null;
+        }
+
         NonNullList<ItemStack> copy = NonNullList.withSize(source.size(), ItemStack.EMPTY);
         IntStream.range(0, source.size()).forEach(i -> copy.set(i, source.get(i).copy()));
         return copy;

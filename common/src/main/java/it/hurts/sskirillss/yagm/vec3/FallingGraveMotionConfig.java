@@ -1,21 +1,9 @@
 package it.hurts.sskirillss.yagm.vec3;
 
-import it.hurts.sskirillss.yagm.entity.FallingGraveEntity;
 import lombok.Value;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * Immutable configuration for {@link FallingGraveEntity} physics and rotation.
- *
- * <ul>
- *   <li>{@code drag}     – per-axis velocity multiplier applied every tick (x/z typically < 1.0 for air resistance,
- *                          y = 1.0 because gravity is handled separately via {@code gravity}).</li>
- *   <li>{@code gravity}  – constant added to {@code velocity.y} every tick; negative = falling.</li>
- *   <li>{@code rotSpeedMin/Max} – random rotation speed range in degrees per tick.</li>
- *   <li>{@code maxLifetime} – ticks before the grave is forced to place itself.</li>
- * </ul>
- */
 @Value
 public class FallingGraveMotionConfig {
 
@@ -66,7 +54,7 @@ public class FallingGraveMotionConfig {
 
     private double horizontalSpeedForDistance(double distance, double upVelocity) {
         // y(T) = 0.5 + up·T + gravity·T(T−1)/2 = 0
-        // → gravity/2·T² + (up − gravity/2)·T + 0.5 = 0  (rearranged)
+        // → gravity/2·T² + (up − gravity/2)·T + 0.5 = 0
         double a = gravity / 2.0;
         double b = upVelocity - gravity / 2.0;
         double c = 0.5;

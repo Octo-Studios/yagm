@@ -3,7 +3,7 @@ package it.hurts.sskirillss.yagm.entity;
 import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
 import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
-import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.init.BlockRegistry;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.client.particle.options.GroundDustParticleOptions;
@@ -432,10 +432,6 @@ public class FallingGraveEntity extends Entity {
     }
 
 
-    private static float lerpAngle(float t, float from, float to) {
-        float diff = ((to - from) % 360f + 540f) % 360f - 180f;
-        return from + diff * t;
-    }
 
     public GraveStoneLevels getGraveLevel() {
         int ordinal = entityData.get(DATA_LEVEL);
@@ -461,14 +457,6 @@ public class FallingGraveEntity extends Entity {
         return variantId;
     }
 
-    @Nullable
-    public IGraveVariant getVariant() {
-        ResourceLocation id = getVariantId();
-        if (id != null) {
-            return GraveVariantRegistry.get(id);
-        }
-        return GraveVariantRegistry.getDefaultVariant();
-    }
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {

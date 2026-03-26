@@ -1,6 +1,6 @@
 package it.hurts.sskirillss.yagm.data.gravedata;
 
-import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import lombok.Data;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;

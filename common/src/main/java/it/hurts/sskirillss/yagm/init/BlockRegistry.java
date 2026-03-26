@@ -5,7 +5,7 @@ import dev.architectury.registry.registries.RegistrySupplier;
 import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.block.GraveStoneBlock;
 import it.hurts.sskirillss.yagm.block.GraveStoneShape;
-import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.component.type.GraveVariantTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Block;

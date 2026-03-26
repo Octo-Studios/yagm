@@ -5,10 +5,9 @@ import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveData;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
-import it.hurts.sskirillss.yagm.component.type.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.component.type.GraveVariantTypes;
 import it.hurts.sskirillss.yagm.util.InventoryUtils;
-import it.hurts.sskirillss.yagm.client.particle.options.GroundDustParticleOptions;
 import it.hurts.sskirillss.yagm.client.particle.options.GraveTrailParticleOptions;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
@@ -36,6 +35,8 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -519,6 +520,58 @@ public class GraveStoneEntity extends Entity {
         }
 
         removeFromGraveManager();
+    }
+
+    /**
+     * Steals one random non-empty item from this grave's inventory.
+     * Used by GhostEntity when raiding graves at night.
+     * Invalidates transient cache to ensure consistency.
+     *
+     * @return the stolen ItemStack, or ItemStack.EMPTY if nothing to steal
+     */
+    public ItemStack stealRandomItem() {
+        if (inventoryData == null || inventoryData.isEmpty()) return ItemStack.EMPTY;
+
+        String[] keys = {"MainInventory", "ArmorInventory", "OffhandInventory"};
+
+        // Collect non-empty slot references: [keyIndex, tagIndex]
+        record SlotRef(int keyIndex, int tagIndex) {}
+        List<SlotRef> candidates = new java.util.ArrayList<>();
+
+        for (int k = 0; k < keys.length; k++) {
+            if (inventoryData.contains(keys[k], net.minecraft.nbt.Tag.TAG_LIST)) {
+                net.minecraft.nbt.ListTag list = inventoryData.getList(keys[k], net.minecraft.nbt.Tag.TAG_COMPOUND);
+                for (int i = 0; i < list.size(); i++) {
+                    CompoundTag slotTag = list.getCompound(i);
+                    ItemStack item = ItemStack.parseOptional(level().registryAccess(), slotTag);
+                    if (!item.isEmpty()) {
+                        candidates.add(new SlotRef(k, i));
+                    }
+                }
+            }
+        }
+
+        if (candidates.isEmpty()) return ItemStack.EMPTY;
+
+        SlotRef chosen = candidates.get(random.nextInt(candidates.size()));
+        String key = keys[chosen.keyIndex];
+        net.minecraft.nbt.ListTag list = inventoryData.getList(key, net.minecraft.nbt.Tag.TAG_COMPOUND);
+        CompoundTag slotTag = list.getCompound(chosen.tagIndex);
+        ItemStack stolen = ItemStack.parseOptional(level().registryAccess(), slotTag);
+
+        // Remove from NBT
+        list.remove(chosen.tagIndex);
+
+        // Invalidate transient cache (force NBT path next time)
+        clearTransientInventories();
+        if (level() instanceof ServerLevel serverLevel) {
+            UUID graveId = graveData.getGraveId();
+            if (graveId != null) {
+                GraveDataManager.get(serverLevel).removeTransientGrave(graveId);
+            }
+        }
+
+        return stolen;
     }
 
     private void removeFromGraveManager() {

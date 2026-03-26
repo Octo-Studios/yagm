@@ -31,7 +31,7 @@ public class DimensionGraveData {
 
     @Setter
     private BiConsumer<BlockPos, Integer> onCemeteryFormed;
-    
+
     @Setter
     private Consumer<BlockPos> onCemeteryDestroyed;
 
@@ -56,7 +56,7 @@ public class DimensionGraveData {
         }
 
         int clusterSize = getClusterSize(pos);
-        
+
         if (clusterSize >= minGravesForCemetery && onCemeteryFormed != null) {
             onCemeteryFormed.accept(getClusterCenter(pos), clusterSize);
         }
@@ -65,23 +65,46 @@ public class DimensionGraveData {
     public void removeGrave(BlockPos pos) {
         if (!spatialHash.remove(pos)) return;
 
-        BlockPos oldRoot = unionFind.find(pos);
-        int oldClusterSize = unionFind.getClusterSize(pos);
-        
-        Set<BlockPos> neighbors = spatialHash.findInRadius(pos, clusterRadius);
+        // Collect ALL members of the cluster BEFORE removal
+        Set<BlockPos> oldClusterMembers = new HashSet<>(unionFind.getClusterMembers(pos));
+        int oldClusterSize = oldClusterMembers.size();
 
+        // Remove the grave from union-find
         unionFind.remove(pos);
-        invalidateCenter(oldRoot);
+        oldClusterMembers.remove(pos);
 
-        if (!neighbors.isEmpty()) {
-            rebuildToCluster(neighbors);
+        // Invalidate all center caches (the topology changed)
+        centerCache.clear();
+        dirtyCenters.clear();
 
+        if (!oldClusterMembers.isEmpty()) {
+            // Rebuild the ENTIRE old cluster (not just neighbors!)
+            // This ensures graves connected through the removed one stay connected
+            // if they have alternate paths within radius.
+            rebuildCluster(oldClusterMembers);
+
+            // Check if the cemetery was destroyed
             if (oldClusterSize >= minGravesForCemetery && onCemeteryDestroyed != null) {
-                int newClusterSize = getClusterSize(pos);
-                if (newClusterSize < minGravesForCemetery) {
-                    onCemeteryDestroyed.accept(oldRoot);
+                boolean anyCemeteryRemains = false;
+                Set<BlockPos> checkedRoots = new HashSet<>();
+
+                for (BlockPos member : oldClusterMembers) {
+                    BlockPos root = unionFind.find(member);
+                    if (root != null && checkedRoots.add(root)) {
+                        if (unionFind.getClusterSize(member) >= minGravesForCemetery) {
+                            anyCemeteryRemains = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!anyCemeteryRemains) {
+                    onCemeteryDestroyed.accept(pos);
                 }
             }
+        } else if (oldClusterSize >= minGravesForCemetery && onCemeteryDestroyed != null) {
+            // Was a cemetery of size 1 at minGraves (shouldn't happen, but safe)
+            onCemeteryDestroyed.accept(pos);
         }
     }
 
@@ -165,11 +188,16 @@ public class DimensionGraveData {
     }
 
 
-    private void rebuildToCluster(Set<BlockPos> graves) {
+    /**
+     * Rebuilds the union-find for a set of graves.
+     * All provided elements are reset and re-clustered based on pairwise distance.
+     */
+    private void rebuildCluster(Set<BlockPos> graves) {
         unionFind.resetElements(graves);
         for (BlockPos grave : graves) {
             centerCache.remove(grave);
         }
+
         List<BlockPos> graveList = new ArrayList<>(graves);
         long radiusSq = (long) clusterRadius * clusterRadius;
 
@@ -227,7 +255,7 @@ public class DimensionGraveData {
 
             if (!spatialHash.add(pos)) continue;
             unionFind.makeSet(pos);
-            
+
             Set<BlockPos> neighbors = spatialHash.findNeighborsInRadius(pos, clusterRadius);
             for (BlockPos neighbor : neighbors) {
                 if (unionFind.union(pos, neighbor)) {

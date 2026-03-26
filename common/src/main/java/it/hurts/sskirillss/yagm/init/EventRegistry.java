@@ -3,7 +3,9 @@ package it.hurts.sskirillss.yagm.init;
 import dev.architectury.event.EventResult;
 import dev.architectury.event.events.common.EntityEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
+import dev.architectury.event.events.common.TickEvent;
 import it.hurts.sskirillss.yagm.api.valuator.ItemValuator;
+import it.hurts.sskirillss.yagm.network.handler.GhostSpawnHandler;
 import lombok.extern.slf4j.Slf4j;
 import it.hurts.sskirillss.yagm.event.GraveStoneEvent;
 import it.hurts.sskirillss.yagm.api.event.IServerEvent;
@@ -33,7 +35,12 @@ public class EventRegistry {
             CemeteryManager.getInstance().validateAndCleanGraves();
             CemeteryManager.getInstance().reevaluateCemeteries();
         });
-        LifecycleEvent.SERVER_STOPPING.register(server -> ItemValuator.shutdown());
+        LifecycleEvent.SERVER_STOPPING.register(server -> {
+            ItemValuator.shutdown();
+            GhostSpawnHandler.reset();
+        });
+
+        TickEvent.SERVER_POST.register(GhostSpawnHandler::tick);
 
 
         EntityEvent.LIVING_DEATH.register((entity, source) -> {

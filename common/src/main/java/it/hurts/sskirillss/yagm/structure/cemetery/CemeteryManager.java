@@ -134,18 +134,25 @@ public class CemeteryManager {
 
     private boolean isCemeteryAlreadyFormed(ResourceKey<Level> dimension, BlockPos center) {
         Set<BlockPos> formed = formedCemeteries.computeIfAbsent(dimension, k -> new HashSet<>());
-        return formed.contains(center);
+        for (BlockPos existing : formed) {
+            if (existing.distSqr(center) < 25) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void markCemeteryAsFormed(ResourceKey<Level> dimension, BlockPos center) {
         Set<BlockPos> formed = formedCemeteries.computeIfAbsent(dimension, k -> new HashSet<>());
         formed.add(center);
     }
-    
-    private void unmarkCemeteryAsFormed(ResourceKey<Level> dimension, BlockPos center) {
-        Set<BlockPos> formed = formedCemeteries.get(dimension);
-        if (formed != null) {
-            formed.remove(center);
+
+
+    private void refreshFormedCemeteries(ResourceKey<Level> dimension, DimensionGraveData data) {
+        Set<BlockPos> formed = formedCemeteries.computeIfAbsent(dimension, k -> new HashSet<>());
+        formed.clear();
+        for (CemeteryInfo cemetery : data.getAllCemeteries()) {
+            formed.add(cemetery.getCenter());
         }
     }
 
@@ -237,15 +244,19 @@ public class CemeteryManager {
                 data.load(tag.getCompound(key));
                 dimensions.put(dimension, data);
 
-                if (onCemeteryFormed != null) {
-                    data.setOnCemeteryFormed((center, size) -> {
-                        if (!isCemeteryAlreadyFormed(dimension, center)) {
-                            markCemeteryAsFormed(dimension, center);
+                data.setOnCemeteryFormed((center, size) -> {
+                    if (!isCemeteryAlreadyFormed(dimension, center)) {
+                        markCemeteryAsFormed(dimension, center);
+                        if (onCemeteryFormed != null) {
                             onCemeteryFormed.onFormed(dimension, center, size);
                         }
-                    });
-                }
-                
+                    }
+                });
+
+                data.setOnCemeteryDestroyed((removedPos) -> {
+                    refreshFormedCemeteries(dimension, data);
+                });
+
                 List<CemeteryInfo> cemeteries = data.getAllCemeteries();
                 Set<BlockPos> formed = formedCemeteries.computeIfAbsent(dimension, k -> new HashSet<>());
                 for (CemeteryInfo cemetery : cemeteries) {
@@ -269,9 +280,8 @@ public class CemeteryManager {
                 }
             });
             
-            data.setOnCemeteryDestroyed((oldRoot) -> {
-                BlockPos center = data.getClusterCenter(oldRoot);
-                unmarkCemeteryAsFormed(dimension, center);
+            data.setOnCemeteryDestroyed((removedPos) -> {
+                refreshFormedCemeteries(dimension, data);
             });
             return data;
         });

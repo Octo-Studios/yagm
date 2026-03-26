@@ -1,6 +1,8 @@
 package it.hurts.sskirillss.yagm.neoforge.client;
 
 import it.hurts.sskirillss.yagm.client.renderer.FallingGraveEntityRenderer;
+import it.hurts.sskirillss.yagm.client.model.GhostEntityModel;
+import it.hurts.sskirillss.yagm.client.renderer.GhostEntityRenderer;
 import it.hurts.sskirillss.yagm.client.renderer.GraveStoneEntityRenderer;
 import it.hurts.sskirillss.yagm.client.particle.GroundDustParticle;
 import it.hurts.sskirillss.yagm.client.particle.GraveTrailParticle;
@@ -33,6 +35,11 @@ public class YAGMNeoForgeClient {
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(EntityRegistry.FALLING_GRAVE.get(), FallingGraveEntityRenderer::new);
         event.registerEntityRenderer(EntityRegistry.GRAVE_STONE.get(), GraveStoneEntityRenderer::new);
+        event.registerEntityRenderer(EntityRegistry.GHOST.get(), GhostEntityRenderer::new);
     }
-    
+
+    @SubscribeEvent
+    public static void onRegisterLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
+        event.registerLayerDefinition(GhostEntityModel.LAYER_LOCATION, GhostEntityModel::createBodyLayer);
+    }
 }
