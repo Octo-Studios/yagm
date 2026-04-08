@@ -2,13 +2,14 @@ package it.hurts.sskirillss.yagm.structure.cemetery.data;
 
 
 import it.hurts.sskirillss.yagm.structure.cemetery.config.CemeteryConfig;
-import it.hurts.sskirillss.yagm.structure.cemetery.util.SpatialHash;
+import it.hurts.sskirillss.yagm.structure.cemetery.util.SpatialGraveHash;
 import it.hurts.sskirillss.yagm.structure.cemetery.util.UnionFind;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 
 import java.util.*;
@@ -23,7 +24,7 @@ public class DimensionGraveData {
     @Getter
     private final int minGravesForCemetery;
 
-    private final SpatialHash spatialHash;
+    private final SpatialGraveHash spatialHash;
     private final UnionFind unionFind;
 
     private final Map<BlockPos, BlockPos> centerCache = new HashMap<>();
@@ -38,7 +39,7 @@ public class DimensionGraveData {
     public DimensionGraveData(int clusterRadius, int minGravesForCemetery) {
         this.clusterRadius = clusterRadius;
         this.minGravesForCemetery = minGravesForCemetery;
-        this.spatialHash = new SpatialHash(CemeteryConfig.getCellSize());
+        this.spatialHash = new SpatialGraveHash(CemeteryConfig.getCellSize());
         this.unionFind = new UnionFind();
     }
 
@@ -64,26 +65,18 @@ public class DimensionGraveData {
 
     public void removeGrave(BlockPos pos) {
         if (!spatialHash.remove(pos)) return;
-
-        // Collect ALL members of the cluster BEFORE removal
         Set<BlockPos> oldClusterMembers = new HashSet<>(unionFind.getClusterMembers(pos));
         int oldClusterSize = oldClusterMembers.size();
 
-        // Remove the grave from union-find
         unionFind.remove(pos);
         oldClusterMembers.remove(pos);
 
-        // Invalidate all center caches (the topology changed)
         centerCache.clear();
         dirtyCenters.clear();
 
         if (!oldClusterMembers.isEmpty()) {
-            // Rebuild the ENTIRE old cluster (not just neighbors!)
-            // This ensures graves connected through the removed one stay connected
-            // if they have alternate paths within radius.
             rebuildCluster(oldClusterMembers);
 
-            // Check if the cemetery was destroyed
             if (oldClusterSize >= minGravesForCemetery && onCemeteryDestroyed != null) {
                 boolean anyCemeteryRemains = false;
                 Set<BlockPos> checkedRoots = new HashSet<>();
@@ -103,7 +96,6 @@ public class DimensionGraveData {
                 }
             }
         } else if (oldClusterSize >= minGravesForCemetery && onCemeteryDestroyed != null) {
-            // Was a cemetery of size 1 at minGraves (shouldn't happen, but safe)
             onCemeteryDestroyed.accept(pos);
         }
     }
@@ -167,15 +159,6 @@ public class DimensionGraveData {
     }
 
 
-    public int getGraveCount() {
-        return spatialHash.getTotalCount();
-    }
-
-
-    public boolean containsGrave(BlockPos pos) {
-        return spatialHash.contains(pos);
-    }
-
     public void clear() {
         spatialHash.clear();
         unionFind.clear();
@@ -183,15 +166,7 @@ public class DimensionGraveData {
         dirtyCenters.clear();
     }
 
-    public boolean isEmpty() {
-        return spatialHash.isEmpty();
-    }
 
-
-    /**
-     * Rebuilds the union-find for a set of graves.
-     * All provided elements are reset and re-clustered based on pairwise distance.
-     */
     private void rebuildCluster(Set<BlockPos> graves) {
         unionFind.resetElements(graves);
         for (BlockPos grave : graves) {
@@ -226,41 +201,34 @@ public class DimensionGraveData {
     }
 
 
+    private static final String TAG_GRAVES = "graves";
+
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
         ListTag gravesList = new ListTag();
 
         for (BlockPos pos : spatialHash.getAll()) {
-            CompoundTag graveTag = new CompoundTag();
-            graveTag.putInt("x", pos.getX());
-            graveTag.putInt("y", pos.getY());
-            graveTag.putInt("z", pos.getZ());
-            gravesList.add(graveTag);
+            BlockPos.CODEC.encodeStart(NbtOps.INSTANCE, pos).result().ifPresent(gravesList::add);
         }
 
-        tag.put("graves", gravesList);
+        tag.put(TAG_GRAVES, gravesList);
         return tag;
     }
 
     public void load(CompoundTag tag) {
         clear();
-        ListTag gravesList = tag.getList("graves", Tag.TAG_COMPOUND);
-        for (int i = 0; i < gravesList.size(); i++) {
-            CompoundTag graveTag = gravesList.getCompound(i);
-            BlockPos pos = new BlockPos(
-                    graveTag.getInt("x"),
-                    graveTag.getInt("y"),
-                    graveTag.getInt("z")
-            );
+        ListTag gravesList = tag.getList(TAG_GRAVES, Tag.TAG_INT_ARRAY);
+        for (Tag value : gravesList) {
+            BlockPos.CODEC.parse(NbtOps.INSTANCE, value).resultOrPartial(e -> {}).ifPresent(this::loadGravePos);
+        }
+    }
 
-            if (!spatialHash.add(pos)) continue;
-            unionFind.makeSet(pos);
-
-            Set<BlockPos> neighbors = spatialHash.findNeighborsInRadius(pos, clusterRadius);
-            for (BlockPos neighbor : neighbors) {
-                if (unionFind.union(pos, neighbor)) {
-                    invalidateCenter(unionFind.find(pos));
-                }
+    private void loadGravePos(BlockPos pos) {
+        if (!spatialHash.add(pos)) return;
+        unionFind.makeSet(pos);
+        for (BlockPos neighbor : spatialHash.findNeighborsInRadius(pos, clusterRadius)) {
+            if (unionFind.union(pos, neighbor)) {
+                invalidateCenter(unionFind.find(pos));
             }
         }
     }

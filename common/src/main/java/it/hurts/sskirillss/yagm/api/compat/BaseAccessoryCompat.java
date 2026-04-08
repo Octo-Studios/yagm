@@ -1,7 +1,6 @@
 package it.hurts.sskirillss.yagm.api.compat;
 
 import it.hurts.sskirillss.yagm.api.compat.provider.IAccessoryHandler;
-import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -12,8 +11,6 @@ import net.minecraft.world.item.ItemStack;
 import java.util.HashMap;
 import java.util.Map;
 
-
-@Slf4j
 public abstract class BaseAccessoryCompat implements IAccessoryHandler {
 
     private static final String TAG_SLOT_KEY = "SlotKey";
@@ -62,14 +59,13 @@ public abstract class BaseAccessoryCompat implements IAccessoryHandler {
         return accessories;
     }
 
-    protected void fallbackToInventoryOrDrop(ServerPlayer player, Iterable<ItemStack> stacks, boolean dropIfFull) {
+    protected void getInventoryOrDrop(ServerPlayer player, Iterable<ItemStack> stacks, boolean dropIfFull) {
         for (ItemStack stack : stacks) {
-            fallbackToInventoryOrDrop(player, stack, dropIfFull);
+            getInventoryOrDrop(player, stack, dropIfFull);
         }
     }
 
-
-    protected void fallbackToInventoryOrDrop(ServerPlayer player, ItemStack stack, boolean dropIfFull) {
+    protected void getInventoryOrDrop(ServerPlayer player, ItemStack stack, boolean dropIfFull) {
         if (stack.isEmpty()) return;
 
         if (!player.getInventory().add(stack.copy()) && dropIfFull) {

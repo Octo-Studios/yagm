@@ -1,6 +1,5 @@
 package it.hurts.sskirillss.yagm.neoforge.compat.curios.slot;
 
-
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.hurts.sskirillss.yagm.YAGMCommon;

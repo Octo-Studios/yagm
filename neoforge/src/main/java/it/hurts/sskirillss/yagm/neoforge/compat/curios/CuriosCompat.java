@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-
 public class CuriosCompat extends BaseAccessoryCompat {
 
     @Override
@@ -75,10 +74,14 @@ public class CuriosCompat extends BaseAccessoryCompat {
 
         for (ICurioStacksHandler stacksHandler : curiosOpt.get().getCurios().values()) {
             IDynamicStackHandler stacks = stacksHandler.getStacks();
-            for (int i = 0; i < stacks.getSlots(); i++) stacks.setStackInSlot(i, ItemStack.EMPTY);
+            for (int i = 0; i < stacks.getSlots(); i++) {
+                stacks.setStackInSlot(i, ItemStack.EMPTY);
+            }
 
             IDynamicStackHandler cosmeticStacks = stacksHandler.getCosmeticStacks();
-            for (int i = 0; i < cosmeticStacks.getSlots(); i++) cosmeticStacks.setStackInSlot(i, ItemStack.EMPTY);
+            for (int i = 0; i < cosmeticStacks.getSlots(); i++) {
+                cosmeticStacks.setStackInSlot(i, ItemStack.EMPTY);
+            }
         }
     }
 
@@ -88,11 +91,7 @@ public class CuriosCompat extends BaseAccessoryCompat {
 
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosInventory(player);
         if (curiosOpt.isEmpty()) {
-            for (ItemStack stack : accessories.values()) {
-                if (stack.isEmpty()) continue;
-                ItemStack clean = withoutSlotData(stack);
-                fallbackToInventoryOrDrop(player, clean, dropIfFull);
-            }
+            getInventoryOrDrop(player, accessories.values().stream().map(CuriosCompat::withoutSlotData).toList(), dropIfFull);
             return;
         }
 
@@ -106,9 +105,7 @@ public class CuriosCompat extends BaseAccessoryCompat {
             if (slotData != null && slotData.wasEquipped()) {
                 ICurioStacksHandler stacksHandler = curios.get(slotData.slotType());
                 if (stacksHandler != null) {
-                    IDynamicStackHandler target = slotData.isCosmetic()
-                            ? stacksHandler.getCosmeticStacks()
-                            : stacksHandler.getStacks();
+                    IDynamicStackHandler target = slotData.isCosmetic() ? stacksHandler.getCosmeticStacks() : stacksHandler.getStacks();
                     int idx = slotData.slotIndex();
 
                     if (idx >= 0 && idx < target.getSlots() && target.getStackInSlot(idx).isEmpty()) {
@@ -120,7 +117,7 @@ public class CuriosCompat extends BaseAccessoryCompat {
 
             ItemStack clean = withoutSlotData(stack);
             if (!tryEquipAccessory(player, clean)) {
-                fallbackToInventoryOrDrop(player, clean, dropIfFull);
+                getInventoryOrDrop(player, clean, dropIfFull);
             }
         }
     }
@@ -149,17 +146,8 @@ public class CuriosCompat extends BaseAccessoryCompat {
             if (stacksHandler == null) continue;
 
             SlotContext context = new SlotContext(slotType, player, 0, false, true);
-            if (!CuriosApi.isStackValid(context, stack)) continue;
-
-            IDynamicStackHandler stacks = stacksHandler.getStacks();
-            for (int i = 0; i < stacks.getSlots(); i++) {
-                if (stacks.getStackInSlot(i).isEmpty()) {
-                    stacks.setStackInSlot(i, stack.copy());
-                    return true;
-                }
-            }
+            CuriosApi.isStackValid(context, stack);
         }
-
         return false;
     }
 
