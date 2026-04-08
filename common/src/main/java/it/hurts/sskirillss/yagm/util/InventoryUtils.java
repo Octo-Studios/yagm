@@ -1,187 +1,193 @@
 package it.hurts.sskirillss.yagm.util;
 
-import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
-import it.hurts.sskirillss.yagm.api.valuator.ItemValuator;
+import it.hurts.sskirillss.yagm.api.compat.AccessoryLoader;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
-import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
-import net.minecraft.core.BlockPos;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Containers;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Supplier;
-import java.util.stream.IntStream;
+import java.util.*;
 
+@Slf4j
 public class InventoryUtils {
+    private static final NbtKeys KEYS = NbtKeys.INSTANCE;
 
-    private static final String MAIN = "MainInventory";
-    private static final String ARMOR = "ArmorInventory";
-    private static final String OFFHAND = "OffhandInventory";
+    private static final String[] KEY = {"MainInventory", "ArmorInventory", "OffhandInventory"};
+    private static final int[] SIZES = {36, 4, 1};
 
     public static CompoundTag savePlayerInventory(Player player) {
         CompoundTag nbt = new CompoundTag();
-        Inventory inventory = player.getInventory();
+        Inventory inv = player.getInventory();
+        var reg = player.registryAccess();
 
-        nbt.putUUID("Id", UUID.randomUUID());
-        nbt.putUUID("PlayerUuid", player.getUUID());
-        nbt.putString("PlayerName", player.getName().getString());
+        nbt.putUUID(KEYS.getId(), UUID.randomUUID());
+        nbt.putUUID(KEYS.getPlayerId(), player.getUUID());
+        nbt.putString(KEYS.getPlayerName(), player.getName().getString());
+        nbt.putString(KEYS.getDeathCause(), player.getLastDamageSource() != null ? player.getLastDamageSource().getLocalizedDeathMessage(player).getString() : "Unknown");
 
-        if (player.getLastDamageSource() != null) {
-            nbt.putString("DeathCause", player.getLastDamageSource().getLocalizedDeathMessage(player).getString());
-        } else {
-            nbt.putString("DeathCause", "Unknown");
+        NonNullList<ItemStack>[] lists = new NonNullList[] {inv.items, inv.armor, inv.offhand};
+
+        for (int i = 0; i < KEY.length; i++) {
+            ItemUtils.saveInventory(reg, nbt, KEY[i], lists[i]);
         }
 
-        ItemUtils.saveInventory(player.registryAccess(), nbt, MAIN, inventory.items);
-        ItemUtils.saveInventory(player.registryAccess(), nbt, ARMOR, inventory.armor);
-        ItemUtils.saveInventory(player.registryAccess(), nbt, OFFHAND, inventory.offhand);
-
-        if (AccessoryManager.hasAnyHandler() && player instanceof ServerPlayer serverPlayer) {
-            Map<String, Map<String, ItemStack>> allAccessories = AccessoryManager.collectAllAccessories(serverPlayer);
-            CompoundTag accessoriesNBT = AccessoryManager.saveAllToNBT(allAccessories, player.registryAccess());
-            if (!accessoriesNBT.isEmpty()) {
-                nbt.put("Accessories", accessoriesNBT);
-            }
+        if (player instanceof ServerPlayer sp && AccessoryLoader.hasAnyHandler()) {
+            CompoundTag acc = AccessoryLoader.saveNBT(AccessoryLoader.collectAccessories(sp), reg);
+            if (!acc.isEmpty()) nbt.put(KEYS.getAccessories(), acc);
         }
 
-        nbt.putDouble("PosX", player.getX());
-        nbt.putDouble("PosY", player.getY());
-        nbt.putDouble("PosZ", player.getZ());
-        nbt.putString("Dimension", player.level().dimension().location().toString());
+        nbt.putInt(KEYS.getTotalExperience(), getTotalXpFromLevelAndProgress(player.experienceLevel, player.experienceProgress));
 
-        if (player instanceof ServerPlayer serverPlayer) {
-            ServerLevel serverLevel = serverPlayer.serverLevel();
-            GraveDataManager manager = GraveDataManager.get(serverLevel);
-            UUID graveId = nbt.getUUID("Id");
-            manager.putTransientGrave(graveId, copyInventoryList(inventory.items), copyInventoryList(inventory.armor), copyInventoryList(inventory.offhand));
-        }
+        nbt.putDouble(KEYS.getDeathPosX(), player.getX());
+        nbt.putDouble(KEYS.getDeathPosY(), player.getY());
+        nbt.putDouble(KEYS.getDeathPosZ(), player.getZ());
+        nbt.putString(KEYS.getDimension(), player.level().dimension().location().toString());
 
         return nbt;
     }
 
-    @SuppressWarnings("unchecked")
     public static NonNullList<ItemStack> getAllItemsFromNBT(HolderLookup.Provider provider, CompoundTag nbt) {
-        NonNullList<ItemStack> mainList = NonNullList.withSize(36, ItemStack.EMPTY);
-        NonNullList<ItemStack> armorList = NonNullList.withSize(4, ItemStack.EMPTY);
-        NonNullList<ItemStack> offhandList = NonNullList.withSize(1, ItemStack.EMPTY);
+        NonNullList<ItemStack>[] lists = createLists();
 
-        ItemUtils.readInventory(provider, nbt, MAIN, mainList);
-        ItemUtils.readInventory(provider, nbt, ARMOR, armorList);
-        ItemUtils.readInventory(provider, nbt, OFFHAND, offhandList);
+        for (int i = 0; i < KEY.length; i++) {
+            ItemUtils.readInventory(provider, nbt, KEY[i], lists[i]);
+        }
 
         NonNullList<ItemStack> result = NonNullList.create();
-        for (NonNullList<ItemStack> list : new NonNullList[]{mainList, armorList, offhandList}) {
+        for (NonNullList<ItemStack> list : lists) {
             for (ItemStack stack : list) {
-                if (!stack.isEmpty()) {
-                    result.add(stack);
-                }
+                if (!stack.isEmpty()) result.add(stack);
             }
         }
+
         return result;
     }
 
+    public static void restoreFromNBT(ServerPlayer player, CompoundTag data, boolean restoreAccessories) {
+        NonNullList<ItemStack>[] lists = createLists();
+        var reg = player.registryAccess();
 
-    public static void restoreInventory(NonNullList<ItemStack> playerInv, NonNullList<ItemStack> graveInv, ServerPlayer player) {
-        for (int i = 0; i < Math.min(graveInv.size(), playerInv.size()); i++) {
-            ItemStack graveItem = graveInv.get(i);
-            if (graveItem.isEmpty()) continue;
+        for (int i = 0; i < KEY.length; i++) {
+            ItemUtils.readInventory(reg, data, KEY[i], lists[i]);
+        }
 
-            if (playerInv.get(i).isEmpty()) {
-                playerInv.set(i, graveItem.copy());
-            } else {
-                giveOrDropItem(player, graveItem.copy());
-            }
+        Inventory inv = player.getInventory();
+        restoreInventory(inv.items, lists[0], player);
+        restoreInventory(inv.armor, lists[1], player);
+        restoreInventory(inv.offhand, lists[2], player);
+
+        if (restoreAccessories && AccessoryLoader.hasAnyHandler() && data.contains(KEYS.getAccessories(), 10)) {
+            var accessories = AccessoryLoader.loadNBT(data.getCompound(KEYS.getAccessories()), reg);
+            AccessoryLoader.restoreAccessories(player, accessories, true);
         }
     }
 
-    public static void restoreFromNBT(ServerPlayer player, CompoundTag data, boolean restoreAccessories) {
-        NonNullList<ItemStack> mainItems = NonNullList.withSize(36, ItemStack.EMPTY);
-        NonNullList<ItemStack> armorItems = NonNullList.withSize(4, ItemStack.EMPTY);
-        NonNullList<ItemStack> offhandItems = NonNullList.withSize(1, ItemStack.EMPTY);
+    private static NonNullList<ItemStack>[] createLists() {
+        return new NonNullList[]{
+                NonNullList.withSize(SIZES[0], ItemStack.EMPTY),
+                NonNullList.withSize(SIZES[1], ItemStack.EMPTY),
+                NonNullList.withSize(SIZES[2], ItemStack.EMPTY)
+        };
+    }
 
-        ItemUtils.readInventory(player.registryAccess(), data, MAIN, mainItems);
-        ItemUtils.readInventory(player.registryAccess(), data, ARMOR, armorItems);
-        ItemUtils.readInventory(player.registryAccess(), data, OFFHAND, offhandItems);
+    public static void restoreInventory(NonNullList<ItemStack> target, NonNullList<ItemStack> source, ServerPlayer player) {
+        for (int i = 0; i < Math.min(source.size(), target.size()); i++) {
+            ItemStack item = source.get(i);
+            if (item.isEmpty()) continue;
 
-        restoreInventory(player.getInventory().items, mainItems, player);
-        restoreInventory(player.getInventory().armor, armorItems, player);
-        restoreInventory(player.getInventory().offhand, offhandItems, player);
-
-        if (restoreAccessories && AccessoryManager.hasAnyHandler() && data.contains("Accessories", 10)) {
-            CompoundTag accessoriesNBT = data.getCompound("Accessories");
-            Map<String, Map<String, ItemStack>> allAccessories = AccessoryManager.loadAllFromNBT(accessoriesNBT, player.registryAccess());
-            AccessoryManager.restoreAllAccessories(player, allAccessories, true);
+            if (target.get(i).isEmpty()) {
+                target.set(i, item.copy());
+            } else {
+                giveOrDropItem(player, item.copy());
+            }
         }
     }
 
     public static void giveOrDropItem(ServerPlayer player, ItemStack stack) {
-        if (stack.isEmpty()) return;
-        if (!player.getInventory().add(stack)) {
+        if (!stack.isEmpty() && !player.getInventory().add(stack)) {
             player.drop(stack, false);
         }
     }
 
-    public static boolean dropItemList(Level level, BlockPos pos, NonNullList<ItemStack> items) {
-        if (!hasNonEmptyItems(items)){
-            return false;
+    private static final Map<String, Double> VALUABLE_ITEMS = new LinkedHashMap<>() {{
+        put("minecraft:saddle", 1.25d);
+        put("minecraft:name_tag", 1d);
+        put("#c:ingots", 5d);
+        put("#c:gems", 8d);
+        put("#c:storage_blocks", 16d);
+        put("#c:ores", 4d);
+        put("#c:raw_materials", 4d);
+        put("#c:rods", 6d);
+        put("#c:alloys", 6d);
+        put("#c:circuits", 8d);
+        put("#c:dusts", 1d);
+        put("#c:foods/golden", 16d);
+        put("#c:tools", 2d);
+        put("#c:armors", 2d);
+        put("#c:music_discs", 8d);
+    }};
+
+    public static GraveStoneLevels calculateGraveLevel(Player player) {
+        List<ItemStack> allItems = new ArrayList<>();
+        allItems.addAll(player.getInventory().items);
+        allItems.addAll(player.getInventory().armor);
+        allItems.addAll(player.getInventory().offhand);
+
+        double score = player.experienceLevel;
+        for (ItemStack stack : allItems) {
+            if (stack.isEmpty()) continue;
+            score += getItemScore(stack) * stack.getCount();
         }
 
-        double x = pos.getX() + 0.5;
-        double y = pos.getY() + 0.5;
-        double z = pos.getZ() + 0.5;
-        for (ItemStack stack : items) {
-            if (!stack.isEmpty()) {
-                Containers.dropItemStack(level, x, y, z, stack);
+        if (score >= 80) return GraveStoneLevels.GRAVESTONE_LEVEL_4;
+        if (score >= 50) return GraveStoneLevels.GRAVESTONE_LEVEL_3;
+        if (score >= 20) return GraveStoneLevels.GRAVESTONE_LEVEL_2;
+        return GraveStoneLevels.GRAVESTONE_LEVEL_1;
+    }
+
+    public static int getXpNeededForLevel(int level) {
+        if (level >= 30) return 112 + (level - 30) * 9;
+        if (level >= 15) return 37 + (level - 15) * 5;
+        return 7 + level * 2;
+    }
+
+
+    public static int getTotalXpFromLevelAndProgress(int level, float progress) {
+        return getTotalXpToReachLevel(level) + (int) (progress * getXpNeededForLevel(level));
+    }
+
+    private static int getTotalXpToReachLevel(int level) {
+        if (level <= 0) return 0;
+        if (level <= 16) return level * level + 6 * level;
+        if (level <= 31) return (int) (2.5 * level * level - 40.5 * level + 360);
+        return (int) (4.5 * level * level - 162.5 * level + 2220);
+    }
+
+    private static double getItemScore(ItemStack stack) {
+        for (Map.Entry<String, Double> entry : VALUABLE_ITEMS.entrySet()) {
+            String key = entry.getKey();
+            if (key.startsWith("#")) {
+                TagKey<Item> tag = TagKey.create(Registries.ITEM, ResourceLocation.parse(key.substring(1)));
+                if (stack.is(tag)) {
+                    return entry.getValue();
+                }
+            } else {
+                ResourceLocation itemId = ResourceLocation.tryParse(key);
+                if (itemId != null && itemId.equals(BuiltInRegistries.ITEM.getKey(stack.getItem()))) {
+                    return entry.getValue();
+                }
             }
         }
-        return true;
-    }
-
-    public static NonNullList<ItemStack> getOrThrowInventory(NonNullList<ItemStack> cached, Supplier<NonNullList<ItemStack>> supplier) {
-        return cached != null ? cached : supplier.get();
-    }
-
-    public static boolean hasNonEmptyItems(NonNullList<ItemStack> items) {
-        if (items == null || items.isEmpty()) return false;
-        for (ItemStack stack : items) {
-            if (!stack.isEmpty()) return true;
-        }
-        return false;
-    }
-
-    public static NonNullList<ItemStack> copyInventoryList(NonNullList<ItemStack> source) {
-        if (source == null){
-            return null;
-        }
-
-        NonNullList<ItemStack> copy = NonNullList.withSize(source.size(), ItemStack.EMPTY);
-        IntStream.range(0, source.size()).forEach(i -> copy.set(i, source.get(i).copy()));
-        return copy;
-    }
-
-    public static GraveStoneLevels calculateGraveLevel(ServerPlayer player, CompoundTag graveData) {
-        if (!ItemValuator.isAvailable()) {
-            return GraveStoneLevels.GRAVESTONE_LEVEL_1;
-        }
-
-        NonNullList<ItemStack> mainList = NonNullList.withSize(36, ItemStack.EMPTY);
-        NonNullList<ItemStack> armorList = NonNullList.withSize(4, ItemStack.EMPTY);
-        NonNullList<ItemStack> offhandList = NonNullList.withSize(1, ItemStack.EMPTY);
-
-        ItemUtils.readInventory(player.registryAccess(), graveData, MAIN, mainList);
-        ItemUtils.readInventory(player.registryAccess(), graveData, ARMOR, armorList);
-        ItemUtils.readInventory(player.registryAccess(), graveData, OFFHAND, offhandList);
-
-        double value = ItemValuator.getInstance().calculateValue(mainList, armorList, offhandList);
-        return ItemValuator.getInstance().determineLevelByValue(value);
+        return 0.0;
     }
 }

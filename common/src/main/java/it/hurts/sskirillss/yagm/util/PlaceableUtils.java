@@ -1,32 +1,33 @@
 package it.hurts.sskirillss.yagm.util;
 
+import it.hurts.sskirillss.yagm.block.GraveStoneBlock;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.material.Fluids;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
+import static net.minecraft.world.level.Level.NETHER;
+
 
 @SuppressWarnings("deprecation")
-public class GraveStoneUtils {
+public class PlaceableUtils {
+
     public static final UUID NULL_UUID = new UUID(0, 0);
-    private static final int MAX_SEARCH_RADIUS = 3;
-    private static final int MAX_SEARCH_HEIGHT = 2;
 
     public static BlockPos getGraveStoneBlockPosition(Level level, BlockPos pos) {
-        if (level.dimension() == Level.END && pos.getY() < 0) {
-            return findEndPos(level, pos);
+        if (!level.getFluidState(pos).isEmpty()) {
+            return findFloorUnderFluid(level, pos);
         }
 
         if (isValidGravePosition(level, pos)) {
             return pos.immutable();
-        }
-
-        BlockPos fluidPos = findPosAboveFluid(level, pos);
-        if (fluidPos != null) {
-            return fluidPos;
         }
 
         BlockPos airPos = findPosInAir(level, pos);
@@ -34,47 +35,17 @@ public class GraveStoneUtils {
             return airPos;
         }
 
-        return searchNearbyPosition(level, pos, MAX_SEARCH_RADIUS, MAX_SEARCH_HEIGHT);
+        return searchNearbyPosition(level, pos, 3, 2);
     }
 
-    private static BlockPos findEndPos(Level level, BlockPos pos) {
-        BlockPos bestPos = null;
-        double bestDistance = Double.MAX_VALUE;
-
-        for (int radius = 0; radius <= 64; radius++) {
-            for (int x = -radius; x <= radius; x++) {
-                for (int z = -radius; z <= radius; z++) {
-                    if (radius > 0 && Math.abs(x) != radius && Math.abs(z) != radius) continue;
-
-                    int wx = pos.getX() + x;
-                    int wz = pos.getZ() + z;
-
-                    int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, wx, wz);
-                    if (surfaceY <= level.getMinBuildHeight()) continue;
-
-                    BlockPos blockPos = new BlockPos(wx, surfaceY, wz);
-                    if (hasEnoughSpace(level, blockPos, 2)) {
-                        double distance = Math.sqrt((double) x * x + (double) (surfaceY - pos.getY()) * (surfaceY - pos.getY()) + (double) z * z);
-
-                        if (distance < bestDistance) {
-                            bestDistance = distance;
-                            bestPos = blockPos;
-                            if (distance < 16) return bestPos;
-                        }
-                    }
-                }
-            }
-            if (bestPos != null && radius > 16) return bestPos;
-        }
-
-        if (bestPos == null) {
-            int mainY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, 0, 0);
-            if (mainY > level.getMinBuildHeight()) {
-                bestPos = new BlockPos(0, mainY, 0);
+    private static BlockPos findFloorUnderFluid(Level level, BlockPos pos) {
+        for (int y = pos.getY(); y >= level.getMinBuildHeight(); y--) {
+            BlockPos candidate = new BlockPos(pos.getX(), y, pos.getZ());
+            if (level.getBlockState(candidate.below()).isSolid()) {
+                return candidate;
             }
         }
-
-        return bestPos != null ? bestPos : new BlockPos(0, 65, 0);
+        return pos.immutable();
     }
 
     private static BlockPos findPosAboveFluid(Level level, BlockPos startPos) {
@@ -123,7 +94,7 @@ public class GraveStoneUtils {
                     mutable.set(center.getX() + dx, center.getY() + dy, center.getZ() + dz);
 
                     if (isValidGravePosition(level, mutable)) {
-                        if (level.dimension() == Level.NETHER) {
+                        if (level.dimension() == NETHER) {
                             if (!level.getFluidState(mutable.below()).isEmpty()) {
                                 continue;
                             }
@@ -184,14 +155,83 @@ public class GraveStoneUtils {
             }
         }
 
-        return !level.isClientSide() && level.setBlock(pos, graveState, 3);
+        return pPosition(level, pos, graveState);
+    }
+
+
+    public static boolean placeGraveStoneExact(Level level, BlockPos pos, BlockState graveState) {
+        if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
+            return false;
+        }
+
+        return pPosition(level, pos, graveState);
     }
 
     private static boolean pPosition(Level level, BlockPos pos, BlockState graveState) {
         BlockState current = level.getBlockState(pos);
-        if (current.isAir() || current.canBeReplaced()) {
-            return level.setBlock(pos, graveState, 3);
+        if (!(current.isAir() || current.canBeReplaced())) {
+            return false;
         }
-        return false;
+
+        if (graveState.getBlock() instanceof GraveStoneBlock graveBlock && graveBlock.isDoubleShape()) {
+            BlockPos upperPos = pos.above();
+            if (upperPos.getY() >= level.getMaxBuildHeight()) {
+                return false;
+            }
+
+            BlockState upperCurrent = level.getBlockState(upperPos);
+            if (!(upperCurrent.isAir() || upperCurrent.canBeReplaced() || upperCurrent.is(Blocks.WATER))) {
+                return false;
+            }
+
+            boolean lowerWaterlogged = level.getFluidState(pos).isSourceOfType(Fluids.WATER);
+            boolean upperWaterlogged = level.getFluidState(upperPos).isSourceOfType(Fluids.WATER);
+
+            BlockState lowerState = graveState.setValue(GraveStoneBlock.HALF, DoubleBlockHalf.LOWER).setValue(GraveStoneBlock.WATERLOGGED, lowerWaterlogged);
+            BlockState upperState = graveState.setValue(GraveStoneBlock.HALF, DoubleBlockHalf.UPPER).setValue(GraveStoneBlock.WATERLOGGED, upperWaterlogged);
+
+            if (!level.setBlock(upperPos, upperState, 3)) {
+                return false;
+            }
+
+            if (!level.setBlock(pos, lowerState, 3)) {
+                level.removeBlock(upperPos, false);
+                return false;
+            }
+
+            return true;
+        }
+
+        return level.setBlock(pos, graveState, 3);
+    }
+
+
+    @Nullable
+    public static BlockPos findP2P(Level level, BlockPos center, int radius) {
+        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                for (int dy = -radius; dy <= radius; dy++) {
+                    mutable.set(center.getX() + dx, center.getY() + dy, center.getZ() + dz);
+                    if (!isValidGravePosition(level, mutable)) continue;
+                    if (level.dimension() == NETHER && !level.getFluidState(mutable.below()).isEmpty()) continue;
+                    return mutable.immutable();
+                }
+            }
+        }
+        return null;
+    }
+
+    public static BlockState getBlockForLevel(ServerLevel level) {
+        if (level.dimension() == Level.OVERWORLD) {
+            return Blocks.DIRT.defaultBlockState();
+        }
+        else if (level.dimension() == Level.NETHER) {
+            return Blocks.NETHERRACK.defaultBlockState();
+        }
+        else if (level.dimension() == Level.END) {
+            return Blocks.END_STONE.defaultBlockState();
+        }
+        return Blocks.DIRT.defaultBlockState();
     }
 }
