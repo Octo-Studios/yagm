@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.data.gravedata;
 
 import it.hurts.sskirillss.yagm.YAGMCommon;
+import it.hurts.sskirillss.yagm.util.NbtKeys;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
@@ -13,130 +14,76 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 @Slf4j
 public class GraveSaveManager {
+    private static final NbtKeys KEYS = NbtKeys.INSTANCE;
+    private static final DateTimeFormatter FILE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").withZone(ZoneId.systemDefault());
 
-    private static final DateTimeFormatter FILENAME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
-    private static final long MAX_NBT_SIZE = 64L * 1024 * 1024; // 64 MB cap
-
-    private static boolean isValidSaveName(String saveName) {
-        if (saveName == null || saveName.isEmpty()) return false;
-        if (saveName.contains("..") || saveName.contains("/") || saveName.contains("\\")) return false;
-        if (!saveName.endsWith(".dat")) return false;
-        Path asPath = Paths.get(saveName);
-        return asPath.getNameCount() == 1 && asPath.toString().equals(saveName);
+    private static Path getGraveDir(String world, UUID uuid) {
+        return Paths.get("saves", world, YAGMCommon.MODID.toLowerCase(Locale.ROOT), uuid.toString());
     }
 
-    private static Path getBasePath(String worldName, UUID playerUuid) {
-        return Paths.get("saves", worldName, YAGMCommon.MODID.toLowerCase(Locale.ROOT), playerUuid.toString());
-    }
 
-    public static boolean saveGraveData(String worldName, UUID playerUuid, String playerName, CompoundTag graveData) {
-        try {
-            Path basePath = getBasePath(worldName, playerUuid);
-            Files.createDirectories(basePath);
-
-            String timestamp = LocalDateTime.now().format(FILENAME_FORMATTER);
-            String filename = timestamp + ".dat";
-            Path filePath = basePath.resolve(filename);
-
-            CompoundTag saveTag = new CompoundTag();
-            saveTag.putString("PlayerName", playerName);
-            saveTag.put("GraveData", graveData);
-
-            try (BufferedOutputStream stream = new BufferedOutputStream(Files.newOutputStream(filePath))) {
-                NbtIo.writeCompressed(saveTag, stream);
+    public static String formatSaveDisplayName(String filename) {
+        if (filename.startsWith("death_") && filename.endsWith(".dat")) {
+            String ts = filename.substring(6, filename.length() - 4);
+            String[] parts = ts.split("_", 2);
+            if (parts.length == 2) {
+                return parts[0] + " " + parts[1].replace('-', ':');
             }
-            return true;
-        } catch (IOException e) {
-            log.error("Failed to save grave data for player {}", playerUuid, e);
-            return false;
         }
+        return filename;
     }
 
     @Nullable
-    public static CompoundTag loadGraveData(String worldName, UUID playerUuid, String saveName) {
-        if (!isValidSaveName(saveName)) {
-            log.warn("Rejected invalid save name: {}", saveName);
-            return null;
-        }
+    public static CompoundTag loadGraveData(String world, UUID uuid, String name) {
+        Path dir = getGraveDir(world, uuid);
+        Path file = dir.resolve(name);
 
-        try {
-            Path basePath = getBasePath(worldName, playerUuid);
-            Path filePath = basePath.resolve(saveName);
+        if (!file.normalize().startsWith(dir.normalize()) || !Files.exists(file)) return null;
 
-            if (!filePath.normalize().startsWith(basePath.normalize())) {
-                log.warn("Path traversal attempt detected: {}", saveName);
-                return null;
-            }
-
-            if (!Files.exists(filePath)) {
-                log.warn("Grave save file not found: {}", filePath);
-                return null;
-            }
-
-            CompoundTag saveTag;
-            try (BufferedInputStream stream = new BufferedInputStream(Files.newInputStream(filePath))) {
-                saveTag = NbtIo.readCompressed(stream, NbtAccounter.create(MAX_NBT_SIZE));
-            }
-
-            return saveTag.getCompound("GraveData");
+        try (var in = new BufferedInputStream(Files.newInputStream(file))) {
+            return NbtIo.readCompressed(in, NbtAccounter.create(64L * 1024 * 1024)).getCompound(KEYS.getGraveData());
         } catch (IOException e) {
-            log.error("Failed to load grave data: {}", saveName, e);
+            log.error("Load failed: {}", name, e);
             return null;
         }
     }
 
-    public static List<String> listSaves(String worldName, UUID playerUuid) {
-        List<String> saves = new ArrayList<>();
-        Path basePath = getBasePath(worldName, playerUuid);
-
-        if (!Files.exists(basePath)) {
-            return saves;
+    public static void saveGraveData(String world, UUID uuid, long deathTimeMillis, CompoundTag graveData) {
+        Path dir = getGraveDir(world, uuid);
+        try {
+            Files.createDirectories(dir);
+            String timestamp = FILE_FORMATTER.format(Instant.ofEpochMilli(deathTimeMillis));
+            Path file = dir.resolve("death_" + timestamp + ".dat");
+            CompoundTag root = new CompoundTag();
+            root.put(KEYS.getGraveData(), graveData);
+            try (var out = new BufferedOutputStream(Files.newOutputStream(file))) {
+                NbtIo.writeCompressed(root, out);
+            }
+        } catch (IOException e) {
+            log.error("Save failed for {}", uuid, e);
         }
-
-        try (Stream<Path> stream = Files.list(basePath)) {
-            stream.filter(path -> path.toString().endsWith(".dat"))
-                  .map(Path::getFileName)
-                  .map(Path::toString)
-                  .forEach(saves::add);
-        } catch (IOException ignored) {}
-
-        return saves;
     }
 
-    public static boolean deleteSave(String worldName, UUID playerUuid, String saveName) {
-        if (!isValidSaveName(saveName)) {
-            log.warn("Rejected invalid save name for deletion: {}", saveName);
-            return false;
-        }
+    public static List<String> listSaves(String world, UUID uuid) {
+        Path dir = getGraveDir(world, uuid);
+        if (!Files.exists(dir)) return List.of();
 
-        try {
-            Path basePath = getBasePath(worldName, playerUuid);
-            Path filePath = basePath.resolve(saveName);
-
-            if (!filePath.normalize().startsWith(basePath.normalize())) {
-                log.warn("Path traversal attempt detected: {}", saveName);
-                return false;
-            }
-
-            if (!Files.exists(filePath)) {
-                return false;
-            }
-
-            Files.delete(filePath);
-            return true;
+        try (var s = Files.list(dir)) {
+            return s.filter(p -> p.toString().endsWith(".dat"))
+                    .map(p -> p.getFileName().toString())
+                    .sorted()
+                    .toList();
         } catch (IOException e) {
-            log.error("Failed to delete grave save: {}", saveName, e);
-            return false;
+            return List.of();
         }
     }
 }
