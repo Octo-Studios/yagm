@@ -1,8 +1,8 @@
 package it.hurts.sskirillss.yagm.api.compat;
 
 import it.hurts.sskirillss.yagm.api.compat.provider.IAccessoryHandler;
+import it.hurts.sskirillss.yagm.util.InventoryUtils;
 import lombok.extern.slf4j.Slf4j;
-import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,10 +12,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public final class AccessoryManager {
+public final class AccessoryLoader {
 
     private static final Map<String, IAccessoryHandler> handlers = new ConcurrentHashMap<>();
-    private static boolean initialized = false;
 
     public static void registerHandler(IAccessoryHandler handler) {
         if (handler == null) return;
@@ -28,26 +27,12 @@ public final class AccessoryManager {
         }
     }
 
-    public static void init() {
-        if (initialized) return;
-        initialized = true;
-    }
-
-
-    public static Collection<IAccessoryHandler> getHandlers() {
-        return Collections.unmodifiableCollection(handlers.values());
-    }
-
-    public static IAccessoryHandler getHandler(String name) {
-        return handlers.get(name);
-    }
-
     public static boolean hasAnyHandler() {
         return !handlers.isEmpty();
     }
 
 
-    public static Map<String, Map<String, ItemStack>> collectAllAccessories(ServerPlayer player) {
+    public static Map<String, Map<String, ItemStack>> collectAccessories(ServerPlayer player) {
         Map<String, Map<String, ItemStack>> allAccessories = new HashMap<>();
 
         for (IAccessoryHandler handler : handlers.values()) {
@@ -61,29 +46,14 @@ public final class AccessoryManager {
     }
 
 
-    public static void clearAllAccessories(ServerPlayer player) {
+    public static void clearAccessories(ServerPlayer player) {
         for (IAccessoryHandler handler : handlers.values()) {
             handler.clearAccessories(player);
         }
     }
 
 
-    public static NonNullList<ItemStack> toFlatList(Map<String, Map<String, ItemStack>> allAccessories) {
-        NonNullList<ItemStack> list = NonNullList.create();
-
-        for (Map<String, ItemStack> handlerAccessories : allAccessories.values()) {
-            for (ItemStack stack : handlerAccessories.values()) {
-                if (!stack.isEmpty()) {
-                    list.add(stack.copy());
-                }
-            }
-        }
-
-        return list;
-    }
-
-
-    public static CompoundTag saveAllToNBT(Map<String, Map<String, ItemStack>> allAccessories, RegistryAccess registryAccess) {
+    public static CompoundTag saveNBT(Map<String, Map<String, ItemStack>> allAccessories, RegistryAccess registryAccess) {
         CompoundTag root = new CompoundTag();
 
         for (Map.Entry<String, Map<String, ItemStack>> entry : allAccessories.entrySet()) {
@@ -103,7 +73,7 @@ public final class AccessoryManager {
     }
 
 
-    public static Map<String, Map<String, ItemStack>> loadAllFromNBT(CompoundTag tag, RegistryAccess registryAccess) {
+    public static Map<String, Map<String, ItemStack>> loadNBT(CompoundTag tag, RegistryAccess registryAccess) {
         Map<String, Map<String, ItemStack>> allAccessories = new HashMap<>();
 
         for (String handlerName : tag.getAllKeys()) {
@@ -120,7 +90,7 @@ public final class AccessoryManager {
     }
 
 
-    public static void restoreAllAccessories(ServerPlayer player, Map<String, Map<String, ItemStack>> allAccessories, boolean dropIfFull) {
+    public static void restoreAccessories(ServerPlayer player, Map<String, Map<String, ItemStack>> allAccessories, boolean dropIfFull) {
         for (Map.Entry<String, Map<String, ItemStack>> entry : allAccessories.entrySet()) {
             String handlerName = entry.getKey();
             Map<String, ItemStack> accessories = entry.getValue();
@@ -131,11 +101,7 @@ public final class AccessoryManager {
             } else {
                 for (ItemStack stack : accessories.values()) {
                     if (!stack.isEmpty()) {
-                        if (!player.getInventory().add(stack.copy())) {
-                            if (dropIfFull) {
-                                player.drop(stack.copy(), false);
-                            }
-                        }
+                        InventoryUtils.giveOrDropItem(player, stack.copy());
                     }
                 }
             }

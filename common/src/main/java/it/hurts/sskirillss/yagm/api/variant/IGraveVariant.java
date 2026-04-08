@@ -22,7 +22,6 @@ public interface IGraveVariant {
     boolean matches(GraveVariantContext context);
 
 
-
     default int getTextColor() {
         return 0xFFFFFFFF;
     }

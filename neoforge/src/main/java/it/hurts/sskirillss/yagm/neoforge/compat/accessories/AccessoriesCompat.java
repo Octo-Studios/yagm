@@ -1,10 +1,10 @@
 package it.hurts.sskirillss.yagm.neoforge.compat.accessories;
 
-import it.hurts.sskirillss.yagm.api.compat.accessories.BaseAccessoriesCompat;
+import it.hurts.sskirillss.yagm.api.compat.accessories.AccessoriesCompatImpl;
 import net.neoforged.fml.ModList;
 
 
-public class AccessoriesCompat extends BaseAccessoriesCompat {
+public class AccessoriesCompat extends AccessoriesCompatImpl {
 
     @Override
     public boolean isModLoaded() {

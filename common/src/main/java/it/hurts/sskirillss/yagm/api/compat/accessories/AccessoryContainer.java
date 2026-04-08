@@ -2,7 +2,7 @@ package it.hurts.sskirillss.yagm.api.compat.accessories;
 
 import net.minecraft.world.item.ItemStack;
 
-public interface AccessoryContainerView {
+public interface AccessoryContainer {
     String slotName();
 
     int size();
