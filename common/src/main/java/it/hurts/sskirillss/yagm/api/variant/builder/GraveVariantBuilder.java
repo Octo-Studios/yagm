@@ -1,18 +1,18 @@
 package it.hurts.sskirillss.yagm.api.variant.builder;
 
-import it.hurts.sskirillss.yagm.api.variant.AbstractGraveVariant;
+import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.context.GraveVariantContext;
 import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
-import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -59,13 +59,6 @@ public class GraveVariantBuilder {
         return this;
     }
 
-    @SafeVarargs
-    public final GraveVariantBuilder matchDimensions(ResourceKey<Level>... dimensions) {
-        Set<ResourceKey<Level>> dimensionSet = Set.of(dimensions);
-        conditions.add(ctx -> dimensionSet.stream().anyMatch(ctx::isDimension));
-        return this;
-    }
-
     public GraveVariantBuilder inOverworldLevel() {
         conditions.add(GraveVariantContext::isOverworld);
         return this;
@@ -81,8 +74,8 @@ public class GraveVariantBuilder {
         return this;
     }
 
-    public IGraveVariant build() {
-        String name = displayName != null ? displayName : id.getPath();
+    public BuiltGraveVariant build() {
+        String name = Objects.requireNonNullElse(displayName, id.getPath());
         return new BuiltGraveVariant(id, name, priority, List.copyOf(conditions));
     }
 
@@ -93,18 +86,18 @@ public class GraveVariantBuilder {
     }
 
     @Getter
-    private static class BuiltGraveVariant extends AbstractGraveVariant {
-
+    @AllArgsConstructor
+    private static class BuiltGraveVariant implements IGraveVariant {
+        private final ResourceLocation id;
+        private final String displayName;
+        private final int priority;
         private final List<Predicate<GraveVariantContext>> conditions;
-
-        BuiltGraveVariant(ResourceLocation id, String displayName, int priority, List<Predicate<GraveVariantContext>> conditions) {
-            super(id, displayName, priority);
-            this.conditions = conditions;
-        }
 
         @Override
         public boolean matches(GraveVariantContext context) {
-            if (conditions.isEmpty()) return false;
+            if (conditions.isEmpty()) {
+                return false;
+            }
             return conditions.stream().allMatch(c -> c.test(context));
         }
     }

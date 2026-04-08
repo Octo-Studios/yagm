@@ -6,7 +6,6 @@ import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -16,8 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GraveVariantRegistry {
 
     private static final Map<ResourceLocation, IGraveVariant> GRAVESTONE_VARIANTS = new ConcurrentHashMap<>();
-    private static final List<IGraveVariant> SORTED_VARIANTS = new ArrayList<>();
-    public static boolean needsSort = true;
+    private static final List<IGraveVariant> SORTED_LOADER = new ArrayList<>();
+    public static boolean valid_sort = true;
 
     @Getter
     private static IGraveVariant defaultVariant;
@@ -30,12 +29,7 @@ public class GraveVariantRegistry {
         }
 
         GRAVESTONE_VARIANTS.put(id, variant);
-        needsSort = true;
-    }
-
-    public static void setDefaultVariant(IGraveVariant variant) {
-        defaultVariant = variant;
-        register(variant);
+        valid_sort = true;
     }
 
     @Nullable
@@ -50,28 +44,22 @@ public class GraveVariantRegistry {
 
 
     public static IGraveVariant getFor(Level level, BlockPos pos) {
-        ensureSorted();
+        if (valid_sort) {
+            synchronized (SORTED_LOADER) {
+                SORTED_LOADER.clear();
+                SORTED_LOADER.addAll(GRAVESTONE_VARIANTS.values());
+                SORTED_LOADER.sort(Comparator.comparingInt(IGraveVariant::getPriority).reversed());
+                valid_sort = false;
+            }
+        }
 
         GraveVariantContext ctx = new GraveVariantContext(level, pos);
-
-        for (IGraveVariant variant : SORTED_VARIANTS) {
+        for (IGraveVariant variant : SORTED_LOADER) {
             if (variant != defaultVariant && variant.matches(ctx)) {
                 return variant;
             }
         }
 
         return defaultVariant;
-    }
-
-
-    private static void ensureSorted() {
-        if (needsSort) {
-            synchronized (SORTED_VARIANTS) {
-                SORTED_VARIANTS.clear();
-                SORTED_VARIANTS.addAll(GRAVESTONE_VARIANTS.values());
-                SORTED_VARIANTS.sort(Comparator.comparingInt(IGraveVariant::getPriority).reversed());
-                needsSort = false;
-            }
-        }
     }
 }

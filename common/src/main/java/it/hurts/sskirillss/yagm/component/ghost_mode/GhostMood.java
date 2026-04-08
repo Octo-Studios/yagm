@@ -1,8 +1,13 @@
 package it.hurts.sskirillss.yagm.component.ghost_mode;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import net.minecraft.util.StringRepresentable;
 
-public enum GhostMood {
+@AllArgsConstructor
+@SuppressWarnings("all")
+public enum GhostMood implements StringRepresentable {
+
     DEFAULT("ghost_default"),
     ANGRY("ghost_angry"),
     HAPPY("ghost_happy"),
@@ -10,17 +15,17 @@ public enum GhostMood {
     SAD("ghost_sad"),
     NEUTRAL("ghost_neutral");
 
+    public static final StringRepresentable.EnumCodec<GhostMood> CODEC = StringRepresentable.fromEnum(GhostMood::values);
+
     @Getter
     private final String textureName;
 
-    GhostMood(String textureName) {
-        this.textureName = textureName;
+    @Override
+    public String getSerializedName() {
+        return textureName;
     }
 
     public static GhostMood fromString(String name) {
-        for (GhostMood mood : values()) {
-            if (mood.textureName.equals(name)) return mood;
-        }
-        return DEFAULT;
+        return CODEC.byName(name, DEFAULT);
     }
 }

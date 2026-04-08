@@ -59,16 +59,4 @@ public class GraveVariantContext {
     public boolean isBiomeTag(TagKey<Biome> tag) {
         return biome.is(tag);
     }
-
-    public boolean isBelow(int y) {
-        return pos.getY() < y;
-    }
-
-    public boolean isAbove(int y) {
-        return pos.getY() > y;
-    }
-
-    public boolean isBetween(int minY, int maxY) {
-        return pos.getY() >= minY && pos.getY() <= maxY;
-    }
 }
