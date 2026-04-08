@@ -3,22 +3,22 @@ package it.hurts.sskirillss.yagm.entity;
 import it.hurts.sskirillss.yagm.component.ghost_mode.BehaviorMode;
 import it.hurts.sskirillss.yagm.component.ghost_mode.GhostMood;
 import it.hurts.sskirillss.yagm.data.entitydata.GhostEntityData;
-import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
-import lombok.Getter;
+import it.hurts.sskirillss.yagm.entity.goals.*;
+import it.hurts.sskirillss.yagm.init.DamageSourceRegistry;
+import it.hurts.sskirillss.yagm.init.SoundRegistry;
+import it.hurts.sskirillss.yagm.util.NbtKeys;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.NonNullList;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -26,50 +26,42 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.control.MoveControl;
-import net.minecraft.world.entity.ai.goal.*;
+import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
-import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
-import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-
+import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 public class GhostEntity extends PathfinderMob {
-
     private static final EntityDataAccessor<String> DATA_MOOD = SynchedEntityData.defineId(GhostEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> DATA_TAME = SynchedEntityData.defineId(GhostEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Optional<UUID>> DATA_OWNER_UUID = SynchedEntityData.defineId(GhostEntity.class, EntityDataSerializers.OPTIONAL_UUID);
-    @Getter
-    private BehaviorMode behaviorMode = BehaviorMode.FOLLOW;
-    @Getter
-    private int shyTimer = 0;
-    private int feedCount = 0;
-    @Nullable
-    private BlockPos targetGravePos;
+    private static final EntityDataAccessor<Integer> DATA_SHY_TIMER = SynchedEntityData.defineId(GhostEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<String> DATA_BEHAVIOR_MODE = SynchedEntityData.defineId(GhostEntity.class, EntityDataSerializers.STRING);
+
+    private static final NbtKeys KEYS = NbtKeys.INSTANCE;
+
     @Setter
     @Nullable
     private BlockPos homePos;
-    private Vec3 smoothVelocity = Vec3.ZERO;
-    private int stealCooldown = 0;
-    private final Set<BlockPos> visitedGraves = new HashSet<>();
-    private int graveListRefreshTimer = 0;
-    private List<BlockPos> cachedGraves = new ArrayList<>();
-    private final NonNullList<ItemStack> stolenItems = NonNullList.create();
+
+    private int feedCount = 0;
     private boolean spawnParticlesEmitted = false;
 
+    public float xBodyRot = 0f;
+    public float xBodyRotO = 0f;
 
     public GhostEntity(EntityType<? extends PathfinderMob> entityType, Level level) {
         super(entityType, level);
@@ -77,135 +69,207 @@ public class GhostEntity extends PathfinderMob {
         this.setNoGravity(true);
     }
 
-
     public static AttributeSupplier.Builder setCustomAttributes() {
         return PathfinderMob.createMobAttributes()
-                .add(Attributes.MAX_HEALTH, 20.0)
-                .add(Attributes.MOVEMENT_SPEED, 0.28)
-                .add(Attributes.KNOCKBACK_RESISTANCE, 0.3)
-                .add(Attributes.ATTACK_KNOCKBACK, 0.5)
+                .add(Attributes.MAX_HEALTH, 10.0)
+                .add(Attributes.MOVEMENT_SPEED, 0.70)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.01)
+                .add(Attributes.ATTACK_KNOCKBACK, 0.3)
                 .add(Attributes.ATTACK_DAMAGE, 4.0)
-                .add(Attributes.FOLLOW_RANGE, 32.0)
-                .add(Attributes.FLYING_SPEED, 0.3);
+                .add(Attributes.FOLLOW_RANGE, 20.0)
+                .add(Attributes.FLYING_SPEED, 0.5);
     }
 
-
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+    protected void defineSynchedData(SynchedEntityData.@NotNull Builder builder) {
         super.defineSynchedData(builder);
         builder.define(DATA_MOOD, GhostMood.DEFAULT.getTextureName());
         builder.define(DATA_TAME, false);
         builder.define(DATA_OWNER_UUID, Optional.empty());
+        builder.define(DATA_SHY_TIMER, 0);
+        builder.define(DATA_BEHAVIOR_MODE, BehaviorMode.FOLLOW.getSerializedName());
     }
 
-
     @Override
-    protected PathNavigation createNavigation(Level level) {
-        FlyingPathNavigation nav = new FlyingPathNavigation(this, level);
+    protected PathNavigation createNavigation(@NotNull Level level) {
+        GhostPathNavigator nav = new GhostPathNavigator(this, level);
         nav.setCanOpenDoors(false);
         nav.setCanFloat(true);
         nav.setCanPassDoors(true);
         return nav;
     }
 
-
-    public GhostMood getMood() {
-        return GhostMood.fromString(this.entityData.get(DATA_MOOD));
+    public String getMoodTextureName() {
+        return entityData.get(DATA_MOOD);
     }
 
     public void setMood(GhostMood mood) {
-        this.entityData.set(DATA_MOOD, mood.getTextureName());
+        entityData.set(DATA_MOOD, mood.getTextureName());
     }
-
-    public String getMoodTextureName() {
-        return this.entityData.get(DATA_MOOD);
-    }
-
 
     public boolean isTame() {
-        return this.entityData.get(DATA_TAME);
+        return entityData.get(DATA_TAME);
     }
 
-    public void setTame(boolean tame) {
-        this.entityData.set(DATA_TAME, tame);
+    public BehaviorMode getBehaviorMode() {
+        return BehaviorMode.CODEC.byName(entityData.get(DATA_BEHAVIOR_MODE), BehaviorMode.FOLLOW);
     }
 
-    @Nullable
-    public UUID getOwnerUUID() {
-        return this.entityData.get(DATA_OWNER_UUID).orElse(null);
-    }
-
-    public void setOwnerUUID(@Nullable UUID uuid) {
-        this.entityData.set(DATA_OWNER_UUID, Optional.ofNullable(uuid));
-    }
-
-    public boolean isOwnedBy(Player player) {
-        UUID owner = getOwnerUUID();
-        return owner != null && owner.equals(player.getUUID());
+    public void setBehaviorMode(BehaviorMode mode) {
+        entityData.set(DATA_BEHAVIOR_MODE, mode.getSerializedName());
     }
 
     @Nullable
     public Player getOwner() {
-        UUID uuid = getOwnerUUID();
-        if (uuid == null) return null;
+        UUID uuid = entityData.get(DATA_OWNER_UUID).orElse(null);
+        if (uuid == null) {
+            return null;
+        }
+
         return level().getPlayerByUUID(uuid);
     }
 
-    public void tame(Player player) {
-        setTame(true);
-        setOwnerUUID(player.getUUID());
-        targetGravePos = null;
-        visitedGraves.clear();
-        cachedGraves.clear();
+    public boolean isOwnedBy(Player player) {
+        return entityData.get(DATA_OWNER_UUID).map(uuid -> uuid.equals(player.getUUID())).orElse(false);
     }
-
 
     @Override
     protected void registerGoals() {
-        this.goalSelector.addGoal(0, new FloatGoal(this));
-        this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.2, true));
-        this.goalSelector.addGoal(5, new LookAtPlayerGoal(this, Player.class, 8.0F));
-        this.goalSelector.addGoal(6, new RandomLookAroundGoal(this));
+        goalSelector.addGoal(0, new FloatGoal(this));
+        goalSelector.addGoal(1, new GhostSnippedAttackGoal(this));
+        goalSelector.addGoal(2, new GhostFollowOwnerGoal(this));
+        goalSelector.addGoal(3, new GhostWanderGoal(this));
+        goalSelector.addGoal(5, new LookAtPlayerGoal(this, Player.class, 8.0F));
+        goalSelector.addGoal(6, new RandomLookAroundGoal(this));
 
-        this.targetSelector.addGoal(1, new HurtByTargetGoal(this) {
+        targetSelector.addGoal(1, new GhostDefendOwnerGoal(this));
+        targetSelector.addGoal(2, new HurtByTargetGoal(this) {
             @Override
             public boolean canUse() {
-                if (GhostEntity.this.isTame() && getTarget() instanceof Player p && GhostEntity.this.isOwnedBy(p)) {
+                if (!super.canUse()) {
                     return false;
                 }
-                return super.canUse();
-            }
 
-            @Override
-            public void start() {
-                super.start();
-                LivingEntity target = mob.getTarget();
-                if (target instanceof Player p && GhostEntity.this.isTame() && GhostEntity.this.isOwnedBy(p)) {
-                    mob.setTarget(null);
+                if (!GhostEntity.this.isTame()) {
+                    return true;
                 }
+
+                LivingEntity attacker = GhostEntity.this.getLastHurtByMob();
+                return !(attacker instanceof Player p && GhostEntity.this.isOwnedBy(p));
             }
         });
-        this.targetSelector.addGoal(2, new GhostAggroGoal(this));
+        targetSelector.addGoal(3, new GhostAggroGoal(this));
     }
-
 
     @Override
     public void tick() {
+        this.setNoGravity(true);
+        this.noPhysics = true;
         super.tick();
+        this.noPhysics = false;
 
-        if (shyTimer > 0) {
-            shyTimer--;
-            if (shyTimer == 0 && isTame()) updateMoodFromState();
+        if (level().isClientSide()) {
+            xBodyRotO = xBodyRot;
+
+            Vec3 lookVector = null;
+            boolean forceOwnerLook = false;
+
+            LivingEntity target = getTarget();
+            if (target != null && target.isAlive()) {
+                lookVector = target.getEyePosition().subtract(getEyePosition());
+            } else if (isTame() && getBehaviorMode() == BehaviorMode.FOLLOW && GhostMood.fromString(entityData.get(DATA_MOOD)) != GhostMood.ANGRY) {
+                Player owner = getOwner();
+                if (owner != null && !owner.isSpectator()) {
+                    Vec3 ownerFocusPos = owner.getEyePosition().add(getOwnerLookOffset());
+                    lookVector = ownerFocusPos.subtract(getEyePosition());
+                    forceOwnerLook = true;
+
+                    double ownerHorizontal = lookVector.horizontalDistance();
+                    if (ownerHorizontal > 1e-4) {
+                        float lookYaw = (float) Math.toDegrees(Math.atan2(lookVector.z, lookVector.x)) - 90f;
+                        setYRot(lookYaw);
+                        yHeadRot = yBodyRot = lookYaw;
+                        yHeadRotO = yBodyRotO = lookYaw;
+                    }
+                }
+            }
+
+            if (forceOwnerLook && lookVector != null && lookVector.lengthSqr() > 1e-6) {
+                double horizontalForPitch = Math.max(lookVector.horizontalDistance(), 1e-4);
+                float targetPitch = (float) Mth.clamp(-Math.toDegrees(Math.atan2(lookVector.y, horizontalForPitch)), -GhostEntityData.PITCH_MAX_DEGREES, GhostEntityData.PITCH_MAX_DEGREES);
+                xBodyRot = targetPitch;
+                return;
+            }
+
+            if (lookVector == null || lookVector.lengthSqr() < 1e-6) {
+                lookVector = getDeltaMovement();
+            }
+
+            double horizontalDistance = lookVector.horizontalDistance();
+            if (lookVector.lengthSqr() > 1e-6 && (horizontalDistance > 1e-4 || Math.abs(lookVector.y) > 0.002)) {
+                double horizontalForPitch = Math.max(horizontalDistance, 1e-4);
+                float rawAngle = (float) Math.toDegrees(Math.atan2(lookVector.y, horizontalForPitch));
+                float targetPitch = (float) Mth.clamp(-rawAngle, -GhostEntityData.PITCH_MAX_DEGREES, GhostEntityData.PITCH_MAX_DEGREES);
+                float lerpSpeed = Math.abs(targetPitch - xBodyRot) > 8f ? 0.25f : GhostEntityData.PITCH_RETURN_SPEED;
+                xBodyRot = Mth.rotLerp(lerpSpeed, xBodyRot, targetPitch);
+                return;
+            }
+
+            xBodyRot = Mth.rotLerp(GhostEntityData.PITCH_RETURN_SPEED, xBodyRot, 0f);
+            return;
         }
 
-        if (!level().isClientSide()) {
-            serverTick();
-        } else {
-            clientTick();
+        if (tickServerSpawnAndDaylight()) {
+            return;
+        }
+
+        int shy = entityData.get(DATA_SHY_TIMER);
+        if (shy > 0) {
+            int next = shy - 1;
+            entityData.set(DATA_SHY_TIMER, next);
+
+            if (next == 0 && isTame()) {
+                updateMoodByBehavior();
+            }
+        }
+
+        if (tickCount % GhostEntityData.MOOD_UPDATE_INTERVAL == 0) {
+            LivingEntity target = getTarget();
+
+            if (isTame()) {
+                if (entityData.get(DATA_SHY_TIMER) <= 0) {
+                    if (target != null && target.isAlive()) {
+                        setMood(GhostMood.ANGRY);
+                    } else {
+                        updateMoodByBehavior();
+                    }
+                }
+                return;
+            }
+
+            boolean validTarget = target != null && target.isAlive() && !target.isSpectator() && !(target instanceof Player p && p.isCreative());
+
+            if (!validTarget && target != null) {
+                setTarget(null);
+            }
+
+            setMood(validTarget ? GhostMood.ANGRY : GhostMood.DEFAULT);
+        }
+
+        if (!isTame() && getTarget() == null) {
+            setDeltaMovement(getDeltaMovement().scale(0.85));
         }
     }
 
-    private void serverTick() {
+    private Vec3 getOwnerLookOffset() {
+        double time = (tickCount + getId() * 13.0) * 0.08;
+        double x = Math.sin(time) * 0.12;
+        double y = Math.sin(time * 0.7 + 1.2) * 0.05;
+        double z = Math.cos(time * 1.1) * 0.12;
+        return new Vec3(x, y, z);
+    }
+
+    private boolean tickServerSpawnAndDaylight() {
         if (!spawnParticlesEmitted) {
             spawnParticlesEmitted = true;
             spawnSoulParticleBurst();
@@ -214,275 +278,168 @@ public class GhostEntity extends PathfinderMob {
         if (!isTame() && level().isDay()) {
             spawnSoulParticleBurst();
             discard();
-            return;
+            return true;
         }
 
-        if (stealCooldown > 0) {
-            stealCooldown--;
-        }
-
-        if (tickCount % 10 == 0) {
-            if (isTame()) {
-                updateTamedMood();
-            } else {
-                updateUntamedMood();
-            }
-        }
-
-        if (getMood() == GhostMood.ANGRY && getTarget() != null && getTarget().isAlive()) {
-            tickAngryChase();
-        } else if (isTame()) {
-            tickTamedBehavior();
-        } else {
-            tickUntamedFlight();
-        }
+        return false;
     }
 
-    private void clientTick() {}
-
-
-    private void tickAngryChase() {
-        LivingEntity target = getTarget();
-        Vec3 targetPos = target.position().add(0, target.getBbHeight() * 0.5, 0);
-        Vec3 toTarget = targetPos.subtract(position());
-        double dist = toTarget.length();
-
-        double aggroSpeed = GhostEntityData.FLY_SPEED * 2.5;
-        double speed = Math.min(dist * 0.1, aggroSpeed);
-        Vec3 desired = toTarget.normalize().scale(speed);
-
-        smoothVelocity = lerpVec3(smoothVelocity, desired, GhostEntityData.SMOOTH_FACTOR * 3.0);
-        setDeltaMovement(smoothVelocity);
-
-        if (smoothVelocity.horizontalDistanceSqr() > 0.0001) {
-            float targetYaw = (float) (Mth.atan2(smoothVelocity.z, smoothVelocity.x) * (180.0 / Math.PI)) - 90.0F;
-            setYRot(Mth.rotLerp(0.25F, getYRot(), targetYaw));
-            yHeadRot = getYRot();
-            yBodyRot = getYRot();
-        }
-
-        if (dist < 1.8 && tickCount % 20 == 0) {
-            doHurtTarget(target);
-        }
-    }
-
-    private void tickUntamedFlight() {
-        graveListRefreshTimer--;
-        if (graveListRefreshTimer <= 0) {
-            refreshGraveList();
-            graveListRefreshTimer = 600;
-        }
-
-        if (targetGravePos != null) {
-            flyToTarget();
-        } else {
-            pickNextGrave();
-        }
-    }
-
-    private void flyToTarget() {
-        Vec3 target = Vec3.atCenterOf(targetGravePos).add(0, GhostEntityData.HOVER_HEIGHT, 0);
-        Vec3 toTarget = target.subtract(position());
-        double dist = toTarget.horizontalDistance();
-
-        if (dist < GhostEntityData.ARRIVAL_THRESHOLD && Math.abs(toTarget.y) < 2.0) {
-            onArrivedAtGrave();
-            return;
-        }
-
-        double speed = Math.min(dist * 0.06, GhostEntityData.FLY_SPEED);
-        Vec3 desired = toTarget.normalize().scale(speed);
-
-        double totalDist = homePos != null ? homePos.distSqr(targetGravePos) : dist * dist;
-        double progress = 1.0 - (dist * dist / Math.max(totalDist, 1.0));
-        if (progress < 0.4) {
-            desired = desired.add(0, 0.02 * (1.0 - progress * 2.5), 0);
-        }
-
-        smoothVelocity = lerpVec3(smoothVelocity, desired, GhostEntityData.SMOOTH_FACTOR);
-        setDeltaMovement(smoothVelocity);
-
-        if (smoothVelocity.horizontalDistanceSqr() > 0.0001) {
-            float targetYaw = (float) (Mth.atan2(smoothVelocity.z, smoothVelocity.x) * (180.0 / Math.PI)) - 90.0F;
-            setYRot(Mth.rotLerp(0.12F, getYRot(), targetYaw));
-            yHeadRot = getYRot();
-            yBodyRot = getYRot();
-        }
-    }
-
-    private void onArrivedAtGrave() {
-        visitedGraves.add(targetGravePos);
-
-        if (stealCooldown <= 0 && stolenItems.size() < GhostEntityData.MAX_STOLEN_ITEMS) {
-            stealFromGraveAt(targetGravePos);
-            stealCooldown = GhostEntityData.STEAL_DELAY_TICKS;
-        }
-
-        homePos = targetGravePos;
-        targetGravePos = null;
-        pickNextGrave();
-    }
-
-    private void stealFromGraveAt(BlockPos pos) {
-        if (!(level() instanceof ServerLevel serverLevel)) return;
-
-        AABB searchBox = new AABB(pos).inflate(1.5);
-        List<GraveStoneEntity> graves = serverLevel.getEntitiesOfClass(GraveStoneEntity.class, searchBox,
-                e -> e.getBoundPos() != null && e.getBoundPos().distSqr(pos) < 4);
-
-        if (graves.isEmpty()) return;
-
-        GraveStoneEntity grave = graves.getFirst();
-        ItemStack stolen = grave.stealRandomItem();
-
-        if (!stolen.isEmpty()) {
-            stolenItems.add(stolen);
-        }
-    }
-
-    private void pickNextGrave() {
-        if (cachedGraves.isEmpty()) {
-            targetGravePos = null;
-            return;
-        }
-
-        List<BlockPos> available = new ArrayList<>();
-        for (BlockPos pos : cachedGraves) {
-            if (!visitedGraves.contains(pos)) {
-                available.add(pos);
-            }
-        }
-
-        if (available.isEmpty()) {
-            visitedGraves.clear();
-            available.addAll(cachedGraves);
-        }
-
-        if (available.isEmpty()) {
-            targetGravePos = null;
-            return;
-        }
-
-        BlockPos myPos = blockPosition();
-        available.sort(Comparator.comparingDouble(p -> p.distSqr(myPos)));
-
-        int maxIndex = Math.min(available.size(), 5);
-        targetGravePos = available.get(random.nextInt(maxIndex));
-    }
-
-    private void refreshGraveList() {
-        CemeteryManager manager = CemeteryManager.getInstance();
-        BlockPos pos = homePos != null ? homePos : blockPosition();
-        Set<BlockPos> graves = manager.getClusterGraves(level().dimension(), pos);
-
-        if (graves == null || graves.isEmpty()) {
-            graves = manager.getGravesInRadius(level().dimension(), blockPosition(), 48);
-        }
-
-        cachedGraves = graves != null ? new ArrayList<>(graves) : new ArrayList<>();
-    }
-
-    private void tickTamedBehavior() {
-        switch (behaviorMode) {
-            case FOLLOW -> tickFollow();
-            case WANDER -> tickWander();
-        }
-    }
-
-    private void tickFollow() {
-        Player owner = getOwner();
-        if (owner == null || owner.isSpectator()) {
-            return;
-        }
-
-        double dist = distanceTo(owner);
-
-        if (dist > 40.0) {
-            teleportTo(owner.getX(), owner.getY(), owner.getZ());
-            return;
-        }
-
-        if (dist > 3.0) {
-            double angle = (getId() % 6) * (Math.PI * 2.0 / 6.0);
-            double offsetX = Math.cos(angle) * 1.8;
-            double offsetZ = Math.sin(angle) * 1.8;
-            Vec3 target = owner.position().add(offsetX, 1.5, offsetZ);
-            Vec3 toOwner = target.subtract(position());
-            double speed = Math.min(dist * 0.04, GhostEntityData.FLY_SPEED * 1.2);
-            Vec3 desired = toOwner.normalize().scale(speed);
-
-            smoothVelocity = lerpVec3(smoothVelocity, desired, GhostEntityData.SMOOTH_FACTOR * 1.5);
-            setDeltaMovement(smoothVelocity);
-
-            if (smoothVelocity.horizontalDistanceSqr() > 0.0001) {
-                float targetYaw = (float) (Mth.atan2(smoothVelocity.z, smoothVelocity.x) * (180.0 / Math.PI)) - 90.0F;
-                setYRot(Mth.rotLerp(0.15F, getYRot(), targetYaw));
-                yHeadRot = getYRot();
-                yBodyRot = getYRot();
-            }
-        }
-    }
-
-    private void tickWander() {
-        if (targetGravePos == null || tickCount % 200 == 0) {
-            int rx = random.nextInt(16) - 8;
-            int rz = random.nextInt(16) - 8;
-            targetGravePos = blockPosition().offset(rx, 0, rz);
-        }
-
-        Vec3 target = Vec3.atCenterOf(targetGravePos).add(0, 1.5, 0);
-        Vec3 toTarget = target.subtract(position());
-        double dist = toTarget.horizontalDistance();
-
-        if (dist < 2.0) {
-            return;
-        }
-
-        Vec3 desired = toTarget.normalize().scale(GhostEntityData.FLY_SPEED * 0.5);
-        smoothVelocity = lerpVec3(smoothVelocity, desired, GhostEntityData.SMOOTH_FACTOR * 0.8);
-        setDeltaMovement(smoothVelocity);
-    }
-
-    private void updateTamedMood() {
-        if (shyTimer > 0) return;
-
-        if (getTarget() != null && getTarget().isAlive()) {
-            setMood(GhostMood.ANGRY);
-            return;
-        }
-
-        updateMoodFromState();
-    }
-
-    private void updateMoodFromState() {
-        switch (behaviorMode) {
+    private void updateMoodByBehavior() {
+        switch (getBehaviorMode()) {
             case FOLLOW -> {
                 Player owner = getOwner();
-                if (owner != null && distanceTo(owner) < 20.0) {
-                    setMood(GhostMood.HAPPY);
-                } else {
-                    setMood(GhostMood.SAD);
-                }
+                setMood(owner != null && distanceTo(owner) < 20.0 ? GhostMood.HAPPY : GhostMood.SAD);
             }
             case WANDER -> setMood(GhostMood.SAD);
             case STAY -> setMood(GhostMood.NEUTRAL);
         }
     }
 
-    private void updateUntamedMood() {
-        LivingEntity target = getTarget();
-        if (target != null && target.isAlive() && !target.isSpectator() && !(target instanceof Player p && p.isCreative())) {
-            setMood(GhostMood.ANGRY);
-        } else {
-            if (target != null) {
-                setTarget(null);
-                targetGravePos = null;
-                pickNextGrave();
-            }
-            setMood(GhostMood.DEFAULT);
+    @Override
+    protected @NotNull InteractionResult mobInteract(Player player, @NotNull InteractionHand hand) {
+        if (level().isClientSide()) {
+            return super.mobInteract(player, hand);
         }
+
+        ItemStack stack = player.getItemInHand(hand);
+        if (player.isShiftKeyDown() && isTame() && isOwnedBy(player)) {
+            BehaviorMode next = getBehaviorMode().next();
+            setBehaviorMode(next);
+            updateMoodByBehavior();
+
+            if (player instanceof ServerPlayer serverPlayer) {
+                serverPlayer.displayClientMessage(Component.translatable(next.getTranslationKey()), true);
+            }
+
+            return InteractionResult.SUCCESS;
+        }
+
+        if (stack.is(Items.GLOWSTONE_DUST)) {
+            if (isTame()) {
+                return InteractionResult.PASS;
+            }
+
+            if (!player.getAbilities().instabuild) {
+                stack.shrink(1);
+            }
+
+            if (++feedCount >= GhostEntityData.FEEDS_TO_TAME) {
+                entityData.set(DATA_TAME, true);
+                entityData.set(DATA_OWNER_UUID, Optional.of(player.getUUID()));
+                setTarget(null);
+                feedCount = 0;
+                setBehaviorMode(BehaviorMode.FOLLOW);
+                setMood(GhostMood.HAPPY);
+
+                if (player instanceof ServerPlayer serverPlayer) {
+                    serverPlayer.displayClientMessage(Component.translatable("yagm.ghost.tamed"), true);
+                }
+            }
+
+            return InteractionResult.SUCCESS;
+        }
+
+        if (!stack.isEmpty() || !isTame() || !isOwnedBy(player)) {
+            return super.mobInteract(player, hand);
+        }
+
+        entityData.set(DATA_SHY_TIMER, GhostEntityData.SHY_DURATION_TICKS);
+        setMood(GhostMood.SHY);
+
+        if (level() instanceof ServerLevel serverLevel) {
+            serverLevel.sendParticles(ParticleTypes.HEART, getX(), getY() + getBbHeight() + 0.3, getZ(), 5, 0.3, 0.3, 0.3, 0.0);
+        }
+
+        playSound(random.nextBoolean() ? SoundRegistry.GHOST_PET_1.get() : SoundRegistry.GHOST_PET_2.get(), 1.0f, 0.95f + random.nextFloat() * 0.1f);
+
+        if (player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.displayClientMessage(Component.translatable("yagm.ghost.petted"), true);
+        }
+
+        return InteractionResult.SUCCESS;
     }
 
+    @Override
+    public boolean doHurtTarget(@NotNull Entity target) {
+        if (isTame() && target instanceof Player player && isOwnedBy(player)) {
+            return false;
+        }
+
+        float damage = (float) getAttributeValue(Attributes.ATTACK_DAMAGE);
+        DamageSource source = DamageSourceRegistry.of(level(), DamageSourceRegistry.GHOST, this);
+
+        boolean result = target.hurt(source, damage);
+        if (!result || !(target instanceof LivingEntity living)) {
+            return result;
+        }
+
+        float knockback = (float) getAttributeValue(Attributes.ATTACK_KNOCKBACK);
+        if (knockback > 0) {
+            Vec3 push = getDeltaMovement().multiply(1, 0, 1).normalize().scale(knockback * 0.5);
+            living.push(push.x, 0.1, push.z);
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        boolean result = super.hurt(source, amount);
+
+        if (result && !level().isClientSide()) {
+            setMood(GhostMood.ANGRY);
+            if (isTame() && source.getEntity() instanceof LivingEntity attacker && !(attacker instanceof Player p && isOwnedBy(p))) {
+                setTarget(attacker);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public void die(DamageSource source) {
+        if (!level().isClientSide() && isTame() && level().getGameRules().getBoolean(GameRules.RULE_SHOWDEATHMESSAGES)) {
+            Player owner = getOwner();
+            if (owner instanceof ServerPlayer serverPlayer) {
+                serverPlayer.sendSystemMessage(getCombatTracker().getDeathMessage());
+            }
+        }
+
+        super.die(source);
+    }
+
+
+    @Nullable
+    @Override
+    protected SoundEvent getAmbientSound() {
+        int i = random.nextInt(3);
+
+        if (i == 0) {
+            return SoundRegistry.GHOST_IDLE_1.get();
+        }
+
+        if (i == 1) {
+            return SoundRegistry.GHOST_IDLE_2.get();
+        }
+
+        return SoundRegistry.GHOST_IDLE_3.get();
+    }
+
+    @Override
+    public int getAmbientSoundInterval() {
+        return 120;
+    }
+
+    @Nullable
+    @Override
+    protected SoundEvent getHurtSound(DamageSource source) {
+        return random.nextBoolean() ? SoundRegistry.GHOST_HURT_1.get() : SoundRegistry.GHOST_HURT_2.get();
+    }
+
+    @Nullable
+    @Override
+    protected SoundEvent getDeathSound() {
+        return SoundRegistry.GHOST_DEATH.get();
+    }
 
     private void spawnSoulParticleBurst() {
         if (level() instanceof ServerLevel serverLevel) {
@@ -490,194 +447,9 @@ public class GhostEntity extends PathfinderMob {
         }
     }
 
-
-    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
-
-        if (!level().isClientSide()) {
-            if (player.isShiftKeyDown() && isTame() && isOwnedBy(player)) {
-                cycleBehaviorMode(player);
-                return InteractionResult.SUCCESS;
-            }
-
-            if (stack.is(Items.GLOWSTONE_DUST)) {
-                return handleGlowstoneFeed(player, stack);
-            }
-
-            if (stack.isEmpty() && isTame() && isOwnedBy(player)) {
-                return handlePet(player);
-            }
-        }
-
-        return super.mobInteract(player, hand);
-    }
-
-    private InteractionResult handleGlowstoneFeed(Player player, ItemStack stack) {
-        if (isTame()) {
-            return InteractionResult.PASS;
-        }
-
-        consumeItem(player, stack);
-        feedCount++;
-
-        if (feedCount >= GhostEntityData.FEEDS_TO_TAME) {
-            tame(player);
-            setTarget(null);
-            feedCount = 0;
-            behaviorMode = BehaviorMode.FOLLOW;
-            setMood(GhostMood.HAPPY);
-
-            dropStolenItems();
-
-            if (player instanceof ServerPlayer sp) {
-                sp.displayClientMessage(Component.translatable("yagm.ghost.tamed"), true);
-            }
-        }
-
-        return InteractionResult.SUCCESS;
-    }
-
-    private InteractionResult handlePet(Player player) {
-        shyTimer = GhostEntityData.SHY_DURATION_TICKS;
-        setMood(GhostMood.SHY);
-
-        if (level() instanceof ServerLevel serverLevel) {
-            serverLevel.sendParticles(ParticleTypes.HEART, getX(), getY() + getBbHeight() + 0.3, getZ(), 5, 0.3, 0.3, 0.3, 0.0);
-        }
-
-        if (player instanceof ServerPlayer sp) {
-            sp.displayClientMessage(Component.translatable("yagm.ghost.petted"), true);
-        }
-        return InteractionResult.SUCCESS;
-    }
-
-    private void cycleBehaviorMode(Player player) {
-        behaviorMode = behaviorMode.next();
-        targetGravePos = null;
-
-        updateMoodFromState();
-
-        if (player instanceof ServerPlayer sp) {
-            sp.displayClientMessage(Component.translatable(behaviorMode.getTranslationKey()), true);
-        }
-    }
-
-
-    private void consumeItem(Player player, ItemStack stack) {
-        if (!player.getAbilities().instabuild) {
-            stack.shrink(1);
-        }
-    }
-
-
-    public void dropStolenItems() {
-        if (level().isClientSide()) return;
-
-        for (ItemStack item : stolenItems) {
-            if (!item.isEmpty()) {
-                spawnAtLocation(item.copy());
-            }
-        }
-        stolenItems.clear();
-    }
-
     @Override
-    protected void dropAllDeathLoot(ServerLevel level, DamageSource source) {
-        dropStolenItems();
-        super.dropAllDeathLoot(level, source);
-    }
-
-
-    @Override
-    public boolean hurt(DamageSource source, float amount) {
-        if (isTame() && source.getEntity() instanceof Player player && isOwnedBy(player)) {
-            return false;
-        }
-
-        boolean result = super.hurt(source, amount);
-        if (result && !level().isClientSide()) {
-            setMood(GhostMood.ANGRY);
-            smoothVelocity = getDeltaMovement();
-        }
-        return result;
-    }
-
-    @Override
-    public boolean removeWhenFarAway(double distanceToClosestPlayer) {
+    public boolean removeWhenFarAway(double dist) {
         return !isTame();
-    }
-
-    public static boolean canGhostSpawn(Level level, BlockPos pos) {
-        if (level.isDay()) return false;
-
-        int blockLight = level.getBrightness(LightLayer.BLOCK, pos);
-        if (blockLight > 7) return false;
-
-        return CemeteryManager.getInstance().isCemetery(level.dimension(), pos);
-    }
-
-
-    @Override
-    public void addAdditionalSaveData(CompoundTag tag) {
-        super.addAdditionalSaveData(tag);
-        tag.putString("Mood", getMoodTextureName());
-        tag.putBoolean("Tame", isTame());
-        tag.putInt("BehaviorMode", behaviorMode.ordinal());
-        tag.putInt("FeedCount", feedCount);
-
-        UUID ownerUuid = getOwnerUUID();
-        if (ownerUuid != null) {
-            tag.putUUID("OwnerUUID", ownerUuid);
-        }
-
-        if (homePos != null) {
-            tag.putLong("HomePos", homePos.asLong());
-        }
-
-        if (!stolenItems.isEmpty()) {
-            ListTag stolenTag = new ListTag();
-            for (ItemStack item : stolenItems) {
-                if (!item.isEmpty()) {
-                    stolenTag.add(item.save(level().registryAccess()));
-                }
-            }
-            tag.put("StolenItems", stolenTag);
-        }
-    }
-
-    @Override
-    public void readAdditionalSaveData(CompoundTag tag) {
-        super.readAdditionalSaveData(tag);
-
-        if (tag.contains("Mood")) setMood(GhostMood.fromString(tag.getString("Mood")));
-        if (tag.contains("Tame")) setTame(tag.getBoolean("Tame"));
-        if (tag.contains("FeedCount")) feedCount = tag.getInt("FeedCount");
-
-        if (tag.contains("BehaviorMode")) {
-            int ordinal = tag.getInt("BehaviorMode");
-            BehaviorMode[] values = BehaviorMode.values();
-            behaviorMode = ordinal >= 0 && ordinal < values.length ? values[ordinal] : BehaviorMode.FOLLOW;
-        }
-
-        if (tag.hasUUID("OwnerUUID")) {
-            setOwnerUUID(tag.getUUID("OwnerUUID"));
-        }
-
-        if (tag.contains("HomePos")) {
-            homePos = BlockPos.of(tag.getLong("HomePos"));
-        }
-
-
-        stolenItems.clear();
-        if (tag.contains("StolenItems", Tag.TAG_LIST)) {
-            ListTag stolenTag = tag.getList("StolenItems", Tag.TAG_COMPOUND);
-            for (int i = 0; i < stolenTag.size(); i++) {
-                ItemStack item = ItemStack.parseOptional(level().registryAccess(), stolenTag.getCompound(i));
-                if (!item.isEmpty()) {
-                    stolenItems.add(item);
-                }
-            }
-        }
     }
 
     @Override
@@ -686,18 +458,13 @@ public class GhostEntity extends PathfinderMob {
     }
 
     @Override
-    public boolean causeFallDamage(float fallDistance, float multiplier, DamageSource source) {
+    public boolean causeFallDamage(float distance, float multiplier, DamageSource source) {
         return false;
     }
 
     @Override
-    public boolean isNoGravity() {
-        return true;
-    }
-
-    @Override
     public boolean isPushable() {
-        return isTame() || getMood() == GhostMood.ANGRY;
+        return isTame() || GhostMood.fromString(entityData.get(DATA_MOOD)) == GhostMood.ANGRY;
     }
 
     @Override
@@ -707,79 +474,44 @@ public class GhostEntity extends PathfinderMob {
         }
     }
 
+    @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putString(KEYS.getMood(), entityData.get(DATA_MOOD));
+        tag.putBoolean(KEYS.getTame(), entityData.get(DATA_TAME));
+        tag.putString(KEYS.getBehaviorMode(), entityData.get(DATA_BEHAVIOR_MODE));
+        tag.putInt(KEYS.getFeedCount(), feedCount);
+        entityData.get(DATA_OWNER_UUID).ifPresent(uuid -> tag.putUUID(KEYS.getOwnerUuid(), uuid));
 
-    private static Vec3 lerpVec3(Vec3 current, Vec3 target, double factor) {
-        return new Vec3(
-                Mth.lerp(factor, current.x, target.x),
-                Mth.lerp(factor, current.y, target.y),
-                Mth.lerp(factor, current.z, target.z)
-        );
-    }
-
-
-    static class GhostMoveControl extends MoveControl {
-        private final GhostEntity ghost;
-
-        GhostMoveControl(GhostEntity ghost) {
-            super(ghost);
-            this.ghost = ghost;
-        }
-
-        @Override
-        public void tick() {
-            if (this.operation == Operation.MOVE_TO) {
-                Vec3 target = new Vec3(wantedX, wantedY, wantedZ);
-                Vec3 toTarget = target.subtract(ghost.position());
-                double dist = toTarget.length();
-
-                if (dist < 0.5) {
-                    this.operation = Operation.WAIT;
-                    ghost.setDeltaMovement(ghost.getDeltaMovement().scale(0.5));
-                    return;
-                }
-
-                Vec3 desired = toTarget.normalize().scale(Math.min(dist * 0.05, speedModifier * 0.15));
-                ghost.smoothVelocity = lerpVec3(ghost.smoothVelocity, desired, GhostEntityData.SMOOTH_FACTOR);
-                ghost.setDeltaMovement(ghost.smoothVelocity);
-
-                if (toTarget.horizontalDistanceSqr() > 0.01) {
-                    float yaw = (float) (Mth.atan2(toTarget.z, toTarget.x) * (180.0 / Math.PI)) - 90.0F;
-                    ghost.setYRot(Mth.rotLerp(0.12F, ghost.getYRot(), yaw));
-                    ghost.yHeadRot = ghost.getYRot();
-                    ghost.yBodyRot = ghost.getYRot();
-                }
-            }
+        if (homePos != null) {
+            tag.putLong(KEYS.getHomePos(), homePos.asLong());
         }
     }
 
-    static class GhostAggroGoal extends NearestAttackableTargetGoal<Player> {
-        private final GhostEntity ghost;
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        entityData.set(DATA_MOOD, GhostMood.fromString(tag.getString(KEYS.getMood())).getTextureName());
+        entityData.set(DATA_TAME, tag.getBoolean(KEYS.getTame()));
+        feedCount = tag.getInt(KEYS.getFeedCount());
+        setBehaviorMode(BehaviorMode.CODEC.byName(tag.getString(KEYS.getBehaviorMode()), BehaviorMode.FOLLOW));
 
-        GhostAggroGoal(GhostEntity ghost) {
-            super(ghost, Player.class, true);
-            this.ghost = ghost;
+        if (tag.hasUUID(KEYS.getOwnerUuid())) {
+            entityData.set(DATA_OWNER_UUID, Optional.of(tag.getUUID(KEYS.getOwnerUuid())));
         }
 
-        @Override
-        public boolean canUse() {
-            if (ghost.isTame()) return false;
-
-            CemeteryManager manager = CemeteryManager.getInstance();
-            BlockPos ghostPos = ghost.blockPosition();
-            boolean nearCemetery = manager.isCemetery(ghost.level().dimension(), ghostPos) || manager.getGraveCountNear(ghost.level().dimension(), ghostPos, (int) GhostEntityData.CEMETERY_AGGRO_RADIUS) > 0;
-
-            return nearCemetery && super.canUse();
+        if (tag.contains(KEYS.getHomePos())) {
+            homePos = BlockPos.of(tag.getLong(KEYS.getHomePos()));
         }
+    }
 
-        @Override
-        public boolean canContinueToUse() {
-            if (ghost.isTame()) return false;
-            LivingEntity target = ghost.getTarget();
-            if (target instanceof Player p && (p.isCreative() || p.isSpectator())) {
-                ghost.setTarget(null);
-                return false;
-            }
-            return super.canContinueToUse();
-        }
+    @Override
+    public boolean shouldDropExperience() {
+        return true;
+    }
+
+    @Override
+    protected int getBaseExperienceReward() {
+        return 5;
     }
 }
