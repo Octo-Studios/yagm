@@ -1,0 +1,33 @@
+{
+  "replace": false,
+  "values": [
+    "yagm:grave_tier_1",
+    "yagm:grave_tier_2",
+    "yagm:grave_tier_3",
+    "yagm:grave_tier_4",
+    "yagm:cold_grave_tier_1",
+    "yagm:cold_grave_tier_2",
+    "yagm:cold_grave_tier_3",
+    "yagm:cold_grave_tier_4",
+    "yagm:hot_grave_tier_1",
+    "yagm:hot_grave_tier_2",
+    "yagm:hot_grave_tier_3",
+    "yagm:hot_grave_tier_4",
+    "yagm:nether_grave_tier_1",
+    "yagm:nether_grave_tier_2",
+    "yagm:nether_grave_tier_3",
+    "yagm:nether_grave_tier_4",
+    "yagm:tropics_grave_tier_1",
+    "yagm:tropics_grave_tier_2",
+    "yagm:tropics_grave_tier_3",
+    "yagm:tropics_grave_tier_4",
+    "yagm:end_grave_tier_1",
+    "yagm:end_grave_tier_2",
+    "yagm:end_grave_tier_3",
+    "yagm:end_grave_tier_4",
+    "yagm:ocean_grave_tier_1",
+    "yagm:ocean_grave_tier_2",
+    "yagm:ocean_grave_tier_3",
+    "yagm:ocean_grave_tier_4"
+  ]
+}
