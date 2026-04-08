@@ -81,14 +81,6 @@ public class UnionFind {
         return true;
     }
 
-
-    public boolean connected(BlockPos a, BlockPos b) {
-        BlockPos rootA = find(a);
-        BlockPos rootB = find(b);
-        return rootA != null && rootA.equals(rootB);
-    }
-
-
     public int getClusterSize(BlockPos pos) {
         BlockPos root = find(pos);
         if (root == null) return 0;
@@ -110,15 +102,6 @@ public class UnionFind {
     }
 
 
-    public Set<BlockPos> getAllRoots() {
-        Set<BlockPos> roots = new HashSet<>();
-        for (BlockPos pos : parent.keySet()) {
-            roots.add(find(pos));
-        }
-        return roots;
-    }
-
-
     public Map<BlockPos, Set<BlockPos>> getAllClusters() {
         Map<BlockPos, Set<BlockPos>> clusters = new HashMap<>();
 
@@ -129,12 +112,6 @@ public class UnionFind {
 
         return clusters;
     }
-
-
-    public Set<BlockPos> getAllElements() {
-        return Collections.unmodifiableSet(parent.keySet());
-    }
-
 
     public void resetElements(Collection<BlockPos> elements) {
         for (BlockPos pos : elements) {

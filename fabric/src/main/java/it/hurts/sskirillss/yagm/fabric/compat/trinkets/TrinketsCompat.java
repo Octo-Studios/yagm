@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-
 public class TrinketsCompat extends BaseAccessoryCompat {
 
     @Override
@@ -50,6 +49,7 @@ public class TrinketsCompat extends BaseAccessoryCompat {
                 for (int i = 0; i < inv.getContainerSize(); i++) {
                     ItemStack stack = inv.getItem(i);
                     if (!stack.isEmpty()) {
+                        // "chest/necklace/0"
                         accessories.put(groupName + "/" + slotName + "/" + i, stack.copy());
                     }
                 }
@@ -74,13 +74,14 @@ public class TrinketsCompat extends BaseAccessoryCompat {
         }
     }
 
+
     @Override
     public void restoreAccessories(ServerPlayer player, Map<String, ItemStack> accessories, boolean dropIfFull) {
         if (accessories.isEmpty()) return;
 
         Optional<TrinketComponent> componentOpt = TrinketsApi.getTrinketComponent(player);
         if (componentOpt.isEmpty()) {
-            fallbackToInventoryOrDrop(player, accessories.values(), dropIfFull);
+            getInventoryOrDrop(player, accessories.values(), dropIfFull);
             return;
         }
 
@@ -106,10 +107,11 @@ public class TrinketsCompat extends BaseAccessoryCompat {
             }
 
             if (!tryEquipAccessory(player, stack)) {
-                fallbackToInventoryOrDrop(player, stack, dropIfFull);
+                getInventoryOrDrop(player, stack, dropIfFull);
             }
         }
     }
+
 
     @Override
     public boolean canEquipAsAccessory(ServerPlayer player, ItemStack stack) {
@@ -155,8 +157,8 @@ public class TrinketsCompat extends BaseAccessoryCompat {
 
     @Value
     private static class SlotInfo {
-        String groupName;
-        String slotName;
+        String groupName; // "chest"
+        String slotName;  // "necklace"
         int index;
     }
 }

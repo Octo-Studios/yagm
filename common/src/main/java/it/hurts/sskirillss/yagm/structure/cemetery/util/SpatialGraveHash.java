@@ -6,7 +6,7 @@ import net.minecraft.core.BlockPos;
 import java.util.*;
 
 
-public class SpatialHash {
+public class SpatialGraveHash {
 
     private final int cellSize;
     private final Map<Long, Set<BlockPos>> cells = new HashMap<>();
@@ -14,7 +14,7 @@ public class SpatialHash {
     @Getter
     private int totalCount = 0;
 
-    public SpatialHash(int cellSize) {
+    public SpatialGraveHash(int cellSize) {
         this.cellSize = cellSize;
     }
 
