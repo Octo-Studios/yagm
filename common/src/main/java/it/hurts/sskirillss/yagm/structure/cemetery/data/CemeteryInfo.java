@@ -33,14 +33,13 @@ public class CemeteryInfo {
     }
 
 
-    public double distanceTo(BlockPos pos) {
-        return Math.sqrt(center.distSqr(pos));
-    }
-
-    static BlockPos calculateCenter(Set<BlockPos> graves) {
+    public static BlockPos calculateCenter(Set<BlockPos> graves) {
         if (graves.isEmpty()) return BlockPos.ZERO;
 
-        long sumX = 0, sumY = 0, sumZ = 0;
+        long sumX = 0;
+        long sumY = 0;
+        long sumZ = 0;
+
         for (BlockPos pos : graves) {
             sumX += pos.getX();
             sumY += pos.getY();
@@ -48,11 +47,7 @@ public class CemeteryInfo {
         }
 
         int count = graves.size();
-        return new BlockPos(
-                (int) (sumX / count),
-                (int) (sumY / count),
-                (int) (sumZ / count)
-        );
+        return new BlockPos((int) (sumX / count), (int) (sumY / count), (int) (sumZ / count));
     }
 
     private static AABB calculateBounds(Set<BlockPos> graves) {
@@ -60,8 +55,12 @@ public class CemeteryInfo {
             return new AABB(0, 0, 0, 0, 0, 0);
         }
 
-        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int minZ = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        int maxZ = Integer.MIN_VALUE;
 
         for (BlockPos pos : graves) {
             minX = Math.min(minX, pos.getX());

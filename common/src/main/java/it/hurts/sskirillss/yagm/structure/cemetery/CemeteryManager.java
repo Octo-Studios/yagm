@@ -2,6 +2,7 @@ package it.hurts.sskirillss.yagm.structure.cemetery;
 
 
 import it.hurts.sskirillss.yagm.block.GraveStoneBlock;
+import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.structure.cemetery.config.CemeteryConfig;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeteryInfo;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeterySavedData;
@@ -20,7 +21,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.*;
 import java.util.function.Function;
 
-
+@SuppressWarnings("all")
 public class CemeteryManager {
 
     @Getter
@@ -37,23 +38,22 @@ public class CemeteryManager {
     private final Map<ResourceKey<Level>, DimensionGraveData> dimensions = new HashMap<>();
 
     private ICemeteryManager.CemeteryFormedCallback onCemeteryFormed;
-    
+
     public void setOnCemeteryFormed(ICemeteryManager.CemeteryFormedCallback callback) {
         this.onCemeteryFormed = callback;
-        for (Map.Entry<ResourceKey<Level>, DimensionGraveData> entry : dimensions.entrySet()) {
-            ResourceKey<Level> dimension = entry.getKey();
-            DimensionGraveData data = entry.getValue();
-            
-            data.setOnCemeteryFormed((center, size) -> {
-                if (!isCemeteryAlreadyFormed(dimension, center)) {
-                    markCemeteryAsFormed(dimension, center);
+        dimensions.forEach((dimension, data) -> setupCallbacks(dimension, data));
+    }
 
-                    if (this.onCemeteryFormed != null) {
-                        this.onCemeteryFormed.onFormed(dimension, center, size);
-                    }
+    private void setupCallbacks(ResourceKey<Level> dimension, DimensionGraveData data) {
+        data.setOnCemeteryFormed((center, size) -> {
+            if (!isCemeteryAlreadyFormed(dimension, center)) {
+                markCemeteryAsFormed(dimension, center);
+                if (onCemeteryFormed != null) {
+                    onCemeteryFormed.onFormed(dimension, center, size);
                 }
-            });
-        }
+            }
+        });
+        data.setOnCemeteryDestroyed((removedPos) -> refreshFormedCemeteries(dimension, data));
     }
 
     @Setter
@@ -63,6 +63,11 @@ public class CemeteryManager {
 
 
     public void addGrave(ResourceKey<Level> dimension, BlockPos pos) {
+        Level level = levelChecker != null ? levelChecker.getLevel(dimension) : null;
+        if (level != null && !isValidCemeteryGraveAtPosition(level, pos)) {
+            return;
+        }
+
         getData(dimension).addGrave(pos);
     }
 
@@ -77,20 +82,9 @@ public class CemeteryManager {
     }
 
 
-    public int getClusterSize(ResourceKey<Level> dimension, BlockPos pos) {
-        return getData(dimension).getClusterSize(pos);
-    }
-
-
     public Set<BlockPos> getClusterGraves(ResourceKey<Level> dimension, BlockPos pos) {
         return getData(dimension).getClusterGraves(pos);
     }
-
-
-    public BlockPos getClusterCenter(ResourceKey<Level> dimension, BlockPos pos) {
-        return getData(dimension).getClusterCenter(pos);
-    }
-
 
     public Set<BlockPos> getGravesInRadius(ResourceKey<Level> dimension, BlockPos pos, int radius) {
         return getData(dimension).getGravesInRadius(pos, radius);
@@ -104,32 +98,6 @@ public class CemeteryManager {
 
     public List<CemeteryInfo> getAllCemeteries(ResourceKey<Level> dimension) {
         return getData(dimension).getAllCemeteries();
-    }
-
-
-    public Set<BlockPos> getAllGraves(ResourceKey<Level> dimension) {
-        return getData(dimension).getAllGraves();
-    }
-
-
-    public int getGraveCount(ResourceKey<Level> dimension) {
-        return getData(dimension).getGraveCount();
-    }
-
-
-    public boolean containsGrave(ResourceKey<Level> dimension, BlockPos pos) {
-        return getData(dimension).containsGrave(pos);
-    }
-
-
-    public void clearDimension(ResourceKey<Level> dimension) {
-        dimensions.remove(dimension);
-        formedCemeteries.remove(dimension);
-    }
-
-    public void clear() {
-        dimensions.clear();
-        formedCemeteries.clear();
     }
 
     private boolean isCemeteryAlreadyFormed(ResourceKey<Level> dimension, BlockPos center) {
@@ -169,7 +137,7 @@ public class CemeteryManager {
                 Set<BlockPos> invalidGraves = new HashSet<>();
 
                 for (BlockPos pos : allGraves) {
-                    if (!isGraveBlockAtPosition(level, pos)) {
+                    if (!isValidCemeteryGraveAtPosition(level, pos)) {
                         invalidGraves.add(pos);
                     }
                 }
@@ -205,8 +173,7 @@ public class CemeteryManager {
         }
     }
 
-
-    private boolean isGraveBlockAtPosition(Level level, BlockPos pos) {
+    private boolean isValidCemeteryGraveAtPosition(Level level, BlockPos pos) {
         if (!level.isLoaded(pos)) {
             return true;
         }
@@ -214,7 +181,15 @@ public class CemeteryManager {
         BlockState state = level.getBlockState(pos);
         Block block = state.getBlock();
 
-        return block instanceof GraveStoneBlock;
+        if (!(block instanceof GraveStoneBlock)) {
+            return false;
+        }
+
+        if (level.getBlockEntity(pos) instanceof GraveStoneBlockEntity blockEntity) {
+            return !blockEntity.isDecorative();
+        }
+
+        return true;
     }
 
     public Set<ResourceKey<Level>> getLoadedDimensions() {
@@ -244,18 +219,7 @@ public class CemeteryManager {
                 data.load(tag.getCompound(key));
                 dimensions.put(dimension, data);
 
-                data.setOnCemeteryFormed((center, size) -> {
-                    if (!isCemeteryAlreadyFormed(dimension, center)) {
-                        markCemeteryAsFormed(dimension, center);
-                        if (onCemeteryFormed != null) {
-                            onCemeteryFormed.onFormed(dimension, center, size);
-                        }
-                    }
-                });
-
-                data.setOnCemeteryDestroyed((removedPos) -> {
-                    refreshFormedCemeteries(dimension, data);
-                });
+                setupCallbacks(dimension, data);
 
                 List<CemeteryInfo> cemeteries = data.getAllCemeteries();
                 Set<BlockPos> formed = formedCemeteries.computeIfAbsent(dimension, k -> new HashSet<>());
@@ -269,20 +233,7 @@ public class CemeteryManager {
     private DimensionGraveData getData(ResourceKey<Level> dimension) {
         return dimensions.computeIfAbsent(dimension, k -> {
             DimensionGraveData data = createDimensionData();
-
-            data.setOnCemeteryFormed((center, size) -> {
-                if (!isCemeteryAlreadyFormed(dimension, center)) {
-                    markCemeteryAsFormed(dimension, center);
-
-                    if (onCemeteryFormed != null) {
-                        onCemeteryFormed.onFormed(dimension, center, size);
-                    }
-                }
-            });
-            
-            data.setOnCemeteryDestroyed((removedPos) -> {
-                refreshFormedCemeteries(dimension, data);
-            });
+            setupCallbacks(dimension, data);
             return data;
         });
     }

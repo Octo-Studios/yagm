@@ -32,10 +32,7 @@ public class CemeterySavedData extends SavedData {
     }
 
     public static CemeterySavedData get(ServerLevel level) {
-        return level.getServer().overworld().getDataStorage().computeIfAbsent(
-                new Factory<>(CemeterySavedData::new, CemeterySavedData::new, DataFixTypes.LEVEL),
-                DATA_NAME
-        );
+        return level.getServer().overworld().getDataStorage().computeIfAbsent(new Factory<>(CemeterySavedData::new, CemeterySavedData::new, DataFixTypes.LEVEL), DATA_NAME);
     }
 
     public static void markDirty(ServerLevel level) {
