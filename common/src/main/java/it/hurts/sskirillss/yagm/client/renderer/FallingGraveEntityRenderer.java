@@ -5,6 +5,7 @@ import com.mojang.math.Axis;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.entity.FallingGraveEntity;
 import it.hurts.sskirillss.yagm.init.BlockRegistry;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
@@ -12,7 +13,6 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
@@ -45,7 +45,7 @@ public class FallingGraveEntityRenderer extends EntityRenderer<FallingGraveEntit
         ResourceLocation variantId = entity.getVariantId();
         String variantStr = variantId != null ? variantId.toString() : null;
 
-        Block block = BlockRegistry.getBlockForVariant(variantStr, level);
+        Block block = BlockRegistry.getVariant(variantStr, level);
         BlockState state = block.defaultBlockState();
 
         if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
@@ -54,7 +54,9 @@ public class FallingGraveEntityRenderer extends EntityRenderer<FallingGraveEntit
 
         BakedModel model = blockRenderer.getBlockModel(state);
 
-        blockRenderer.getModelRenderer().renderModel(poseStack.last(), buffer.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)), state, model, 1.0F, 1.0F, 1.0F, packedLight, OverlayTexture.NO_OVERLAY);
+        RenderType renderType = ItemBlockRenderTypes.getRenderType(state, false);
+        blockRenderer.getModelRenderer().renderModel(poseStack.last(), buffer.getBuffer(renderType), state, model, 1.0F, 1.0F, 1.0F, packedLight, OverlayTexture.NO_OVERLAY);
+
         poseStack.popPose();
 
         super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);

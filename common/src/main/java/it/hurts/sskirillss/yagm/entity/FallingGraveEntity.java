@@ -1,21 +1,20 @@
 package it.hurts.sskirillss.yagm.entity;
 
-import it.hurts.sskirillss.yagm.api.compat.AccessoryManager;
+import it.hurts.sskirillss.yagm.api.compat.AccessoryLoader;
 import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
+import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
+import it.hurts.sskirillss.yagm.client.particle.options.GraveTrailParticleOptions;
+import it.hurts.sskirillss.yagm.client.particle.options.GroundDustParticleOptions;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.init.BlockRegistry;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
-import it.hurts.sskirillss.yagm.client.particle.options.GroundDustParticleOptions;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
-import it.hurts.sskirillss.yagm.util.GraveStoneUtils;
-import it.hurts.sskirillss.yagm.util.InventoryUtils;
+import it.hurts.sskirillss.yagm.util.*;
 import it.hurts.sskirillss.yagm.vec3.FallingGraveMotionConfig;
-import net.minecraft.core.NonNullList;
-import net.minecraft.world.Containers;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -23,21 +22,24 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.level.ChunkPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.Containers;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.awt.*;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -55,17 +57,20 @@ public class FallingGraveEntity extends Entity {
     private CompoundTag graveData;
     private UUID ownerUUID;
     private String ownerName;
+    private boolean voidRecovery = false;
     private GraveStoneLevels graveLevel = GraveStoneLevels.GRAVESTONE_LEVEL_1;
     private Direction facing = Direction.NORTH;
     @Nullable
     private ResourceLocation variantId;
 
+    private static final NbtKeys KEYS = NbtKeys.INSTANCE;
     private static final FallingGraveMotionConfig MOTION = FallingGraveMotionConfig.DEFAULT;
 
     private float rotationSpeed;
     private float prevRotation;
     private int lifetime = 0;
-    private static final int CHUNK_TICKET_RADIUS = 2;
+    private boolean graveHandled = false;
+    private BlockPos lastSafePos = null;
     private static final TicketType<Long> FALLING_GRAVE_TICKET = TicketType.create("yagm_falling_grave", Long::compareTo);
     private final Set<Long> activeChunkTickets = new HashSet<>();
 
@@ -75,6 +80,10 @@ public class FallingGraveEntity extends Entity {
     }
 
     public static FallingGraveEntity create(Level level, Vec3 position, Vec3 velocity, CompoundTag graveData, GraveStoneLevels graveLevel, UUID ownerUUID, String ownerName, Direction facing) {
+        return create(level, position, velocity, graveData, graveLevel, ownerUUID, ownerName, facing, false);
+    }
+
+    public static FallingGraveEntity create(Level level, Vec3 position, Vec3 velocity, CompoundTag graveData, GraveStoneLevels graveLevel, UUID ownerUUID, String ownerName, Direction facing, boolean voidRecovery) {
         FallingGraveEntity entity = new FallingGraveEntity(EntityRegistry.FALLING_GRAVE.get(), level);
         entity.setPos(position);
         entity.setDeltaMovement(velocity);
@@ -82,15 +91,27 @@ public class FallingGraveEntity extends Entity {
         entity.graveLevel = graveLevel;
         entity.ownerUUID = ownerUUID;
         entity.ownerName = ownerName;
+        entity.voidRecovery = voidRecovery;
         entity.facing = facing;
+        if (voidRecovery) {
+            entity.lastSafePos = BlockPos.containing(position);
+        }
         entity.rotationSpeed = MOTION.randomRotSpeed(level.random);
 
         BlockPos blockPos = BlockPos.containing(position);
-        IGraveVariant variant = GraveVariantRegistry.getFor(level, blockPos);
-        if (variant != null) {
-            entity.variantId = variant.getId();
-            graveData.putString("VariantId", variant.getId().toString());
-            entity.entityData.set(DATA_VARIANT, variant.getId().toString());
+        if (graveData.contains(KEYS.getVariantId())) {
+            ResourceLocation existingVariant = ResourceLocation.tryParse(graveData.getString(KEYS.getVariantId()));
+            if (existingVariant != null) {
+                entity.variantId = existingVariant;
+                entity.entityData.set(DATA_VARIANT, existingVariant.toString());
+            }
+        } else {
+            IGraveVariant variant = GraveVariantRegistry.getFor(level, blockPos);
+            if (variant != null) {
+                entity.variantId = variant.getId();
+                graveData.putString(KEYS.getVariantId(), variant.getId().toString());
+                entity.entityData.set(DATA_VARIANT, variant.getId().toString());
+            }
         }
 
         entity.entityData.set(DATA_LEVEL, graveLevel.ordinal());
@@ -121,15 +142,18 @@ public class FallingGraveEntity extends Entity {
 
         prevRotation = entityData.get(DATA_ROTATION);
         if (!onGround()) {
-            entityData.set(DATA_ROTATION, (prevRotation + rotationSpeed) % 360f);
+            entityData.set(DATA_ROTATION, (prevRotation + entityData.get(DATA_ROT_SPEED)) % 360f);
         }
 
         if (!level().isClientSide()) {
-            if (this.getY() < level().getMinBuildHeight() - 10 && level().dimension() == Level.END) {
-                BlockPos safePos = findEndIslandPosition(blockPosition());
-                this.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
-                this.setDeltaMovement(Vec3.ZERO);
-                level().playSound(null, safePos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.BLOCKS, 1.0F, 1.0F);
+
+            if (!voidRecovery && getY() > level().getMinBuildHeight() + 8) {
+                lastSafePos = blockPosition();
+            }
+
+            if (this.getY() < level().getMinBuildHeight() + 2) {
+                placeGrave();
+                return;
             }
 
             Vec3 motion = getDeltaMovement();
@@ -143,16 +167,16 @@ public class FallingGraveEntity extends Entity {
                 BlockState belowState = level().getBlockState(belowPos);
 
                 if (belowState.isSuffocating(level(), belowPos) || belowState.isSolid()) {
-                    BlockPos currentPos = blockPosition();
-                    BlockState currentState = level().getBlockState(currentPos);
+                    BlockPos pos = blockPosition();
+                    BlockState state = level().getBlockState(pos);
 
-                    if (!currentState.isAir() && !currentState.canBeReplaced()) {
+                    if (!state.isAir() && !state.canBeReplaced()) {
                         shouldPlace = true;
                     }
                 }
             }
 
-            if (!shouldPlace && lifetime > MOTION.getMaxLifetime()) {
+            if (!shouldPlace && lifetime > 300) {
                 shouldPlace = true;
             }
 
@@ -163,12 +187,17 @@ public class FallingGraveEntity extends Entity {
             if (!onGround()) {
                 setDeltaMovement(MOTION.applyPhysics(getDeltaMovement()));
                 move(MoverType.SELF, getDeltaMovement());
+                spawnFlyingParticles();
             }
         }
     }
 
     @Override
     public void remove(@NotNull RemovalReason reason) {
+        if (!level().isClientSide() && !graveHandled && reason == RemovalReason.KILLED) {
+            graveHandled = true;
+            handleGravePlacement();
+        }
         if (!level().isClientSide()) {
             releaseChunkTickets();
         }
@@ -176,72 +205,104 @@ public class FallingGraveEntity extends Entity {
     }
 
     private void placeGrave() {
-        BlockPos landingPos = findActualLandingPosition();
-        BlockPos gravePos = GraveStoneUtils.getGraveStoneBlockPosition(level(), landingPos);
-
-        String variantStr = variantId != null ? variantId.toString() : null;
-        Block graveBlock = BlockRegistry.getBlockForVariant(variantStr, graveLevel);
-        BlockState graveState = graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
-
-        if (GraveStoneUtils.placeGraveStone(level(), gravePos, graveState)) {
-            if (!level().isClientSide()) {
-                GraveStoneEntity graveEntity = GraveStoneEntity.create(level(), gravePos);
-                if (graveData != null) {
-                    graveEntity.loadGraveData(graveData);
-                }
-                graveEntity.initializeGrave(ownerUUID, ownerName, System.currentTimeMillis(), null, null, graveLevel);
-
-                if (variantId != null) {
-                    graveEntity.setVariant(GraveVariantRegistry.get(variantId));
-                }
-                level().addFreshEntity(graveEntity);
-                spawnLandingDustBurst(gravePos);
-                level().levelEvent(2001, gravePos, Block.getId(graveState));
-            }
-            CemeteryManager.getInstance().addGrave(level().dimension(), gravePos);
-        } else if (!level().isClientSide()) {
-            dropGraveDataAsItems(gravePos);
-        }
-
+        if (graveHandled) return;
+        graveHandled = true;
+        handleGravePlacement();
         discard();
     }
 
-    private void dropGraveDataAsItems(BlockPos pos) {
-        if (graveData == null) return;
-        double x = pos.getX() + 0.5, y = pos.getY() + 0.5, z = pos.getZ() + 0.5;
+    private void handleGravePlacement() {
+        BlockPos landingPos = findLandingPosition();
 
-        NonNullList<ItemStack> items = InventoryUtils.getAllItemsFromNBT(level().registryAccess(), graveData);
-        for (ItemStack item : items) {
-            if (!item.isEmpty()) {
-                Containers.dropItemStack(level(), x, y, z, item);
+        BlockPos gravePos = voidRecovery ? landingPos : PlaceableUtils.getGraveStoneBlockPosition(level(), landingPos);
+
+        String variantStr = variantId != null ? variantId.toString() : null;
+        Block graveBlock = BlockRegistry.getVariant(variantStr, graveLevel);
+
+        if (tryPlaceGrave(gravePos, graveBlock)) return;
+
+        if (!level().isClientSide()) {
+            if (!voidRecovery) {
+                BlockPos altPos = PlaceableUtils.findP2P(level(), landingPos, 16);
+                if (altPos != null && tryPlaceGrave(altPos, graveBlock)) return;
             }
-        }
 
-        if (AccessoryManager.hasAnyHandler() && graveData.contains("Accessories", 10)) {
-            CompoundTag accessoriesNBT = graveData.getCompound("Accessories");
-            Map<String, Map<String, ItemStack>> allAccessories = AccessoryManager.loadAllFromNBT(accessoriesNBT, level().registryAccess());
-            for (Map<String, ItemStack> handlerAccessories : allAccessories.values()) {
-                for (ItemStack accessory : handlerAccessories.values()) {
-                    if (!accessory.isEmpty()) {
-                        Containers.dropItemStack(level(), x, y, z, accessory);
+            if (graveData == null) return;
+            double x = landingPos.getX() + 0.5;
+            double y = landingPos.getY() + 0.5;
+            double z = landingPos.getZ() + 0.5;
+
+            NonNullList<ItemStack> items = InventoryUtils.getAllItemsFromNBT(level().registryAccess(), graveData);
+            for (ItemStack item : items) {
+                if (!item.isEmpty()) {
+                    Containers.dropItemStack(level(), x, y, z, item);
+                }
+            }
+
+            if (AccessoryLoader.hasAnyHandler() && graveData.contains(KEYS.getAccessories(), 10)) {
+                CompoundTag accessoriesNBT = graveData.getCompound(KEYS.getAccessories());
+                Map<String, Map<String, ItemStack>> allAccessories = AccessoryLoader.loadNBT(accessoriesNBT, level().registryAccess());
+                for (Map<String, ItemStack> handlerAccessories : allAccessories.values()) {
+                    for (ItemStack accessory : handlerAccessories.values()) {
+                        if (!accessory.isEmpty()) {
+                            Containers.dropItemStack(level(), x, y, z, accessory);
+                        }
                     }
                 }
             }
+
+            int xp = graveData.getInt(KEYS.getTotalExperience());
+
+            if (xp <= 0) return;
+
+            if (level() instanceof ServerLevel serverLevel) {
+                ExperienceOrb.award(serverLevel, Vec3.atCenterOf(landingPos), xp);
+            }
         }
     }
+
+    private boolean tryPlaceGrave(BlockPos pos, Block graveBlock) {
+        boolean waterlogged = level().getFluidState(pos).isSourceOfType(Fluids.WATER);
+
+        BlockState graveState = graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing).setValue(BlockStateProperties.WATERLOGGED, waterlogged);
+
+        boolean placed = voidRecovery ? PlaceableUtils.placeGraveStoneExact(level(), pos, graveState) : PlaceableUtils.placeGraveStone(level(), pos, graveState);
+
+        if (!placed) {
+            return false;
+        }
+
+        if (!level().isClientSide()) {
+            if (level().getBlockEntity(pos) instanceof GraveStoneBlockEntity blockEntity) {
+                if (graveData != null) {
+                    blockEntity.loadGraveData(graveData, level().registryAccess());
+                }
+                blockEntity.setVoidRecovery(voidRecovery);
+
+                blockEntity.initializeGrave(ownerUUID, ownerName, System.currentTimeMillis(), null, null, graveLevel);
+
+                if (variantId != null) {
+                    blockEntity.setVariant(GraveVariantRegistry.get(variantId));
+                }
+
+                if (!blockEntity.isDecorative()) {
+                    CemeteryManager.getInstance().addGrave(level().dimension(), pos);
+                }
+            }
+            spawnLandingDustBurst(pos);
+            level().levelEvent(2001, pos, Block.getId(graveState));
+        }
+        return true;
+    }
+
 
     private void spawnLandingDustBurst(BlockPos gravePos) {
         if (!(level() instanceof ServerLevel serverLevel)) {
             return;
         }
 
-        float[] base = getDustBaseColor();
-        float baseScale = switch (graveLevel) {
-            case GRAVESTONE_LEVEL_1 -> 1.0f;
-            case GRAVESTONE_LEVEL_2 -> 1.0f;
-            case GRAVESTONE_LEVEL_3 -> 1.0f;
-            case GRAVESTONE_LEVEL_4 -> 1.0f;
-        };
+        float[] base = VariantUtils.getVariantColor(variantId != null ? variantId.getPath() : null);
+        float baseScale = 1.0f;
 
         for (int i = 0; i < 56; i++) {
             double x = gravePos.getX() + 0.5 + (random.nextDouble() * 3.0 - 1.5);
@@ -249,9 +310,9 @@ public class FallingGraveEntity extends Entity {
             double z = gravePos.getZ() + 0.5 + (random.nextDouble() * 3.0 - 1.5);
 
             float variance = 0.09f;
-            float r = clamp01(base[0] + (random.nextFloat() * 2 - 1) * variance);
-            float g = clamp01(base[1] + (random.nextFloat() * 2 - 1) * variance);
-            float b = clamp01(base[2] + (random.nextFloat() * 2 - 1) * variance);
+            float r = Mth.clamp(base[0] + (random.nextFloat() * 2 - 1) * variance, 0f, 1f);
+            float g = Mth.clamp(base[1] + (random.nextFloat() * 2 - 1) * variance, 0f, 1f);
+            float b = Mth.clamp(base[2] + (random.nextFloat() * 2 - 1) * variance, 0f, 1f);
             float scale = baseScale * (0.9f + random.nextFloat() * 0.55f);
 
             GroundDustParticleOptions options = new GroundDustParticleOptions(r, g, b, scale);
@@ -262,25 +323,6 @@ public class FallingGraveEntity extends Entity {
         }
     }
 
-    private float[] getDustBaseColor() {
-        String path = variantId != null ? variantId.getPath() : "default";
-        return switch (path) {
-            case "cold" -> new float[]{0.72f, 0.82f, 0.92f};
-            case "hot" -> new float[]{0.96f, 0.57f, 0.28f};
-            case "nether" -> new float[]{0.83f, 0.24f, 0.24f};
-            case "end" -> new float[]{0.74f, 0.66f, 0.96f};
-            case "ocean" -> new float[]{0.34f, 0.74f, 0.93f};
-            case "tropics" -> new float[]{0.43f, 0.88f, 0.58f};
-            default -> new float[]{0.82f, 0.82f, 0.82f};
-        };
-    }
-
-    private static float clamp01(float value) {
-        if (value < 0f) return 0f;
-        if (value > 1f) return 1f;
-        return value;
-    }
-
     private void updateChunkTickets() {
         if (!(level() instanceof ServerLevel serverLevel)) {
             return;
@@ -289,14 +331,14 @@ public class FallingGraveEntity extends Entity {
         ChunkPos center = new ChunkPos(blockPosition());
         Set<Long> required = new HashSet<>();
 
-        for (int dx = -CHUNK_TICKET_RADIUS; dx <= CHUNK_TICKET_RADIUS; dx++) {
-            for (int dz = -CHUNK_TICKET_RADIUS; dz <= CHUNK_TICKET_RADIUS; dz++) {
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
                 ChunkPos chunk = new ChunkPos(center.x + dx, center.z + dz);
                 long chunkId = chunk.toLong();
                 required.add(chunkId);
 
                 if (!activeChunkTickets.contains(chunkId)) {
-                    serverLevel.getChunkSource().addRegionTicket(FALLING_GRAVE_TICKET, chunk, CHUNK_TICKET_RADIUS, chunkId);
+                    serverLevel.getChunkSource().addRegionTicket(FALLING_GRAVE_TICKET, chunk, 2, chunkId);
                 }
             }
         }
@@ -304,7 +346,7 @@ public class FallingGraveEntity extends Entity {
         for (Long chunkId : activeChunkTickets) {
             if (!required.contains(chunkId)) {
                 ChunkPos chunk = new ChunkPos(chunkId);
-                serverLevel.getChunkSource().removeRegionTicket(FALLING_GRAVE_TICKET, chunk, CHUNK_TICKET_RADIUS, chunkId);
+                serverLevel.getChunkSource().removeRegionTicket(FALLING_GRAVE_TICKET, chunk, 2, chunkId);
             }
         }
 
@@ -319,25 +361,41 @@ public class FallingGraveEntity extends Entity {
 
         for (Long chunkId : activeChunkTickets) {
             ChunkPos chunk = new ChunkPos(chunkId);
-            serverLevel.getChunkSource().removeRegionTicket(FALLING_GRAVE_TICKET, chunk, CHUNK_TICKET_RADIUS, chunkId);
+            serverLevel.getChunkSource().removeRegionTicket(FALLING_GRAVE_TICKET, chunk, 2, chunkId);
         }
 
         activeChunkTickets.clear();
     }
 
-    private BlockPos findActualLandingPosition() {
-        Vec3 currentPos = position();
-        BlockPos blockPos = BlockPos.containing(currentPos);
+    private BlockPos findLandingPosition() {
+        if (voidRecovery) {
+            BlockPos base = lastSafePos != null ? lastSafePos : BlockPos.containing(position());
 
-        if (level().dimension() == Level.END && blockPos.getY() < level().getMinBuildHeight() + 5) {
-            return findEndIslandPosition(blockPos);
+            BlockPos dirtPos = new BlockPos(base.getX(), level().getMinBuildHeight(), base.getZ());
+
+            level().setBlock(dirtPos, PlaceableUtils.getBlockForLevel((ServerLevel) level()), 3);
+
+            return dirtPos.above();
         }
 
-        BlockState currentState = level().getBlockState(blockPos);
-        if (!currentState.isAir() && !currentState.canBeReplaced()) {
+        BlockPos blockPos = BlockPos.containing(position());
+
+        if (blockPos.getY() <= level().getMinBuildHeight() + 4 && lastSafePos != null) {
+            blockPos = lastSafePos;
+        }
+
+        if (blockPos.getY() <= level().getMinBuildHeight() + 2) {
+            return new BlockPos(blockPos.getX(), level().getMinBuildHeight(), blockPos.getZ());
+        }
+
+        BlockState state = level().getBlockState(blockPos);
+        if (!state.isAir() && !state.canBeReplaced()) {
             for (int y = 0; y <= 5; y++) {
                 BlockPos above = blockPos.above(y);
+
+
                 BlockState aboveState = level().getBlockState(above);
+
                 BlockState below = level().getBlockState(above.below());
                 if ((aboveState.isAir() || aboveState.canBeReplaced()) && below.isSolid()) {
                     return above;
@@ -346,9 +404,12 @@ public class FallingGraveEntity extends Entity {
         }
 
         for (int y = 0; y <= 10; y++) {
+
             BlockPos below = blockPos.below(y);
             BlockState belowState = level().getBlockState(below);
+
             BlockState atPos = level().getBlockState(below.above());
+
 
             if (belowState.isSolid() && (atPos.isAir() || atPos.canBeReplaced())) {
                 return below.above();
@@ -358,84 +419,91 @@ public class FallingGraveEntity extends Entity {
         return blockPos;
     }
 
-    private BlockPos findEndIslandPosition(BlockPos deathPos) {
-        BlockPos bestPos = null;
-        double bestDistance = Double.MAX_VALUE;
 
-        for (int radius = 0; radius <= 64; radius += 2) {
-            for (int x = -radius; x <= radius; x += 2) {
-                for (int z = -radius; z <= radius; z += 2) {
-                    if (radius > 0 && Math.abs(x) != radius && Math.abs(z) != radius) continue;
+    private void spawnFlyingParticles() {
+        GraveStoneLevels graveLevel = getGraveLevel();
+        ResourceLocation variantId = getVariantId();
+        String variantPath = variantId != null ? variantId.getPath() : null;
 
-                    int wx = deathPos.getX() + x;
-                    int wz = deathPos.getZ() + z;
+        float rotation = entityData.get(DATA_ROTATION);
+        double rad = Math.toRadians(rotation);
+        double cos = Math.cos(rad);
+        double sin = Math.sin(rad);
 
-                    int surfaceY = level().getHeight(Heightmap.Types.MOTION_BLOCKING, wx, wz);
-                    if (surfaceY <= level().getMinBuildHeight()) continue;
+        if (graveLevel == GraveStoneLevels.GRAVESTONE_LEVEL_4 && tickCount % 10 == 0) {
+            float[] base = VariantUtils.getVariantColor(variantPath);
+            for (int i = 0; i < 2; i++) {
+                double angle = random.nextDouble() * (Math.PI * 2.0);
+                double radius = Math.sqrt(random.nextDouble());
+                double x = getX() + Math.cos(angle) * radius;
+                double y = getY() - 0.15 + random.nextDouble() * 0.08;
+                double z = getZ() + Math.sin(angle) * radius;
+                float variance = 0.08f;
+                float r = Mth.clamp(base[0] + (random.nextFloat() * 2 - 1) * variance, 0f, 1f);
+                float g = Mth.clamp(base[1] + (random.nextFloat() * 2 - 1) * variance, 0f, 1f);
+                float b = Mth.clamp(base[2] + (random.nextFloat() * 2 - 1) * variance, 0f, 1f);
+                level().addParticle(new GraveTrailParticleOptions(r, g, b, 0.55f), x, y, z, 0.0, 0.040 + random.nextDouble() * 0.015, 0.0);
+            }
+        }
 
-                    BlockPos candidate = new BlockPos(wx, surfaceY, wz);
-                    if (hasSpaceForGrave(candidate)) {
-                        double distance = calculateDistance(deathPos, candidate);
-                        if (distance < bestDistance) {
-                            bestDistance = distance;
-                            bestPos = candidate;
-                            if (distance < 16) return bestPos;
-                        }
+        if (graveLevel == GraveStoneLevels.GRAVESTONE_LEVEL_3 && tickCount % 2 == 0) {
+
+            double[][] candles;
+
+
+            if ("end".equals(variantPath)) {
+                candles = new double[][]{{0.375, -0.34375, 0.625}, {-0.375, -0.34375, 0.46875}};
+            } else if ("hot".equals(variantPath)) {
+                candles = new double[][]{{-0.34375, -0.1875, 0.625}, {-0.375, -0.390625, 0.46875}};
+            } else if ("tropics".equals(variantPath)) {
+                candles = new double[][]{{0.3125, -0.1875, 0.5625}, {0.28125, -0.390625, 0.40625}};
+            } else {
+                candles = null;
+            }
+
+            if (candles != null) {
+                Direction facing = getFacing();
+                for (double[] candle : candles) {
+                    double lx = candle[0];
+                    double lz = candle[1];
+                    double lyOffset = candle[2];
+
+                    double ox, oz;
+                    switch (facing) {
+                        case SOUTH -> {ox = -lx; oz = -lz;}
+                        case EAST -> {ox = -lz; oz = lx;}
+                        case WEST -> {ox = lz; oz = -lx;}
+                        default -> {ox = lx; oz = lz;}
                     }
+
+                    double rx = cos * ox - sin * oz;
+                    double rz = sin * ox + cos * oz;
+
+                    double x = getX() + rx + (random.nextDouble() - 0.5) * 0.03;
+                    double y = getY() + lyOffset + random.nextDouble() * 0.04;
+
+                    double z = getZ() + rz + (random.nextDouble() - 0.5) * 0.03;
+
+                    level().addParticle(ParticleUtils.constructSimpleSpark(new Color(155 + random.nextInt(100), random.nextInt(100), 0), 0.15f, 5 + random.nextInt(5), 0.85f), x, y, z, 0.0, 0.025, 0.0);
                 }
             }
-            if (bestPos != null && radius > 16) return bestPos;
         }
-
-        if (bestPos == null) {
-            int mainY = level().getHeight(Heightmap.Types.MOTION_BLOCKING, 0, 0);
-            if (mainY > level().getMinBuildHeight()) {
-                bestPos = new BlockPos(0, mainY, 0);
-            }
-        }
-
-        return bestPos != null ? bestPos : new BlockPos(0, 65, 0);
     }
 
-    private boolean hasSpaceForGrave(BlockPos pos) {
-        for (int i = 0; i < 2; i++) {
-            BlockState state = level().getBlockState(pos.above(i));
-            if (!state.isAir() && !state.canBeReplaced()) {
-                return false;
-            }
-        }
-        return true;
+    public void stopRotation() {
+        this.rotationSpeed = 0f;
+        this.entityData.set(DATA_ROT_SPEED, 0f);
     }
 
-    private double calculateDistance(BlockPos from, BlockPos to) {
-        double dx = to.getX() - from.getX();
-        double dy = to.getY() - from.getY();
-        double dz = to.getZ() - from.getZ();
-        return Math.sqrt(dx * dx + dy * dy + dz * dz);
-    }
-
-    public float getGraveRotation() {
-        return entityData.get(DATA_ROTATION);
-    }
-
-    /**
-     * at the 0°/360° boundary.
-     */
     public float getGraveRotation(float partialTick) {
-        float speed = entityData.get(DATA_ROT_SPEED);
-        if (speed == 0f) {
-            speed = rotationSpeed;
-        }
-
-        double nowTicks = System.nanoTime() / 50_000_000.0;
-        return (float) ((nowTicks * speed) % 360.0);
+        return Mth.rotLerp(partialTick, prevRotation, entityData.get(DATA_ROTATION));
     }
-
-
 
     public GraveStoneLevels getGraveLevel() {
         int ordinal = entityData.get(DATA_LEVEL);
         GraveStoneLevels[] levels = GraveStoneLevels.values();
+
+
         if (ordinal >= 0 && ordinal < levels.length) {
             return levels[ordinal];
         }
@@ -445,7 +513,6 @@ public class FallingGraveEntity extends Entity {
     public Direction getFacing() {
         return Direction.from2DDataValue(entityData.get(DATA_FACING));
     }
-
 
 
     @Nullable
@@ -460,27 +527,28 @@ public class FallingGraveEntity extends Entity {
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
-        if (tag.contains("GraveData")) {
-            this.graveData = tag.getCompound("GraveData");
+        if (tag.contains(KEYS.getGraveData())) {
+            this.graveData = tag.getCompound(KEYS.getGraveData());
         }
 
-        if (tag.hasUUID("OwnerUUID")) {
-            this.ownerUUID = tag.getUUID("OwnerUUID");
+        if (tag.hasUUID(KEYS.getOwnerUuid())) {
+            this.ownerUUID = tag.getUUID(KEYS.getOwnerUuid());
         }
 
-        this.ownerName = tag.getString("OwnerName");
-        this.graveLevel = GraveStoneLevels.CODEC.byName(tag.getString("GraveLevel"), GraveStoneLevels.GRAVESTONE_LEVEL_1);
-        this.facing = Direction.from2DDataValue(tag.getInt("Facing"));
-        this.rotationSpeed = tag.getFloat("RotationSpeed");
-        this.lifetime = tag.getInt("Lifetime");
+        this.ownerName = tag.contains(KEYS.getOwnerName()) ? tag.getString(KEYS.getOwnerName()) : null;
+        this.graveLevel = GraveStoneLevels.CODEC.byName(tag.getString(KEYS.getGraveLevel()), GraveStoneLevels.GRAVESTONE_LEVEL_1);
+        this.facing = Direction.from2DDataValue(tag.getInt(KEYS.getFacing()));
+        this.rotationSpeed = tag.getFloat(KEYS.getRotationSpeed());
+        this.lifetime = tag.getInt(KEYS.getLifetime());
+        this.voidRecovery = tag.getBoolean(KEYS.getVoidRecovery());
 
-        if (tag.contains("VariantId")) {
-            this.variantId = ResourceLocation.tryParse(tag.getString("VariantId"));
-            entityData.set(DATA_VARIANT, tag.getString("VariantId"));
+        if (tag.contains(KEYS.getVariantId())) {
+            this.variantId = ResourceLocation.tryParse(tag.getString(KEYS.getVariantId()));
+            entityData.set(DATA_VARIANT, tag.getString(KEYS.getVariantId()));
         }
 
         entityData.set(DATA_LEVEL, graveLevel.ordinal());
-        entityData.set(DATA_ROTATION, tag.getFloat("Rotation"));
+        entityData.set(DATA_ROTATION, tag.getFloat(KEYS.getRotation()));
         entityData.set(DATA_FACING, this.facing.get2DDataValue());
         entityData.set(DATA_ROT_SPEED, this.rotationSpeed);
     }
@@ -488,23 +556,29 @@ public class FallingGraveEntity extends Entity {
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         if (graveData != null) {
-            tag.put("GraveData", graveData);
+            tag.put(KEYS.getGraveData(), graveData);
         }
         if (ownerUUID != null) {
-            tag.putUUID("OwnerUUID", ownerUUID);
+            tag.putUUID(KEYS.getOwnerUuid(), ownerUUID);
         }
         if (ownerName != null) {
-            tag.putString("OwnerName", ownerName);
+            tag.putString(KEYS.getOwnerName(), ownerName);
         }
-        tag.putString("GraveLevel", graveLevel.getSerializedName());
-        tag.putInt("Facing", facing.get2DDataValue());
-        tag.putFloat("RotationSpeed", rotationSpeed);
-        tag.putInt("Lifetime", lifetime);
-        tag.putFloat("Rotation", entityData.get(DATA_ROTATION));
+        tag.putString(KEYS.getGraveLevel(), graveLevel.getSerializedName());
+        tag.putInt(KEYS.getFacing(), facing.get2DDataValue());
+        tag.putFloat(KEYS.getRotationSpeed(), rotationSpeed);
+        tag.putInt(KEYS.getLifetime(), lifetime);
+        tag.putBoolean(KEYS.getVoidRecovery(), voidRecovery);
+        tag.putFloat(KEYS.getRotation(), entityData.get(DATA_ROTATION));
 
         if (variantId != null) {
-            tag.putString("VariantId", variantId.toString());
+            tag.putString(KEYS.getVariantId(), variantId.toString());
         }
+    }
+
+    @Override
+    public boolean canChangeDimensions(Level from, Level to) {
+        return false;
     }
 
     @Override
@@ -517,4 +591,3 @@ public class FallingGraveEntity extends Entity {
         return false;
     }
 }
-
