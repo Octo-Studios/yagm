@@ -2,19 +2,22 @@ package it.hurts.sskirillss.yagm;
 
 import it.hurts.sskirillss.yagm.api.compat.YAGMCompat;
 import it.hurts.sskirillss.yagm.init.*;
-import lombok.extern.slf4j.Slf4j;
 import net.minecraft.resources.ResourceLocation;
 
-@Slf4j
+import java.util.logging.Logger;
+
 public class YAGMCommon {
     public static final String MODID = "yagm";
+    public static final Logger LOGGER = Logger.getLogger(MODID);
 
     public static void init(){
         BlockRegistry.init();
+        BlockEntityRegistry.init();
         EntityRegistry.init();
         ItemsRegistry.init();
         EventRegistry.init();
         CommandRegistry.init();
+        SoundRegistry.init();
         ParticleRegistry.init();
         CreativeTabsRegistry.init();
         DefaultVariantsRegistry.registerAll();

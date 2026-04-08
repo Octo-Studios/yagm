@@ -11,7 +11,6 @@ public class YAGMCompat {
         if (initialized) return;
         initialized = true;
         registerPlatformHandlers();
-        AccessoryManager.init();
     }
 
     @ExpectPlatform

@@ -41,7 +41,13 @@ public class YAGMCommands {
                                 ServerPlayer targetPlayer = context.getSource().getServer().getPlayerList().getPlayerByName(playerName);
                                 if (targetPlayer != null) {
                                     List<String> saves = GraveSaveManager.listSaves(worldName, targetPlayer.getUUID());
-                                    saves.stream().filter(save -> save.toLowerCase().startsWith(builder.getRemaining().toLowerCase())).forEach(builder::suggest);
+                                    for (int i = 0; i < saves.size(); i++) {
+                                        String index = String.valueOf(i + 1);
+                                        if (index.startsWith(builder.getRemaining())) {
+                                            String displayName = GraveSaveManager.formatSaveDisplayName(saves.get(i));
+                                            builder.suggest(index, Component.literal(displayName));
+                                        }
+                                    }
                                 }
                                 return builder.buildFuture();
                             })
@@ -54,11 +60,7 @@ public class YAGMCommands {
 
     private static int restoreGrave(CommandContext<CommandSourceStack> context) {
         String playerName = StringArgumentType.getString(context, "player");
-        String saveName = StringArgumentType.getString(context, "save");
-        if (!saveName.endsWith(".dat")) {
-            saveName += ".dat";
-        }
-        String finalSaveName = saveName;
+        String saveArg = StringArgumentType.getString(context, "save");
 
         ServerLevel level = context.getSource().getLevel();
         ServerPlayer targetPlayer = level.getServer().getPlayerList().getPlayerByName(playerName);
@@ -69,6 +71,21 @@ public class YAGMCommands {
         }
 
         String worldName = level.getServer().getWorldPath(LevelResource.ROOT).getFileName().toString();
+
+        String saveName;
+        try {
+            int index = Integer.parseInt(saveArg);
+            List<String> saves = GraveSaveManager.listSaves(worldName, targetPlayer.getUUID());
+            if (index < 1 || index > saves.size()) {
+                context.getSource().sendFailure(Component.literal("Save #" + index + " not found (total: " + saves.size() + ")"));
+                return 0;
+            }
+            saveName = saves.get(index - 1);
+        } catch (NumberFormatException e) {
+            saveName = saveArg.endsWith(".dat") ? saveArg : saveArg + ".dat";
+        }
+
+        String finalSaveName = saveName;
         CompoundTag graveData = GraveSaveManager.loadGraveData(worldName, targetPlayer.getUUID(), saveName);
 
         if (graveData == null) {

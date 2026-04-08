@@ -3,10 +3,12 @@ package it.hurts.sskirillss.yagm.neoforge.client;
 import it.hurts.sskirillss.yagm.client.renderer.FallingGraveEntityRenderer;
 import it.hurts.sskirillss.yagm.client.model.GhostEntityModel;
 import it.hurts.sskirillss.yagm.client.renderer.GhostEntityRenderer;
-import it.hurts.sskirillss.yagm.client.renderer.GraveStoneEntityRenderer;
+import it.hurts.sskirillss.yagm.client.renderer.GraveStoneBlockEntityRenderer;
+import it.hurts.sskirillss.yagm.client.particle.FireParticle;
 import it.hurts.sskirillss.yagm.client.particle.GroundDustParticle;
 import it.hurts.sskirillss.yagm.client.particle.GraveTrailParticle;
 import it.hurts.sskirillss.yagm.client.YAGMClient;
+import it.hurts.sskirillss.yagm.init.BlockEntityRegistry;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.init.ParticleRegistry;
 import it.hurts.sskirillss.yagm.YAGMCommon;
@@ -29,13 +31,14 @@ public class YAGMNeoForgeClient {
     public static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ParticleRegistry.GRAVE_DUST_FLAT.get(), GroundDustParticle.Provider::new);
         event.registerSpriteSet(ParticleRegistry.GRAVE_TRAIL.get(), GraveTrailParticle.Provider::new);
+        event.registerSpriteSet(ParticleRegistry.CANDLE_FLAME.get(), FireParticle.Provider::new);
     }
 
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(EntityRegistry.FALLING_GRAVE.get(), FallingGraveEntityRenderer::new);
-        event.registerEntityRenderer(EntityRegistry.GRAVE_STONE.get(), GraveStoneEntityRenderer::new);
         event.registerEntityRenderer(EntityRegistry.GHOST.get(), GhostEntityRenderer::new);
+        event.registerBlockEntityRenderer(BlockEntityRegistry.GRAVE_STONE.get(), GraveStoneBlockEntityRenderer::new);
     }
 
     @SubscribeEvent
