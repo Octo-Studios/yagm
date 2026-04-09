@@ -5,6 +5,7 @@ import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -189,5 +190,17 @@ public class InventoryUtils {
             }
         }
         return 0.0;
+    }
+
+    public static NonNullList<ItemStack> parseArmor(RegistryAccess registry, CompoundTag data) {
+        NonNullList<ItemStack> armor = NonNullList.withSize(4, ItemStack.EMPTY);
+        ItemUtils.readInventory(registry, data, KEYS.getArmorInventory(), armor);
+        return armor;
+    }
+
+    public static NonNullList<ItemStack> parseMainInventory(RegistryAccess registry, CompoundTag data) {
+        NonNullList<ItemStack> main = NonNullList.withSize(36, ItemStack.EMPTY);
+        ItemUtils.readInventory(registry, data, KEYS.getMainInventory(), main);
+        return main;
     }
 }

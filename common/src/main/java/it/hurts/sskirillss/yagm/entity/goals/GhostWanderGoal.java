@@ -24,7 +24,7 @@ public class GhostWanderGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        return ghost.isTame() && ghost.getBehaviorMode() == BehaviorMode.WANDER;
+        return ghost.getTarget() == null && (!ghost.isTame() || ghost.getBehaviorMode() == BehaviorMode.WANDER);
     }
 
     @Override

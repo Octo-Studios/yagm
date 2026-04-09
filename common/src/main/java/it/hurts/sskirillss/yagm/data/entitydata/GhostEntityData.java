@@ -15,8 +15,8 @@ public class GhostEntityData {
     public static final float PITCH_MAX_DEGREES = 35f;
 
     public static final double TELEPORT_DISTANCE = 40.0;
-    public static final double FOLLOW_ARRIVAL_DIST = 3.0;
-    public static final double FOLLOW_ORBIT_RADIUS = 1.8;
+    public static final double FOLLOW_ARRIVAL_DIST = 1.8;
+    public static final double FOLLOW_ORBIT_RADIUS = 2.5;
     public static final double FOLLOW_ORBIT_HEIGHT = 1.5;
     public static final double FOLLOW_SPEED_MULT = 1.2;
 

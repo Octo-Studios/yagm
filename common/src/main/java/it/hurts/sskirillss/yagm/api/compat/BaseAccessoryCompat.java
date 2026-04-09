@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.api.compat;
 
 import it.hurts.sskirillss.yagm.api.compat.provider.IAccessoryHandler;
+import it.hurts.sskirillss.yagm.util.NbtKeys;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -9,12 +10,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
 
 public abstract class BaseAccessoryCompat implements IAccessoryHandler {
 
     private static final String TAG_SLOT_KEY = "SlotKey";
     private static final String TAG_ITEM = "Item";
+    private static final NbtKeys NBT_KEYS = NbtKeys.INSTANCE;
 
     protected abstract String getNbtTag();
 
@@ -70,6 +74,20 @@ public abstract class BaseAccessoryCompat implements IAccessoryHandler {
 
         if (!player.getInventory().add(stack.copy()) && dropIfFull) {
             player.drop(stack.copy(), false);
+        }
+    }
+
+    public static List<ItemStack> parseAccessories(RegistryAccess registry, CompoundTag data) {
+        if (!AccessoryLoader.hasAnyHandler() || !data.contains(NBT_KEYS.getAccessories())) {
+            return List.of();
+        }
+
+        try {
+            var accessories = AccessoryLoader.loadNBT(data.getCompound(NBT_KEYS.getAccessories()), registry);
+
+            return accessories.values().stream().flatMap(slots -> slots.values().stream()).filter(stack -> !stack.isEmpty()).toList();
+        } catch (Exception e) {
+            return List.of();
         }
     }
 }

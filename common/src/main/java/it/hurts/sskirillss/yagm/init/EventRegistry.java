@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import it.hurts.sskirillss.yagm.event.GraveStoneEvent;
 import it.hurts.sskirillss.yagm.api.event.IServerEvent;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
+import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeterySavedData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -19,6 +20,7 @@ public class EventRegistry {
 
     public static void init() {
         LifecycleEvent.SERVER_STARTED.register(server -> {
+            CemeterySavedData.get(server.overworld());
             CemeteryManager.getInstance().setLevelChecker(dimension -> {
                 for (ServerLevel level : server.getAllLevels()) {
                     if (level.dimension().equals(dimension)) {

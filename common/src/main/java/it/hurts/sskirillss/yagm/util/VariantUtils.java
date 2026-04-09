@@ -2,8 +2,10 @@ package it.hurts.sskirillss.yagm.util;
 
 import dev.architectury.registry.registries.RegistrySupplier;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.component.type.GraveVariantTypes;
 import lombok.Builder;
 import lombok.Getter;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 
 import java.util.EnumMap;
@@ -59,4 +61,13 @@ public class VariantUtils {
             default -> new float[]{0.82f, 0.82f, 0.82f};
         };
     }
+
+    public static final Map<String, ResourceLocation> VARIANT_PREFIXES = Map.of(
+            "cold_", GraveVariantTypes.COLD.getResourceLocation(),
+            "hot_", GraveVariantTypes.HOT.getResourceLocation(),
+            "nether_", GraveVariantTypes.NETHER.getResourceLocation(),
+            "end_", GraveVariantTypes.END.getResourceLocation(),
+            "tropics_", GraveVariantTypes.TROPICS.getResourceLocation(),
+            "ocean_", GraveVariantTypes.OCEAN.getResourceLocation()
+    );
 }

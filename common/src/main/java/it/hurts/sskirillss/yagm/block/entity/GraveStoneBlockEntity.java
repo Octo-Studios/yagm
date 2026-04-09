@@ -62,14 +62,6 @@ public class GraveStoneBlockEntity extends BlockEntity {
     };
 
     private static final Map<String, GraveStoneLevels> LEVEL_PATTERNS = new LinkedHashMap<>();
-    private static final Map<String, ResourceLocation> VARIANT_PREFIXES = Map.of(
-            "cold_", GraveVariantTypes.COLD.getResourceLocation(),
-            "hot_", GraveVariantTypes.HOT.getResourceLocation(),
-            "nether_", GraveVariantTypes.NETHER.getResourceLocation(),
-            "end_", GraveVariantTypes.END.getResourceLocation(),
-            "tropics_", GraveVariantTypes.TROPICS.getResourceLocation(),
-            "ocean_", GraveVariantTypes.OCEAN.getResourceLocation()
-    );
 
     static {
         LEVEL_PATTERNS.put("tier_4", GraveStoneLevels.GRAVESTONE_LEVEL_4);
@@ -413,10 +405,9 @@ public class GraveStoneBlockEntity extends BlockEntity {
         super.loadAdditional(tag, registries);
 
         if (tag.getBoolean(KEYS.getSync())) {
-            if (tag.contains(KEYS.getVariantId())) {
-                graveData.setVariantId(ResourceLocation.tryParse(tag.getString(KEYS.getVariantId())));
-            } else {
-                graveData.setVariantId(null);
+            this.graveData = GraveData.load(tag, registries);
+            if (tag.contains(KEYS.getInventoryData())) {
+                this.inventoryData = tag.getCompound(KEYS.getInventoryData()).copy();
             }
             return;
         }
@@ -431,12 +422,17 @@ public class GraveStoneBlockEntity extends BlockEntity {
         }
     }
 
+    public CompoundTag getInventoryData() {
+        return inventoryData;
+    }
+
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
         tag.putBoolean(KEYS.getSync(), true);
-        if (graveData.getVariantId() != null) {
-            tag.putString(KEYS.getVariantId(), graveData.getVariantId().toString());
+        graveData.save(tag, registries);
+        if (inventoryData != null && !inventoryData.isEmpty()) {
+            tag.put(KEYS.getInventoryData(), inventoryData.copy());
         }
         return tag;
     }
@@ -474,7 +470,7 @@ public class GraveStoneBlockEntity extends BlockEntity {
 
     @Nullable
     private ResourceLocation VariantIdFromPath(String path) {
-        for (var entry : VARIANT_PREFIXES.entrySet()) {
+        for (var entry : VariantUtils.VARIANT_PREFIXES.entrySet()) {
             if (path.startsWith(entry.getKey())) {
                 return entry.getValue();
             }

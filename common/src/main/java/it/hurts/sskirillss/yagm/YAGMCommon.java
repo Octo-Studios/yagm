@@ -3,12 +3,13 @@ package it.hurts.sskirillss.yagm;
 import it.hurts.sskirillss.yagm.api.compat.YAGMCompat;
 import it.hurts.sskirillss.yagm.init.*;
 import net.minecraft.resources.ResourceLocation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.logging.Logger;
 
 public class YAGMCommon {
     public static final String MODID = "yagm";
-    public static final Logger LOGGER = Logger.getLogger(MODID);
+    public static final Logger LOGGER = LoggerFactory.getLogger(MODID);
 
     public static void init(){
         BlockRegistry.init();
