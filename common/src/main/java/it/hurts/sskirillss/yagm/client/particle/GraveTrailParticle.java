@@ -16,6 +16,11 @@ import org.jetbrains.annotations.NotNull;
 public class GraveTrailParticle extends TextureSheetParticle {
     private final SpriteSet spriteSet;
     private final double startY;
+    private final double centerX;
+    private final double centerZ;
+    private final double orbitRadius;
+    private final double orbitSpeed;
+    private double orbitAngle;
 
     @Getter
     private final int trailColorIn;
@@ -27,6 +32,13 @@ public class GraveTrailParticle extends TextureSheetParticle {
         super(level, x, y, z, xdIn, ydIn, zdIn);
         this.spriteSet = spriteSet;
         this.startY = y;
+        this.centerX = options.getCenter().x();
+        this.centerZ = options.getCenter().z();
+        double dx = x - this.centerX;
+        double dz = z - this.centerZ;
+        this.orbitRadius = Math.sqrt(dx * dx + dz * dz);
+        this.orbitAngle = Math.atan2(dz, dx);
+        this.orbitSpeed = 0.08 + random.nextDouble() * 0.06;
 
         this.xd = 0.0;
         this.yd = ydIn + random.nextFloat() * 0.002f;
@@ -35,6 +47,7 @@ public class GraveTrailParticle extends TextureSheetParticle {
         this.lifetime = 28 + random.nextInt(53);
         this.gravity = 0f;
         this.friction = 0.98f;
+        this.hasPhysics = false;
 
         float tint = 0.9f + random.nextFloat() * 0.2f;
         this.rCol = Mth.clamp(options.getColor().x() * tint, 0f, 1f);
@@ -74,7 +87,12 @@ public class GraveTrailParticle extends TextureSheetParticle {
         this.alpha = 0.0f;
         this.setSpriteFromAge(this.spriteSet);
 
-        this.move(this.xd, this.yd, this.zd);
+        this.orbitAngle += this.orbitSpeed;
+        double orbitX = this.centerX + Math.cos(this.orbitAngle) * this.orbitRadius;
+        double orbitZ = this.centerZ + Math.sin(this.orbitAngle) * this.orbitRadius;
+        this.setPos(orbitX, this.y, orbitZ);
+
+        this.move(0.0, this.yd, 0.0);
         this.yd *= 0.986f;
         this.xd *= 0.986f;
         this.zd *= 0.986f;

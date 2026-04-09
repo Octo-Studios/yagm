@@ -434,7 +434,8 @@ public class FallingGraveEntity extends Entity {
             float[] base = VariantUtils.getVariantColor(variantPath);
             for (int i = 0; i < 2; i++) {
                 double angle = random.nextDouble() * (Math.PI * 2.0);
-                double radius = Math.sqrt(random.nextDouble());
+                double minRadius = 0.35;
+                double radius = minRadius + Math.sqrt(random.nextDouble()) * (1.0 - minRadius);
                 double x = getX() + Math.cos(angle) * radius;
                 double y = getY() - 0.15 + random.nextDouble() * 0.08;
                 double z = getZ() + Math.sin(angle) * radius;
@@ -442,7 +443,7 @@ public class FallingGraveEntity extends Entity {
                 float r = Mth.clamp(base[0] + (random.nextFloat() * 2 - 1) * variance, 0f, 1f);
                 float g = Mth.clamp(base[1] + (random.nextFloat() * 2 - 1) * variance, 0f, 1f);
                 float b = Mth.clamp(base[2] + (random.nextFloat() * 2 - 1) * variance, 0f, 1f);
-                level().addParticle(new GraveTrailParticleOptions(r, g, b, 0.55f), x, y, z, 0.0, 0.040 + random.nextDouble() * 0.015, 0.0);
+                level().addParticle(new GraveTrailParticleOptions(r, g, b, 0.55f, (float) getX(), (float) getY(), (float) getZ()), x, y, z, 0.0, 0.040 + random.nextDouble() * 0.015, 0.0);
             }
         }
 

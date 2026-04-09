@@ -18,9 +18,14 @@ import org.joml.Vector3f;
 public class GraveTrailParticleOptions implements ParticleOptions {
     private final Vector3f color;
     private final float scale;
+    private final Vector3f center;
 
     public GraveTrailParticleOptions(float r, float g, float b, float scale) {
-        this(new Vector3f(r, g, b), scale);
+        this(new Vector3f(r, g, b), scale, new Vector3f(0f, 0f, 0f));
+    }
+
+    public GraveTrailParticleOptions(float r, float g, float b, float scale, float centerX, float centerY, float centerZ) {
+        this(new Vector3f(r, g, b), scale, new Vector3f(centerX, centerY, centerZ));
     }
 
     public static final StreamCodec<? super ByteBuf, GraveTrailParticleOptions> STREAM_CODEC = StreamCodec.of(
@@ -29,8 +34,19 @@ public class GraveTrailParticleOptions implements ParticleOptions {
                 buf.writeFloat(option.color.y());
                 buf.writeFloat(option.color.z());
                 buf.writeFloat(option.scale);
+                buf.writeFloat(option.center.x());
+                buf.writeFloat(option.center.y());
+                buf.writeFloat(option.center.z());
             },
-            (buf) -> new GraveTrailParticleOptions(buf.readFloat(), buf.readFloat(), buf.readFloat(), buf.readFloat())
+            (buf) -> new GraveTrailParticleOptions(
+                    buf.readFloat(),
+                    buf.readFloat(),
+                    buf.readFloat(),
+                    buf.readFloat(),
+                    buf.readFloat(),
+                    buf.readFloat(),
+                    buf.readFloat()
+            )
     );
 
     public static final MapCodec<GraveTrailParticleOptions> MAP_CODEC = RecordCodecBuilder.mapCodec(object ->
@@ -38,7 +54,10 @@ public class GraveTrailParticleOptions implements ParticleOptions {
                     Codec.FLOAT.optionalFieldOf("r", 0.82f).forGetter(p -> p.color.x()),
                     Codec.FLOAT.optionalFieldOf("g", 0.82f).forGetter(p -> p.color.y()),
                     Codec.FLOAT.optionalFieldOf("b", 0.82f).forGetter(p -> p.color.z()),
-                    Codec.FLOAT.optionalFieldOf("scale", 1.0f).forGetter(p -> p.scale)
+                    Codec.FLOAT.optionalFieldOf("scale", 1.0f).forGetter(p -> p.scale),
+                    Codec.FLOAT.optionalFieldOf("center_x", 0.0f).forGetter(p -> p.center.x()),
+                    Codec.FLOAT.optionalFieldOf("center_y", 0.0f).forGetter(p -> p.center.y()),
+                    Codec.FLOAT.optionalFieldOf("center_z", 0.0f).forGetter(p -> p.center.z())
             ).apply(object, GraveTrailParticleOptions::new)
     );
 

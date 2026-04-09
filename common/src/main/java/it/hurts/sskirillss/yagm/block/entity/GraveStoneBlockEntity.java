@@ -301,8 +301,8 @@ public class GraveStoneBlockEntity extends BlockEntity {
 
         clientTicks++;
 
-        if(level instanceof ClientLevel clientLevel) {
-            if (getGraveLevel() == GraveStoneLevels.GRAVESTONE_LEVEL_4 && clientTicks % 10 == 0) {
+        if (level instanceof ClientLevel clientLevel) {
+            if (getGraveLevel() == GraveStoneLevels.GRAVESTONE_LEVEL_4 && clientTicks % 20 == 0) {
                 BlockPos pos = getBlockPos();
                 IGraveVariant variant = getVariant();
 
@@ -314,21 +314,20 @@ public class GraveStoneBlockEntity extends BlockEntity {
 
                 float[] baseColor = VariantUtils.getVariantColor(variantPath);
 
-                for (int i = 0; i < 2; i++) {
-                    double angle = clientLevel.random.nextDouble() * (Math.PI * 2.0);
-                    double radius = Math.sqrt(clientLevel.random.nextDouble()) * 1.0;
+                double angle = clientLevel.random.nextDouble() * (Math.PI * 2.0);
+                double minRadius = 0.35;
+                double radius = minRadius + Math.sqrt(clientLevel.random.nextDouble()) * (1.0 - minRadius);
 
-                    double x = pos.getX() + 0.5 + Math.cos(angle) * radius;
-                    double y = pos.getY() - 0.15 + clientLevel.random.nextDouble() * 0.08;
-                    double z = pos.getZ() + 0.5 + Math.sin(angle) * radius;
+                double x = pos.getX() + 0.5 + Math.cos(angle) * radius;
+                double y = pos.getY();
+                double z = pos.getZ() + 0.5 + Math.sin(angle) * radius;
 
-                    float variance = 0.08f;
-                    float r = Mth.clamp(baseColor[0] + (clientLevel.random.nextFloat() * 2 - 1) * variance, 0f, 1f);
-                    float g = Mth.clamp(baseColor[1] + (clientLevel.random.nextFloat() * 2 - 1) * variance, 0f, 1f);
-                    float b = Mth.clamp(baseColor[2] + (clientLevel.random.nextFloat() * 2 - 1) * variance, 0f, 1f);
+                float variance = 0.08f;
+                float r = Mth.clamp(baseColor[0] + (clientLevel.random.nextFloat() * 2 - 1) * variance, 0f, 1f);
+                float g = Mth.clamp(baseColor[1] + (clientLevel.random.nextFloat() * 2 - 1) * variance, 0f, 1f);
+                float b = Mth.clamp(baseColor[2] + (clientLevel.random.nextFloat() * 2 - 1) * variance, 0f, 1f);
 
-                    clientLevel.addParticle(new GraveTrailParticleOptions(r, g, b, 0.55f), x, y, z, 0.0, 0.040 + clientLevel.random.nextDouble() * 0.015, 0.0);
-                }
+                clientLevel.addParticle(new GraveTrailParticleOptions(r, g, b, 0.55f, pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f), x, y, z, 0.0, 0.040 + clientLevel.random.nextDouble() * 0.015, 0.0);
             }
 
             if (getGraveLevel() == GraveStoneLevels.GRAVESTONE_LEVEL_3 && clientTicks % 2 == 0) {
@@ -380,7 +379,7 @@ public class GraveStoneBlockEntity extends BlockEntity {
                         double y = pos.getY() + lyOffset + clientLevel.random.nextDouble() * 0.04;
                         double z = pos.getZ() + 0.5 + oz + (clientLevel.random.nextDouble() - 0.5) * 0.03;
 
-                        if (clientTicks % 5 == 0) {
+                        if (clientTicks % 3 == 0) {
                             clientLevel.addParticle(ParticleUtils.constructSimpleSpark(new Color(155 + level.getRandom().nextInt(100), level.getRandom().nextInt(100), 0), 0.15f, 5 + level.getRandom().nextInt(5), 0.85f), x, y, z, 0.0, 0.025, 0.0);
                         }
                     }
@@ -495,7 +494,7 @@ public class GraveStoneBlockEntity extends BlockEntity {
             return null;
         }
 
-        ResourceLocation fromPath= VariantIdFromPath(path);
+        ResourceLocation fromPath = VariantIdFromPath(path);
         if (fromPath != null) {
             graveData.setVariantId(fromPath);
         }
