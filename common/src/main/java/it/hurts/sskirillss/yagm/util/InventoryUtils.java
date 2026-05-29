@@ -2,25 +2,32 @@ package it.hurts.sskirillss.yagm.util;
 
 import it.hurts.sskirillss.yagm.api.compat.AccessoryLoader;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
-import lombok.extern.slf4j.Slf4j;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.Containers;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.*;
 
-@Slf4j
+
 public class InventoryUtils {
+
     private static final NbtKeys KEYS = NbtKeys.INSTANCE;
 
     private static final String[] KEY = {"MainInventory", "ArmorInventory", "OffhandInventory"};
@@ -47,7 +54,7 @@ public class InventoryUtils {
             if (!acc.isEmpty()) nbt.put(KEYS.getAccessories(), acc);
         }
 
-        nbt.putInt(KEYS.getTotalExperience(), getTotalXpFromLevelAndProgress(player.experienceLevel, player.experienceProgress));
+        nbt.putLong(KEYS.getTotalExperience(), getTotalXpFromLevelAndProgress(player.experienceLevel, player.experienceProgress));
 
         nbt.putDouble(KEYS.getDeathPosX(), player.getX());
         nbt.putDouble(KEYS.getDeathPosY(), player.getY());
@@ -156,23 +163,6 @@ public class InventoryUtils {
         return GraveStoneLevels.GRAVESTONE_LEVEL_1;
     }
 
-    public static int getXpNeededForLevel(int level) {
-        if (level >= 30) return 112 + (level - 30) * 9;
-        if (level >= 15) return 37 + (level - 15) * 5;
-        return 7 + level * 2;
-    }
-
-
-    public static int getTotalXpFromLevelAndProgress(int level, float progress) {
-        return getTotalXpToReachLevel(level) + (int) (progress * getXpNeededForLevel(level));
-    }
-
-    private static int getTotalXpToReachLevel(int level) {
-        if (level <= 0) return 0;
-        if (level <= 16) return level * level + 6 * level;
-        if (level <= 31) return (int) (2.5 * level * level - 40.5 * level + 360);
-        return (int) (4.5 * level * level - 162.5 * level + 2220);
-    }
 
     private static double getItemScore(ItemStack stack) {
         for (Map.Entry<String, Double> entry : VALUABLE_ITEMS.entrySet()) {
@@ -192,6 +182,116 @@ public class InventoryUtils {
         return 0.0;
     }
 
+    public static void restoreFullGrave(ServerPlayer player, CompoundTag data) {
+        restoreFromNBT(player, data, true);
+
+        long xp = data.getLong(KEYS.getTotalExperience());
+        if (xp > 0) {
+            addExperience(player, xp);
+        }
+
+        player.getInventory().setChanged();
+        player.containerMenu.broadcastChanges();
+    }
+
+    public static void dropFullGrave(Level level, BlockPos pos, CompoundTag data) {
+        double x = pos.getX() + 0.5;
+        double y = pos.getY() + 0.5;
+        double z = pos.getZ() + 0.5;
+
+        for (ItemStack item : getAllItemsFromNBT(level.registryAccess(), data)) {
+            if (!item.isEmpty()) {
+                Containers.dropItemStack(level, x, y, z, item);
+            }
+        }
+
+        if (AccessoryLoader.hasAnyHandler() && data.contains(KEYS.getAccessories(), Tag.TAG_COMPOUND)) {
+            AccessoryLoader.loadNBT(data.getCompound(KEYS.getAccessories()), level.registryAccess()).values()
+                    .forEach(slots -> slots.values().forEach(item -> {
+                        if (!item.isEmpty()) {
+                            Containers.dropItemStack(level, x, y, z, item);
+                        }
+                    }));
+        }
+
+        if (level instanceof ServerLevel serverLevel) {
+            long xp = data.getLong(KEYS.getTotalExperience());
+            if (xp > 0) {
+                ExperienceOrb.award(serverLevel, new Vec3(x, y, z), (int) Math.min(Integer.MAX_VALUE, xp));
+            }
+        }
+    }
+
+    public static long getXpForLevel(long level) {
+        if (level < 0) return 0;
+        if (level >= 30) return 112 + (level - 30) * 9;
+        if (level >= 15) return 37 + (level - 15) * 5;
+        return 7 + level * 2;
+    }
+
+    public static long getTotalXpFromLevelAndProgress(long level, double progress) {
+        return getTotalXpToReachLevel(level) + (long) (progress * getXpForLevel(level));
+    }
+
+    private static long getTotalXpToReachLevel(long level) {
+        if (level <= 0) return 0;
+        if (level <= 16) return level * level + 6 * level;
+        if (level <= 31) return (5 * level * level - 81 * level + 720) / 2;
+        return (9 * level * level - 325 * level + 4440) / 2;
+    }
+
+    public static void clearExperience(ServerPlayer player) {
+        player.experienceLevel = 0;
+        player.experienceProgress = 0.0F;
+        player.totalExperience = 0;
+    }
+
+    private static void addExperience(ServerPlayer player, long xpToAdd) {
+        long current = getTotalXpFromLevelAndProgress(player.experienceLevel, player.experienceProgress);
+        long total = Long.MAX_VALUE - current < xpToAdd ? Long.MAX_VALUE : current + xpToAdd;
+        applyTotalExperience(player, total);
+    }
+
+    private static void applyTotalExperience(ServerPlayer player, long totalXp) {
+        XpState state = decodeTotalExperience(totalXp);
+        player.experienceLevel = state.level();
+        player.experienceProgress = state.progress();
+        player.totalExperience = (int) Math.min(Integer.MAX_VALUE, totalXp);
+    }
+
+    private static XpState decodeTotalExperience(long totalXp) {
+        if (totalXp <= 0) {
+            return new XpState(0, 0.0f);
+        }
+
+        long low = 0;
+        long high = 1;
+
+        while (high < Integer.MAX_VALUE && getTotalXpToReachLevel(high) <= totalXp) {
+            long next = high << 1;
+            high = next <= 0 || next > Integer.MAX_VALUE ? Integer.MAX_VALUE : next;
+        }
+
+        while (low < high) {
+            long mid = (low + high + 1) >>> 1;
+            if (getTotalXpToReachLevel(mid) <= totalXp) {
+                low = mid;
+            } else {
+                high = mid - 1;
+            }
+        }
+
+        long level = Math.min(low, Integer.MAX_VALUE);
+        long base = getTotalXpToReachLevel(level);
+        long toNext = Math.max(1L, getXpForLevel(level));
+        float progress = (float) Math.min(0.999999, Math.max(0.0, (double) (totalXp - base) / (double) toNext));
+
+        return new XpState((int) level, progress);
+    }
+
+    private record XpState(int level, float progress) {
+    }
+
     public static NonNullList<ItemStack> parseArmor(RegistryAccess registry, CompoundTag data) {
         NonNullList<ItemStack> armor = NonNullList.withSize(4, ItemStack.EMPTY);
         ItemUtils.readInventory(registry, data, KEYS.getArmorInventory(), armor);
@@ -202,5 +302,11 @@ public class InventoryUtils {
         NonNullList<ItemStack> main = NonNullList.withSize(36, ItemStack.EMPTY);
         ItemUtils.readInventory(registry, data, KEYS.getMainInventory(), main);
         return main;
+    }
+
+    public static NonNullList<ItemStack> parseOffHand(RegistryAccess registry, CompoundTag data) {
+        NonNullList<ItemStack> offhand = NonNullList.withSize(1, ItemStack.EMPTY);
+        ItemUtils.readInventory(registry, data, KEYS.getOffhandInventory(), offhand);
+        return offhand;
     }
 }

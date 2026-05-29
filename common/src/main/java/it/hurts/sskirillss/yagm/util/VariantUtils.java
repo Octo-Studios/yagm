@@ -3,11 +3,13 @@ package it.hurts.sskirillss.yagm.util;
 import dev.architectury.registry.registries.RegistrySupplier;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.component.type.GraveVariantTypes;
+import it.hurts.sskirillss.yagm.init.BlockRegistry;
 import lombok.Builder;
 import lombok.Getter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -15,8 +17,25 @@ import java.util.Map;
 @Builder
 public class VariantUtils {
 
+    public static final Map<String, ResourceLocation> VARIANT_PREFIXES = Map.of(
+            "cold_", GraveVariantTypes.COLD.getResourceLocation(),
+            "hot_", GraveVariantTypes.HOT.getResourceLocation(),
+            "nether_", GraveVariantTypes.NETHER.getResourceLocation(),
+            "end_", GraveVariantTypes.END.getResourceLocation(),
+            "tropics_", GraveVariantTypes.TROPICS.getResourceLocation(),
+            "ocean_", GraveVariantTypes.OCEAN.getResourceLocation()
+    );
+
     private final Map<GraveStoneLevels, RegistrySupplier<Block>> defaultBlocks;
     private final Map<String, Map<GraveStoneLevels, RegistrySupplier<Block>>> variantToBlocks;
+
+    public static String createVariantId(GraveVariantTypes variant) {
+        return variant.getId();
+    }
+
+    public static Block getVariantId(String variantId, GraveStoneLevels level) {
+        return BlockRegistry.getRegistry().getVariant(variantId, level);
+    }
 
     public Block getLevel(GraveStoneLevels level) {
         RegistrySupplier<Block> supplier = defaultBlocks.getOrDefault(level, defaultBlocks.get(GraveStoneLevels.GRAVESTONE_LEVEL_1));
@@ -41,6 +60,18 @@ public class VariantUtils {
         return blockSupplier.get();
     }
 
+    public static Block[] getGraves() {
+        return Arrays.asList(
+                BlockRegistry.GRAVESTONE_LEVEL_1.get(), BlockRegistry.GRAVESTONE_LEVEL_2.get(), BlockRegistry.GRAVESTONE_LEVEL_3.get(), BlockRegistry.GRAVESTONE_LEVEL_4.get(),
+                BlockRegistry.COLD_GRAVESTONE_1.get(), BlockRegistry.COLD_GRAVESTONE_2.get(), BlockRegistry.COLD_GRAVESTONE_3.get(), BlockRegistry.COLD_GRAVESTONE_4.get(),
+                BlockRegistry.HOT_GRAVESTONE_1.get(), BlockRegistry.HOT_GRAVESTONE_2.get(), BlockRegistry.HOT_GRAVESTONE_3.get(), BlockRegistry.HOT_GRAVESTONE_4.get(),
+                BlockRegistry.NETHER_GRAVESTONE_1.get(), BlockRegistry.NETHER_GRAVESTONE_2.get(), BlockRegistry.NETHER_GRAVESTONE_3.get(), BlockRegistry.NETHER_GRAVESTONE_4.get(),
+                BlockRegistry.TROPICS_GRAVESTONE_1.get(), BlockRegistry.TROPICS_GRAVESTONE_2.get(), BlockRegistry.TROPICS_GRAVESTONE_3.get(), BlockRegistry.TROPICS_GRAVESTONE_4.get(),
+                BlockRegistry.END_GRAVESTONE_1.get(), BlockRegistry.END_GRAVESTONE_2.get(), BlockRegistry.END_GRAVESTONE_3.get(), BlockRegistry.END_GRAVESTONE_4.get(),
+                BlockRegistry.OCEAN_GRAVESTONE_1.get(), BlockRegistry.OCEAN_GRAVESTONE_2.get(), BlockRegistry.OCEAN_GRAVESTONE_3.get(), BlockRegistry.OCEAN_GRAVESTONE_4.get()
+        ).toArray(new Block[0]);
+    }
+
     public static Map<GraveStoneLevels, RegistrySupplier<Block>> createBlockMap(RegistrySupplier<Block> level1, RegistrySupplier<Block> level2, RegistrySupplier<Block> level3, RegistrySupplier<Block> level4) {
         Map<GraveStoneLevels, RegistrySupplier<Block>> blocks = new EnumMap<>(GraveStoneLevels.class);
         blocks.put(GraveStoneLevels.GRAVESTONE_LEVEL_1, level1);
@@ -61,13 +92,4 @@ public class VariantUtils {
             default -> new float[]{0.82f, 0.82f, 0.82f};
         };
     }
-
-    public static final Map<String, ResourceLocation> VARIANT_PREFIXES = Map.of(
-            "cold_", GraveVariantTypes.COLD.getResourceLocation(),
-            "hot_", GraveVariantTypes.HOT.getResourceLocation(),
-            "nether_", GraveVariantTypes.NETHER.getResourceLocation(),
-            "end_", GraveVariantTypes.END.getResourceLocation(),
-            "tropics_", GraveVariantTypes.TROPICS.getResourceLocation(),
-            "ocean_", GraveVariantTypes.OCEAN.getResourceLocation()
-    );
 }
