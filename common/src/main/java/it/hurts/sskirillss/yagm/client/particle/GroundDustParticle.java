@@ -1,9 +1,6 @@
 package it.hurts.sskirillss.yagm.client.particle;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Axis;
 import it.hurts.sskirillss.yagm.client.particle.options.GroundDustParticleOptions;
-import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
@@ -11,117 +8,82 @@ import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SpriteSet;
 import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.util.Mth;
-import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 public class GroundDustParticle extends TextureSheetParticle {
-
     private final SpriteSet spriteSet;
-    private final float sourceScale;
+    private final boolean fixedSize;
+    private final float startSize;
+    private final float endSize;
 
-    public GroundDustParticle(ClientLevel level, double x, double y, double z, double xdR, double ydR, double zdR, GroundDustParticleOptions options, SpriteSet spriteSet) {
-        super(level, x, y, z, xdR, ydR, zdR);
+    public GroundDustParticle(ClientLevel level, double x, double y, double z, double xd, double yd, double zd, GroundDustParticleOptions options, SpriteSet spriteSet) {
+        super(level, x, y, z, xd, yd, zd);
         this.spriteSet = spriteSet;
-        this.sourceScale = options.getScale();
+        float requestedScale = options.getScale();
+        float scale = Math.abs(requestedScale);
+        this.fixedSize = requestedScale < 0.0f;
 
-        this.xd = xdR + (random.nextFloat() - 0.5f) * 0.006f;
-        this.yd = ydR + random.nextFloat() * 0.004f;
-        this.zd = zdR + (random.nextFloat() - 0.5f) * 0.006f;
-        this.quadSize = (0.9f + random.nextFloat() * 0.45f) * options.getScale();
-        this.lifetime = this.sourceScale <= 0.8f ? 16 + random.nextInt(11) : 34 + random.nextInt(20);
+        float base = (0.38f + random.nextFloat() * 0.24f) * scale;
+        if (fixedSize) {
+            this.startSize = base;
+            this.endSize = base;
+        } else {
+            boolean shrink = random.nextFloat() < 0.45f;
+            this.startSize = shrink ? base * (1.25f + random.nextFloat() * 0.30f) : base * (0.70f + random.nextFloat() * 0.20f);
+            this.endSize = shrink ? base * (0.62f + random.nextFloat() * 0.18f) : base * (1.35f + random.nextFloat() * 0.45f);
+        }
+
+        this.xd = xd + (random.nextFloat() - 0.5f) * 0.006f;
+        this.yd = yd + 0.002f + random.nextFloat() * 0.0035f;
+        this.zd = zd + (random.nextFloat() - 0.5f) * 0.006f;
+
+        this.quadSize = this.startSize;
+        this.lifetime = (int) (40 + random.nextInt(26) + scale * 14);
         this.gravity = 0f;
-        this.friction = 0.98f;
+        this.friction = 0.965f;
+        this.hasPhysics = false;
 
-        float tint = 0.9f + random.nextFloat() * 0.2f;
-        this.rCol = Mth.clamp(options.getColor().x() * tint, 0f, 1f);
-        this.gCol = Mth.clamp(options.getColor().y() * tint, 0f, 1f);
-        this.bCol = Mth.clamp(options.getColor().z() * tint, 0f, 1f);
-        this.alpha = 0.0f;
+        float tint = 0.92f + random.nextFloat() * 0.16f;
+        float whiten = random.nextFloat() * 0.22f;
+        float baseR = Mth.clamp(options.getColor().x() * tint, 0f, 1f);
+        float baseG = Mth.clamp(options.getColor().y() * tint, 0f, 1f);
+        float baseB = Mth.clamp(options.getColor().z() * tint, 0f, 1f);
+        this.rCol = Mth.clamp(baseR + whiten * (1f - baseR), 0f, 1f);
+        this.gCol = Mth.clamp(baseG + whiten * (1f - baseG), 0f, 1f);
+        this.bCol = Mth.clamp(baseB + whiten * (1f - baseB), 0f, 1f);
+        this.alpha = 0f;
 
         this.setSpriteFromAge(this.spriteSet);
     }
 
-
     @Override
     public float getQuadSize(float partialTick) {
-        float lastage = (this.age + partialTick) / (float) this.lifetime;
-        float fadeIn = Mth.clamp(lastage * 3.2f, 0f, 1f);
-        float fadeOut = 1f - Mth.clamp((lastage - 0.55f) / 0.45f, 0f, 1f);
-        return this.quadSize * (0.9f + fadeIn * 0.2f) * fadeOut;
+        return quadSize;
     }
 
     @Override
     public void tick() {
-        this.xo = this.x;
-        this.yo = this.y;
-        this.zo = this.z;
+        xo = x;
+        yo = y;
+        zo = z;
 
-        if (this.age++ >= this.lifetime) {
-            this.remove();
+        if (age++ >= lifetime) {
+            remove();
             return;
         }
 
-        float age01 = this.age / (float) this.lifetime;
-        float fadeIn = Mth.clamp(age01 * 4f, 0f, 1f);
-        float fadeOut = 1f - Mth.clamp((age01 - 0.55f) / 0.45f, 0f, 1f);
-        this.alpha = 0.9f * fadeIn * fadeOut;
-        this.setSpriteFromAge(this.spriteSet);
+        float t = age / (float) lifetime;
+        float fadeIn = Mth.clamp(t / 0.20f, 0f, 1f);
+        float fadeOut = 1f - Mth.clamp((t - 0.58f) / 0.42f, 0f, 1f);
+        alpha = 0.34f * fadeIn * fadeOut;
+        quadSize = fixedSize ? startSize : Mth.lerp(Mth.clamp(t, 0f, 1f), startSize, endSize);
 
-        this.move(this.xd, this.yd, this.zd);
-        this.yd *= 0.5f;
-        this.xd *= 0.985f;
-        this.zd *= 0.985f;
-    }
+        setSpriteFromAge(spriteSet);
+        move(xd, yd, zd);
 
-    @Override
-    public void render(VertexConsumer buffer, Camera camera, float partialTick) {
-        renderHorizontal(buffer, camera, partialTick, false);
-        renderHorizontal(buffer, camera, partialTick, true);
-    }
-
-    private void renderHorizontal(VertexConsumer consumer, Camera camera, float partialTick, boolean backFace) {
-        Vec3 cameraPosition = camera.getPosition();
-
-        float x = (float) (Mth.lerp(partialTick, this.xo, this.x) - cameraPosition.x());
-        float y = (float) (Mth.lerp(partialTick, this.yo, this.y) - cameraPosition.y());
-        float z = (float) (Mth.lerp(partialTick, this.zo, this.z) - cameraPosition.z());
-
-        Quaternionf quaternion = new Quaternionf();
-
-        if (backFace) {
-            quaternion.mul(Axis.YP.rotation(-(float) Math.PI));
-            quaternion.mul(Axis.XP.rotation((float) (Math.PI / 2)));
-        } else {
-            quaternion.mul(Axis.XP.rotation((float) (-Math.PI / 2)));
-        }
-
-        Vector3f[] flats = new Vector3f[]{
-                new Vector3f(-1.0F, -1.0F, 0.0F),
-                new Vector3f(-1.0F, 1.0F, 0.0F),
-                new Vector3f(1.0F, 1.0F, 0.0F),
-                new Vector3f(1.0F, -1.0F, 0.0F)
-        };
-
-        float size = this.getQuadSize(partialTick);
-
-        for (Vector3f corner : flats) {
-            corner.rotate(quaternion);
-            corner.mul(size);
-            corner.add(x, y, z);
-        }
-
-        int light = this.getLightColor(partialTick);
-
-        addVertex(consumer, flats[0], this.getU1(), this.getV1(), light);
-        addVertex(consumer, flats[1], this.getU1(), this.getV0(), light);
-        addVertex(consumer, flats[2], this.getU0(), this.getV0(), light);
-        addVertex(consumer, flats[3], this.getU0(), this.getV1(), light);
-    }
-
-    private void addVertex(VertexConsumer consumer, Vector3f vec, float u, float v, int light) {
-        consumer.addVertex(vec.x(), vec.y(), vec.z()).setUv(u, v).setColor(this.rCol, this.gCol, this.bCol, this.alpha).setLight(light);
+        yd *= 0.92f;
+        xd *= 0.985f;
+        zd *= 0.985f;
     }
 
     @Override
@@ -143,7 +105,7 @@ public class GroundDustParticle extends TextureSheetParticle {
 
         @Override
         public Particle createParticle(@NotNull GroundDustParticleOptions options, @NotNull ClientLevel level, double x, double y, double z, double xd, double yd, double zd) {
-            return new GroundDustParticle(level, x, y, z, xd, yd, zd, options, this.spriteSet);
+            return new GroundDustParticle(level, x, y, z, xd, yd, zd, options, spriteSet);
         }
     }
 }

@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.util;
 
+import it.hurts.sskirillss.yagm.YAGMCommon;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -35,6 +36,10 @@ public final class NbtKeys {
     private final String behaviorMode = "BehaviorMode";
     private final String feedCount = "FeedCount";
     private final String homePos = "HomePos";
+    private final String breedLoveTicks = "BreedLoveTicks";
+    private final String breedCooldownTicks = "BreedCooldownTicks";
+    private final String ghostAge = "GhostAge";
+
     // GraveDataManager
     private final String graves = "Graves";
 
@@ -57,6 +62,11 @@ public final class NbtKeys {
     private final String playerName = "PlayerName";
     private final String id = "Id";
 
+    public final String dataName = YAGMCommon.MODID + "_grave_saves";
+    public final String saveTime = "SavedAt";
+    public final String players = "Players";
+    public final String player = "Player";
+    public final String saves = "Saves";
 }
 
 

@@ -10,6 +10,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.biome.Biome;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -21,6 +23,7 @@ public class GraveVariantBuilder {
     private final ResourceLocation id;
     private String displayName;
     private int priority = 50;
+    private double[][] candlePositions;
     private final List<Predicate<GraveVariantContext>> conditions = new ArrayList<>();
 
     private GraveVariantBuilder(ResourceLocation id) {
@@ -74,9 +77,14 @@ public class GraveVariantBuilder {
         return this;
     }
 
+    public GraveVariantBuilder candlePositions(double[]... positions) {
+        this.candlePositions = positions;
+        return this;
+    }
+
     public BuiltGraveVariant build() {
         String name = Objects.requireNonNullElse(displayName, id.getPath());
-        return new BuiltGraveVariant(id, name, priority, List.copyOf(conditions));
+        return new BuiltGraveVariant(id, name, priority, List.copyOf(conditions), candlePositions);
     }
 
     public IGraveVariant buildAndRegister() {
@@ -92,6 +100,8 @@ public class GraveVariantBuilder {
         private final String displayName;
         private final int priority;
         private final List<Predicate<GraveVariantContext>> conditions;
+        @Nullable
+        private final double[][] candlePositions;
 
         @Override
         public boolean matches(GraveVariantContext context) {
@@ -99,6 +109,12 @@ public class GraveVariantBuilder {
                 return false;
             }
             return conditions.stream().allMatch(c -> c.test(context));
+        }
+
+        @Override
+        @Nullable
+        public double[][] getCandlePositions() {
+            return candlePositions;
         }
     }
 }

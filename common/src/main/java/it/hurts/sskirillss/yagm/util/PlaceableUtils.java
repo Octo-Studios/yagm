@@ -35,7 +35,8 @@ public class PlaceableUtils {
             return airPos;
         }
 
-        return searchNearbyPosition(level, pos, 3, 2);
+        BlockPos nearby = findValidNearby(level, pos, 3, 2);
+        return nearby != null ? nearby : pos.immutable();
     }
 
     private static BlockPos findFloorUnderFluid(Level level, BlockPos pos) {
@@ -85,7 +86,8 @@ public class PlaceableUtils {
         return null;
     }
 
-    private static BlockPos searchNearbyPosition(Level level, BlockPos center, int radius, int heightRange) {
+    @Nullable
+    private static BlockPos findValidNearby(Level level, BlockPos center, int radius, int heightRange) {
         BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
 
         for (int dx = -radius; dx <= radius; dx++) {
@@ -94,10 +96,8 @@ public class PlaceableUtils {
                     mutable.set(center.getX() + dx, center.getY() + dy, center.getZ() + dz);
 
                     if (isValidGravePosition(level, mutable)) {
-                        if (level.dimension() == NETHER) {
-                            if (!level.getFluidState(mutable.below()).isEmpty()) {
-                                continue;
-                            }
+                        if (level.dimension() == NETHER && !level.getFluidState(mutable.below()).isEmpty()) {
+                            continue;
                         }
                         return mutable.immutable();
                     }
@@ -105,7 +105,7 @@ public class PlaceableUtils {
             }
         }
 
-        return center.immutable();
+        return null;
     }
 
     private static boolean isValidGravePosition(Level level, BlockPos pos) {
@@ -208,18 +208,7 @@ public class PlaceableUtils {
 
     @Nullable
     public static BlockPos findP2P(Level level, BlockPos center, int radius) {
-        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dz = -radius; dz <= radius; dz++) {
-                for (int dy = -radius; dy <= radius; dy++) {
-                    mutable.set(center.getX() + dx, center.getY() + dy, center.getZ() + dz);
-                    if (!isValidGravePosition(level, mutable)) continue;
-                    if (level.dimension() == NETHER && !level.getFluidState(mutable.below()).isEmpty()) continue;
-                    return mutable.immutable();
-                }
-            }
-        }
-        return null;
+        return findValidNearby(level, center, radius, radius);
     }
 
     public static BlockState getBlockForLevel(ServerLevel level) {

@@ -2,7 +2,7 @@ package it.hurts.sskirillss.yagm.api.variant;
 
 import it.hurts.sskirillss.yagm.api.variant.context.GraveVariantContext;
 import net.minecraft.resources.ResourceLocation;
-import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 public interface IGraveVariant {
 
@@ -16,18 +16,23 @@ public interface IGraveVariant {
     String getDisplayName();
 
 
+    /**
+     * Priority replacer for id
+     * !!in work!!
+     * @return
+     */
     int getPriority();
 
 
     boolean matches(GraveVariantContext context);
 
-
-    default int getTextColor() {
-        return 0xFFFFFFFF;
-    }
-
-
-    default float getTextHeightOffset() {
-        return 0f;
+    /**
+     * Candle particle positions relative to block center.
+     * Each entry is {localX, localZ, yOffset}.
+     * Returns null if this variant has no candles.
+     */
+    @Nullable
+    default double[][] getCandlePositions() {
+        return null;
     }
 }

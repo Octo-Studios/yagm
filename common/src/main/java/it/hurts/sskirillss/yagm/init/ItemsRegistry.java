@@ -3,10 +3,15 @@ package it.hurts.sskirillss.yagm.init;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import it.hurts.sskirillss.yagm.YAGMCommon;
+import it.hurts.sskirillss.yagm.item.RestoreKey;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.level.block.Block;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Function;
 
 @SuppressWarnings("all")
 public final class ItemsRegistry {
@@ -15,6 +20,18 @@ public final class ItemsRegistry {
 
     public static <B extends Block> RegistrySupplier<BlockItem> blockItem(String name, RegistrySupplier<B> block) {
         return ITEMS.register(name, () -> new BlockItem(block.get(), new Item.Properties().arch$tab(CreativeTabsRegistry.YAGM)));
+    }
+
+    public static RegistrySupplier<Item> item(String name) {
+        return item(name, new Item.Properties().arch$tab(CreativeTabsRegistry.YAGM), Item::new);
+    }
+
+    public static <I extends Item> @NotNull RegistrySupplier<I> item(String name, Item.Properties properties, Function<Item.Properties, I> itemFunc) {
+        return ITEMS.register(name, () -> itemFunc.apply(properties));
+    }
+
+    public static <I extends Item> RegistrySupplier<I> item(String name, Function<Item.Properties, I> itemFunc) {
+        return item(name, new Item.Properties().arch$tab(CreativeTabsRegistry.YAGM), itemFunc);
     }
 
     public static final RegistrySupplier<BlockItem> GRAVESTONE_TIER_1 = blockItem("grave_tier_1", BlockRegistry.GRAVESTONE_LEVEL_1);
@@ -73,6 +90,11 @@ public final class ItemsRegistry {
 
     public static final RegistrySupplier<BlockItem> OCEAN_GRAVESTONE_TIER_4 = blockItem("ocean_grave_tier_4", BlockRegistry.OCEAN_GRAVESTONE_4);
 
+    public static final RegistrySupplier<Item> RESTORE_KEY = item("restore_key", RestoreKey::new);
+
+    public static final RegistrySupplier<Item> GHOST_PEARL = item("ghost_pearl", properties -> new Item(properties.stacksTo(16)));
+
+    public static final RegistrySupplier<Item> GHOST_SPAWN_EGG = item("ghost_spawn_egg", props -> new SpawnEggItem(EntityRegistry.GHOST.get(), 0xDDEBFF, 0x6AC7FF, props));
 
     public static void init() {
         ITEMS.register();

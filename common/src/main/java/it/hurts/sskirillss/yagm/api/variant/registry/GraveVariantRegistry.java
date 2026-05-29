@@ -16,7 +16,7 @@ public class GraveVariantRegistry {
 
     private static final Map<ResourceLocation, IGraveVariant> GRAVESTONE_VARIANTS = new ConcurrentHashMap<>();
     private static final List<IGraveVariant> SORTED_LOADER = new ArrayList<>();
-    public static boolean valid_sort = true;
+    private static volatile boolean needsSort = true;
 
     @Getter
     private static IGraveVariant defaultVariant;
@@ -24,12 +24,17 @@ public class GraveVariantRegistry {
     public static void register(IGraveVariant variant) {
         ResourceLocation id = variant.getId();
 
-        if (GRAVESTONE_VARIANTS.containsKey(id)) {
+        IGraveVariant previous = GRAVESTONE_VARIANTS.putIfAbsent(id, variant);
+        if (previous != null) {
             throw new IllegalArgumentException("Grave variant '" + id + "' already registered!");
         }
 
-        GRAVESTONE_VARIANTS.put(id, variant);
-        valid_sort = true;
+        needsSort = true;
+    }
+
+    public static void registerDefault(IGraveVariant variant) {
+        register(variant);
+        defaultVariant = variant;
     }
 
     @Nullable
@@ -44,22 +49,28 @@ public class GraveVariantRegistry {
 
 
     public static IGraveVariant getFor(Level level, BlockPos pos) {
-        if (valid_sort) {
-            synchronized (SORTED_LOADER) {
+        List<IGraveVariant> snapshot;
+
+        synchronized (SORTED_LOADER) {
+            if (needsSort) {
                 SORTED_LOADER.clear();
                 SORTED_LOADER.addAll(GRAVESTONE_VARIANTS.values());
                 SORTED_LOADER.sort(Comparator.comparingInt(IGraveVariant::getPriority).reversed());
-                valid_sort = false;
+                needsSort = false;
             }
+
+            snapshot = List.copyOf(SORTED_LOADER);
         }
 
         GraveVariantContext ctx = new GraveVariantContext(level, pos);
-        for (IGraveVariant variant : SORTED_LOADER) {
-            if (variant != defaultVariant && variant.matches(ctx)) {
+        IGraveVariant fallback = defaultVariant;
+
+        for (IGraveVariant variant : snapshot) {
+            if (variant != fallback && variant.matches(ctx)) {
                 return variant;
             }
         }
 
-        return defaultVariant;
+        return fallback;
     }
 }
