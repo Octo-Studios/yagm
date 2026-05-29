@@ -18,7 +18,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -44,7 +43,9 @@ public class GraveStoneEvent {
 
     public static void onPlayerDeath(ServerPlayer player, CompoundTag graveData) {
         Level level = player.level();
+
         if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) return;
+
         if (!(level instanceof ServerLevel serverLevel)) return;
 
         DeathSpawn spawn = resolveDeathSpawn(player);
@@ -59,8 +60,7 @@ public class GraveStoneEvent {
         manager.addGrave(graveData);
 
         long deathTime = System.currentTimeMillis();
-        String worldName = serverLevel.getServer().getWorldPath(LevelResource.ROOT).getFileName().toString();
-        GraveSaveManager.saveGraveData(worldName, player.getUUID(), deathTime, graveData);
+        GraveSaveManager.saveGraveData(serverLevel, player.getUUID(), deathTime, graveData);
 
         GraveStoneLevels graveLevel = InventoryUtils.calculateGraveLevel(player);
 
@@ -68,7 +68,6 @@ public class GraveStoneEvent {
             FallingGraveEntity fallingGrave = FallingGraveEntity.create(serverLevel, deathPos, velocity, graveData, graveLevel, player.getUUID(), player.getName().getString(), facing, spawn.usedTrackedPosition());
             serverLevel.addFreshEntity(fallingGrave);
         });
-
     }
 
     public static void trackLastSafePositions(MinecraftServer server) {
@@ -123,9 +122,7 @@ public class GraveStoneEvent {
 
             player.getInventory().clearContent();
 
-            player.experienceLevel = 0;
-            player.experienceProgress = 0.0F;
-            player.totalExperience = 0;
+            InventoryUtils.clearExperience(player);
         } catch (Exception e) {
             log.error("Failed to create grave for player {}, items will drop normally: {}", uuid, e.getMessage(), e);
         } finally {
@@ -145,7 +142,7 @@ public class GraveStoneEvent {
             return;
         }
 
-        if (!isVoidColumn(level, pos)) {
+        if (isVoidColumn(level, pos)) {
             return;
         }
 

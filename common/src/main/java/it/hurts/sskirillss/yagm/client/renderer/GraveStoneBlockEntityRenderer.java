@@ -51,8 +51,6 @@ public class GraveStoneBlockEntityRenderer implements BlockEntityRenderer<GraveS
         int light = LevelRenderer.getLightColor(level, pos);
 
         blockRenderer.getModelRenderer().renderModel(poseStack.last(), buffer.getBuffer(RenderType.entityCutout(TextureAtlas.LOCATION_BLOCKS)), modelState, model, 1.0F, 1.0F, 1.0F, light, OverlayTexture.NO_OVERLAY);
-
-        blockEntity.clientTick();
     }
 
     @Override

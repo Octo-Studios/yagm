@@ -1,10 +1,7 @@
 package it.hurts.sskirillss.yagm.block.entity;
 
-import it.hurts.sskirillss.yagm.api.compat.AccessoryLoader;
 import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
-import it.hurts.sskirillss.yagm.block.GraveStoneBlock;
-import it.hurts.sskirillss.yagm.client.particle.options.GraveTrailParticleOptions;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.component.type.GraveVariantTypes;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveData;
@@ -14,17 +11,12 @@ import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeterySavedData;
 import it.hurts.sskirillss.yagm.util.InventoryUtils;
 import it.hurts.sskirillss.yagm.util.NbtKeys;
-import it.hurts.sskirillss.yagm.util.ParticleUtils;
 import it.hurts.sskirillss.yagm.util.VariantUtils;
 import lombok.Getter;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -32,17 +24,11 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.Mth;
-import net.minecraft.world.Containers;
-import net.minecraft.world.entity.ExperienceOrb;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -54,7 +40,6 @@ public class GraveStoneBlockEntity extends BlockEntity {
     private boolean silkTouchPickup = false;
     private boolean voidRecovery = false;
     private boolean cleaned = false;
-    private int clientTicks = 0;
 
     private static final String[] INVENTORY_KEYS = {
             KEYS.getMainInventory(), KEYS.getArmorInventory(), KEYS.getOffhandInventory(),
@@ -88,7 +73,6 @@ public class GraveStoneBlockEntity extends BlockEntity {
     public boolean isVoidRecovery() {
         return voidRecovery;
     }
-
 
     public GraveStoneBlockEntity(BlockPos pos, BlockState state) {
         super(BlockEntityRegistry.GRAVE_STONE.get(), pos, state);
@@ -193,18 +177,9 @@ public class GraveStoneBlockEntity extends BlockEntity {
             return;
         }
 
-        InventoryUtils.restoreFromNBT(player, inventoryData, true);
-
-        if (inventoryData.contains(KEYS.getTotalExperience())) {
-            int xp = inventoryData.getInt(KEYS.getTotalExperience());
-            if (xp > 0) {
-                player.giveExperiencePoints(xp);
-            }
-        }
-
-        player.getInventory().setChanged();
-        player.containerMenu.broadcastChanges();
+        InventoryUtils.restoreFullGrave(player, inventoryData);
         this.inventoryData = new CompoundTag();
+        syncToClient();
 
         removeFromGraveManager();
     }
@@ -212,37 +187,24 @@ public class GraveStoneBlockEntity extends BlockEntity {
     public void dropItems(Level level, BlockPos pos) {
         if (suppressDropsOnRemove) return;
         if (inventoryData != null && !inventoryData.isEmpty()) {
-
-            double x = pos.getX() + 0.5;
-            double y = pos.getY() + 0.5;
-            double z = pos.getZ() + 0.5;
-
-            for (ItemStack item : InventoryUtils.getAllItemsFromNBT(level.registryAccess(), inventoryData)) {
-                if (!item.isEmpty()) {
-                    Containers.dropItemStack(level, x, y, z, item);
-                }
-            }
-
-            if (AccessoryLoader.hasAnyHandler() && inventoryData.contains(KEYS.getAccessories(), Tag.TAG_COMPOUND)) {
-                AccessoryLoader.loadNBT(inventoryData.getCompound(KEYS.getAccessories()), level.registryAccess()).values()
-                        .forEach(slots -> slots.values().forEach(item -> {
-                            if (!item.isEmpty()) {
-                                Containers.dropItemStack(level, x, y, z, item);
-                            }
-                        }));
-            }
-
-            if (inventoryData.contains(KEYS.getTotalExperience()) && level instanceof ServerLevel serverLevel) {
-                int xp = inventoryData.getInt(KEYS.getTotalExperience());
-                if (xp > 0) {
-                    ExperienceOrb.award(serverLevel, new Vec3(x, y, z), xp);
-                }
-            }
-
+            InventoryUtils.dropFullGrave(level, pos, inventoryData);
             this.inventoryData = new CompoundTag();
         }
 
         removeFromGraveManager();
+    }
+
+    public void consumeByRestoreKey() {
+        this.inventoryData = new CompoundTag();
+        syncToClient();
+        removeFromGraveManager();
+    }
+
+    private void syncToClient() {
+        setChanged();
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+        }
     }
 
     public CompoundTag getItemData() {
@@ -292,101 +254,6 @@ public class GraveStoneBlockEntity extends BlockEntity {
         setChanged();
     }
 
-
-    public void clientTick() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null || mc.isPaused() || !mc.isWindowActive()) {
-            return;
-        }
-
-        clientTicks++;
-
-        if (level instanceof ClientLevel clientLevel) {
-            if (getGraveLevel() == GraveStoneLevels.GRAVESTONE_LEVEL_4 && clientTicks % 20 == 0) {
-                BlockPos pos = getBlockPos();
-                IGraveVariant variant = getVariant();
-
-                String variantPath = null;
-
-                if (variant != null && variant.getId() != null) {
-                    variantPath = variant.getId().getPath();
-                }
-
-                float[] baseColor = VariantUtils.getVariantColor(variantPath);
-
-                double angle = clientLevel.random.nextDouble() * (Math.PI * 2.0);
-                double minRadius = 0.35;
-                double radius = minRadius + Math.sqrt(clientLevel.random.nextDouble()) * (1.0 - minRadius);
-
-                double x = pos.getX() + 0.5 + Math.cos(angle) * radius;
-                double y = pos.getY();
-                double z = pos.getZ() + 0.5 + Math.sin(angle) * radius;
-
-                float variance = 0.08f;
-                float r = Mth.clamp(baseColor[0] + (clientLevel.random.nextFloat() * 2 - 1) * variance, 0f, 1f);
-                float g = Mth.clamp(baseColor[1] + (clientLevel.random.nextFloat() * 2 - 1) * variance, 0f, 1f);
-                float b = Mth.clamp(baseColor[2] + (clientLevel.random.nextFloat() * 2 - 1) * variance, 0f, 1f);
-
-                clientLevel.addParticle(new GraveTrailParticleOptions(r, g, b, 0.55f, pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f), x, y, z, 0.0, 0.040 + clientLevel.random.nextDouble() * 0.015, 0.0);
-            }
-
-            if (getGraveLevel() == GraveStoneLevels.GRAVESTONE_LEVEL_3 && clientTicks % 2 == 0) {
-                IGraveVariant variant = getVariant();
-                String variantPath = variant != null && variant.getId() != null ? variant.getId().getPath() : null;
-
-                double[][] candles;
-                if ("end".equals(variantPath)) {
-                    candles = new double[][]{{0.375, -0.34375, 0.625}, {-0.375, -0.34375, 0.46875}};
-                } else if ("hot".equals(variantPath)) {
-                    candles = new double[][]{{-0.34375, -0.1875, 0.625}, {-0.375, -0.390625, 0.46875}};
-                } else if ("tropics".equals(variantPath)) {
-                    candles = new double[][]{{0.3125, -0.1875, 0.5625}, {0.28125, -0.390625, 0.40625}};
-                } else {
-                    candles = null;
-                }
-
-                if (candles != null) {
-                    BlockPos pos = getBlockPos();
-                    BlockState state = getBlockState();
-                    Direction facing = state.hasProperty(GraveStoneBlock.FACING) ? state.getValue(GraveStoneBlock.FACING) : Direction.NORTH;
-
-                    for (double[] candle : candles) {
-                        double lx = candle[0];
-                        double lz = candle[1];
-                        double lyOffset = candle[2];
-
-                        double ox, oz;
-                        switch (facing) {
-                            case SOUTH -> {
-                                ox = -lx;
-                                oz = -lz;
-                            }
-                            case EAST -> {
-                                ox = -lz;
-                                oz = lx;
-                            }
-                            case WEST -> {
-                                ox = lz;
-                                oz = -lx;
-                            }
-                            default -> {
-                                ox = lx;
-                                oz = lz;
-                            }
-                        }
-
-                        double x = pos.getX() + 0.5 + ox + (clientLevel.random.nextDouble() - 0.5) * 0.03;
-                        double y = pos.getY() + lyOffset + clientLevel.random.nextDouble() * 0.04;
-                        double z = pos.getZ() + 0.5 + oz + (clientLevel.random.nextDouble() - 0.5) * 0.03;
-
-                        if (clientTicks % 3 == 0) {
-                            clientLevel.addParticle(ParticleUtils.constructSimpleSpark(new Color(155 + level.getRandom().nextInt(100), level.getRandom().nextInt(100), 0), 0.15f, 5 + level.getRandom().nextInt(5), 0.85f), x, y, z, 0.0, 0.025, 0.0);
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
@@ -529,5 +396,3 @@ public class GraveStoneBlockEntity extends BlockEntity {
         }
     }
 }
-
-

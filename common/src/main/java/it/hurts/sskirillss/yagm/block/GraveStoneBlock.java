@@ -4,23 +4,25 @@ import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
 import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.entity.FallingGraveEntity;
+import it.hurts.sskirillss.yagm.entity.GhostlyFogEntity;
+import it.hurts.sskirillss.yagm.init.BlockEntityRegistry;
+import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.util.NbtKeys;
+import it.hurts.sskirillss.yagm.util.ParticleUtils;
+import it.hurts.sskirillss.yagm.util.VariantUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -28,6 +30,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.*;
@@ -35,12 +39,13 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
+import java.awt.*;
 import java.util.UUID;
 
 public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, EntityBlock {
@@ -120,7 +125,7 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
 
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             be.giveInventoryToPlayer(serverPlayer);
-            level.removeBlock(gravePos, false);
+            level.destroyBlock(gravePos, !serverPlayer.isCreative(), serverPlayer);
         }
 
         return InteractionResult.SUCCESS;
@@ -153,10 +158,14 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
         return getShape(state, level, pos, context);
     }
 
-
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+    public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity te, ItemStack stack) {
+        if (shape.isDouble() && state.getValue(HALF) == DoubleBlockHalf.UPPER) {
+            Block.popResource(level, pos, new ItemStack(this));
+            player.causeFoodExhaustion(0.005F);
+        } else {
+            super.playerDestroy(level, player, pos, state, te, stack);
+        }
     }
 
     @Override
@@ -167,14 +176,141 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
 
             if (grave != null && player instanceof ServerPlayer serverPlayer) {
                 grave.giveInventoryToPlayer(serverPlayer);
-                ItemStack graveItem = new ItemStack(level.getBlockState(gravePos).getBlock());
-                ItemEntity ie = new ItemEntity(level, gravePos.getX() + 0.5, gravePos.getY() + 0.5, gravePos.getZ() + 0.5, graveItem);
-                ie.setDefaultPickUpDelay();
-                level.addFreshEntity(ie);
             }
         }
         super.playerWillDestroy(level, pos, state, player);
         return state;
+    }
+
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        if (type != BlockEntityRegistry.GRAVE_STONE.get()) {
+            return null;
+        }
+
+        if (level.isClientSide) {
+            return (lvl, p, s, blockentity) -> clientTick(lvl, p, s, (GraveStoneBlockEntity) blockentity);
+        }
+
+        return (lvl, p, s, blockentity) -> serverTick((ServerLevel) lvl, p, s, (GraveStoneBlockEntity) blockentity);
+    }
+
+    private static void clientTick(Level level, BlockPos pos, BlockState state, GraveStoneBlockEntity blockEntity) {
+        if (!level.isClientSide()) {
+            return;
+        }
+
+        if (blockEntity.getGraveLevel() != GraveStoneLevels.GRAVESTONE_LEVEL_3) {
+            return;
+        }
+
+
+        IGraveVariant variant = blockEntity.getVariant();
+        double[][] candles = variant != null ? variant.getCandlePositions() : null;
+
+        if (candles == null) {
+            return;
+        }
+
+        Direction facing = state.hasProperty(GraveStoneBlock.FACING) ? state.getValue(GraveStoneBlock.FACING) : Direction.NORTH;
+
+        for (double[] candle : candles) {
+            double lx = candle[0];
+            double lz = candle[1];
+            double lyOffset = candle[2];
+
+            double ox, oz;
+            switch (facing) {
+                case SOUTH -> {
+                    ox = -lx;
+                    oz = -lz;
+                }
+                case EAST -> {
+                    ox = -lz;
+                    oz = lx;
+                }
+                case WEST -> {
+                    ox = lz;
+                    oz = -lx;
+                }
+                default -> {
+                    ox = lx;
+                    oz = lz;
+                }
+            }
+
+            for (int i = 0; i < 3; i++) {
+                double x = pos.getX() + 0.5 + ox + (level.random.nextDouble() - 0.5) * 0.03;
+                double y = pos.getY() + lyOffset + level.random.nextDouble() * 0.04;
+                double z = pos.getZ() + 0.5 + oz + (level.random.nextDouble() - 0.5) * 0.03;
+
+                level.addParticle(ParticleUtils.constructSimpleSpark(new Color(155 + level.getRandom().nextInt(100), level.getRandom().nextInt(100), 0), 0.15f, 5 + level.getRandom().nextInt(5), 0.85f), x, y, z, 0.0, 0.025, 0.0);
+            }
+        }
+    }
+
+    private static void serverTick(ServerLevel level, BlockPos pos, BlockState state, GraveStoneBlockEntity blockEntity) {
+        if (blockEntity.isDecorative() || blockEntity.isVoidRecovery()) {
+            return;
+        }
+
+        if (((level.getGameTime() + pos.asLong()) % 20L) != 0L) {
+            return;
+        }
+
+        if (level.getNearestPlayer(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 32.0, false) == null) {
+            return;
+        }
+
+        ResourceLocation variantId = blockEntity.getGraveData().getVariantId();
+        if (variantId == null && blockEntity.getVariant() != null) {
+            variantId = blockEntity.getVariant().getId();
+        }
+
+        CemeteryManager cemeteryManager = CemeteryManager.getInstance();
+        if (!cemeteryManager.isCemetery(level.dimension(), pos)) {
+            clearCemeteryFogForGrave(level, pos);
+            return;
+        }
+
+        BlockPos lastAdded = cemeteryManager.getLastAddedCemeteryGrave(level.dimension());
+        if (lastAdded != null && lastAdded.equals(pos)) {
+            clearCemeteryFogForGrave(level, pos);
+            return;
+        }
+
+        AABB checkBox = new AABB(pos).inflate(2.2);
+        for (GhostlyFogEntity fogEntity : level.getEntitiesOfClass(GhostlyFogEntity.class, checkBox)) {
+            if (fogEntity.isBoundToGrave(pos)) {
+                return;
+            }
+        }
+
+        float[] color = VariantUtils.getVariantColor(variantId != null ? variantId.getPath() : null);
+        GhostlyFogEntity fog = EntityRegistry.GHOSTLY_FOG.get().create(level);
+        if (fog == null) {
+            return;
+        }
+
+        double x = pos.getX() + 0.5 + (level.random.nextDouble() - 0.5) * 0.12;
+        double y = pos.getY() - 0.06;
+        double z = pos.getZ() + 0.5 + (level.random.nextDouble() - 0.5) * 0.12;
+
+        fog.moveTo(x, y, z, 0f, 0f);
+        fog.bindToGrave(pos);
+        int density = 1;
+        float scale = 1.01f;
+        fog.configure(170 + level.random.nextInt(70), 1.42f + level.random.nextFloat() * 0.20f, density, -scale, color[0], color[1], color[2], 10);
+        level.addFreshEntity(fog);
+    }
+
+    private static void clearCemeteryFogForGrave(ServerLevel level, BlockPos pos) {
+        AABB checkBox = new AABB(pos).inflate(2.2);
+        for (GhostlyFogEntity fogEntity : level.getEntitiesOfClass(GhostlyFogEntity.class, checkBox)) {
+            if (fogEntity.isBoundToGrave(pos)) {
+                fogEntity.discard();
+            }
+        }
     }
 
     @Override
@@ -266,7 +402,7 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
         if (shape.isDouble() && state.getValue(HALF) == DoubleBlockHalf.UPPER) return;
 
         GraveStoneBlockEntity blockEntity = getBlockEntity(level, pos);
-        if (blockEntity != null && blockEntity.isVoidRecovery()) {
+        if (blockEntity != null && (blockEntity.isVoidRecovery() || blockEntity.isDecorative())) {
             return;
         }
 
@@ -278,6 +414,7 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
     private void startFalling(ServerLevel level, BlockPos pos, BlockState state) {
         GraveStoneBlockEntity blockEntity = getBlockEntity(level, pos);
         if (blockEntity == null) return;
+        if (blockEntity.isDecorative()) return;
 
         boolean hasLandingSurface = false;
         for (int y = pos.getY() - 1; y >= level.getMinBuildHeight(); y--) {
@@ -308,7 +445,7 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
         blockEntity.setSuppressDropsOnRemove(true);
         level.removeBlock(pos, false);
 
-        FallingGraveEntity falling = FallingGraveEntity.create(level, Vec3.atCenterOf(pos), Vec3.ZERO, itemData, graveLevel, ownerUUID, ownerName, state.getValue(FACING));
+        FallingGraveEntity falling = FallingGraveEntity.create(level, new Vec3(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D), Vec3.ZERO, itemData, graveLevel, ownerUUID, ownerName, state.getValue(FACING));
         falling.stopRotation();
         level.addFreshEntity(falling);
     }
