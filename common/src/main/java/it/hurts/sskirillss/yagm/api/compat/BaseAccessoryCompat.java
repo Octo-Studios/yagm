@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.api.compat;
 
+import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.api.compat.provider.IAccessoryHandler;
 import it.hurts.sskirillss.yagm.util.NbtKeys;
 import net.minecraft.core.RegistryAccess;
@@ -12,6 +13,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 
 public abstract class BaseAccessoryCompat implements IAccessoryHandler {
@@ -78,16 +80,29 @@ public abstract class BaseAccessoryCompat implements IAccessoryHandler {
     }
 
     public static List<ItemStack> parseAccessories(RegistryAccess registry, CompoundTag data) {
-        if (!AccessoryLoader.hasAnyHandler() || !data.contains(NBT_KEYS.getAccessories())) {
+        if (registry == null || data == null || !AccessoryLoader.hasAnyHandler() || !data.contains(NBT_KEYS.getAccessories(), Tag.TAG_COMPOUND)) {
             return List.of();
         }
+
+        Map<String, Map<String, ItemStack>> accessories;
 
         try {
-            var accessories = AccessoryLoader.loadNBT(data.getCompound(NBT_KEYS.getAccessories()), registry);
-
-            return accessories.values().stream().flatMap(slots -> slots.values().stream()).filter(stack -> !stack.isEmpty()).toList();
-        } catch (Exception e) {
+            accessories = AccessoryLoader.loadNBT(data.getCompound(NBT_KEYS.getAccessories()), registry);
+        } catch (RuntimeException e) {
+            YAGMCommon.LOGGER.warn("Failed to load accessories from NBT", e);
             return List.of();
         }
+
+        if (accessories.isEmpty()) {
+            return List.of();
+        }
+
+        return accessories.values().stream()
+                .filter(Objects::nonNull)
+                .flatMap(slots -> slots.values().stream())
+                .filter(Objects::nonNull)
+                .filter(stack -> !stack.isEmpty())
+                .map(ItemStack::copy)
+                .toList();
     }
 }

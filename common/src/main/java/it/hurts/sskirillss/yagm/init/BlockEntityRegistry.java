@@ -4,6 +4,7 @@ import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
+import it.hurts.sskirillss.yagm.util.VariantUtils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 
@@ -14,7 +15,7 @@ public class BlockEntityRegistry {
     public static final RegistrySupplier<BlockEntityType<GraveStoneBlockEntity>> GRAVE_STONE =
             BLOCK_ENTITIES.register("grave_stone", () -> BlockEntityType.Builder.of(
                     GraveStoneBlockEntity::new,
-                    BlockRegistry.getGraves()
+                    VariantUtils.getGraves()
             ).build(null));
 
     public static void init() {

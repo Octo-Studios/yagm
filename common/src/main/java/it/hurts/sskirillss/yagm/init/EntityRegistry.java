@@ -7,6 +7,7 @@ import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import it.hurts.sskirillss.yagm.entity.FallingGraveEntity;
 import it.hurts.sskirillss.yagm.entity.GhostEntity;
+import it.hurts.sskirillss.yagm.entity.GhostlyFogEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -30,6 +31,14 @@ public class EntityRegistry {
                             .clientTrackingRange(64)
                             .updateInterval(3)
                             .build("ghost"));
+
+    public static final RegistrySupplier<EntityType<GhostlyFogEntity>> GHOSTLY_FOG =
+            ENTITIES.register("ghostly_fog", () ->
+                    EntityType.Builder.of(GhostlyFogEntity::new, MobCategory.MISC)
+                            .sized(0.1f, 0.1f)
+                            .clientTrackingRange(64)
+                            .updateInterval(1)
+                            .build("ghostly_fog"));
 
 
     public static void init() {

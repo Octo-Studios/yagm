@@ -26,6 +26,7 @@ public class DimensionGraveData {
 
     private final SpatialGraveHash spatialHash;
     private final UnionFind unionFind;
+    private final Deque<BlockPos> insertionOrder = new ArrayDeque<>();
 
     private final Map<BlockPos, BlockPos> centerCache = new HashMap<>();
     private final Set<BlockPos> dirtyCenters = new HashSet<>();
@@ -46,6 +47,8 @@ public class DimensionGraveData {
 
     public void addGrave(BlockPos pos) {
         if (!spatialHash.add(pos)) return;
+        insertionOrder.remove(pos);
+        insertionOrder.addLast(pos.immutable());
 
         unionFind.makeSet(pos);
 
@@ -65,6 +68,7 @@ public class DimensionGraveData {
 
     public void removeGrave(BlockPos pos) {
         if (!spatialHash.remove(pos)) return;
+        insertionOrder.remove(pos);
         Set<BlockPos> oldClusterMembers = new HashSet<>(unionFind.getClusterMembers(pos));
         int oldClusterSize = oldClusterMembers.size();
 
@@ -158,12 +162,28 @@ public class DimensionGraveData {
         return spatialHash.getAll();
     }
 
+    public BlockPos getLastAddedGrave() {
+        return insertionOrder.peekLast();
+    }
+
+    public BlockPos getLastAddedCemeteryGrave() {
+        Iterator<BlockPos> it = insertionOrder.descendingIterator();
+        while (it.hasNext()) {
+            BlockPos pos = it.next();
+            if (isCemetery(pos)) {
+                return pos;
+            }
+        }
+        return null;
+    }
+
 
     public void clear() {
         spatialHash.clear();
         unionFind.clear();
         centerCache.clear();
         dirtyCenters.clear();
+        insertionOrder.clear();
     }
 
 
@@ -200,26 +220,47 @@ public class DimensionGraveData {
         return dx * dx + dz * dz;
     }
 
-
-    private static final String TAG_GRAVES = "graves";
-
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
         ListTag gravesList = new ListTag();
+        ListTag orderList = new ListTag();
 
         for (BlockPos pos : spatialHash.getAll()) {
             BlockPos.CODEC.encodeStart(NbtOps.INSTANCE, pos).result().ifPresent(gravesList::add);
         }
 
-        tag.put(TAG_GRAVES, gravesList);
+        for (BlockPos pos : insertionOrder) {
+            BlockPos.CODEC.encodeStart(NbtOps.INSTANCE, pos).result().ifPresent(orderList::add);
+        }
+
+        tag.put("graves", gravesList);
+        tag.put("order", orderList);
         return tag;
     }
 
     public void load(CompoundTag tag) {
         clear();
-        ListTag gravesList = tag.getList(TAG_GRAVES, Tag.TAG_INT_ARRAY);
+        ListTag gravesList = tag.getList("graves", Tag.TAG_INT_ARRAY);
         for (Tag value : gravesList) {
             BlockPos.CODEC.parse(NbtOps.INSTANCE, value).resultOrPartial(e -> {}).ifPresent(this::loadGravePos);
+        }
+
+        ListTag orderList = tag.getList("order", Tag.TAG_INT_ARRAY);
+        for (Tag value : orderList) {
+            BlockPos.CODEC.parse(NbtOps.INSTANCE, value).resultOrPartial(e -> {}).ifPresent(pos -> {
+                if (spatialHash.getAll().contains(pos)) {
+                    insertionOrder.remove(pos);
+                    insertionOrder.addLast(pos.immutable());
+                }
+            });
+        }
+
+        if (insertionOrder.isEmpty()) {
+            List<BlockPos> sorted = new ArrayList<>(spatialHash.getAll());
+            sorted.sort(Comparator.comparingLong(BlockPos::asLong));
+            for (BlockPos pos : sorted) {
+                insertionOrder.addLast(pos.immutable());
+            }
         }
     }
 

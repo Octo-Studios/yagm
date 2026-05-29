@@ -2,6 +2,7 @@ package it.hurts.sskirillss.yagm.init;
 
 import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.api.variant.builder.GraveVariantBuilder;
+import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
 import it.hurts.sskirillss.yagm.component.type.GraveVariantTypes;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.world.level.biome.Biomes;
@@ -9,10 +10,12 @@ import net.minecraft.world.level.biome.Biomes;
 public class DefaultVariantsRegistry {
     public static void registerAll() {
         // Default grave (fallback for all biomes)
-        GraveVariantBuilder.create(YAGMCommon.MODID, GraveVariantTypes.DEFAULT.getPath())
-                .displayName("Default")
-                .priority(0)
-                .buildAndRegister();
+        GraveVariantRegistry.registerDefault(
+                GraveVariantBuilder.create(YAGMCommon.MODID, GraveVariantTypes.DEFAULT.getPath())
+                        .displayName("Default")
+                        .priority(0)
+                        .build()
+        );
 
         // Cold biomes (taiga, snowy)
         GraveVariantBuilder.create(YAGMCommon.MODID, GraveVariantTypes.COLD.getPath())
@@ -28,6 +31,7 @@ public class DefaultVariantsRegistry {
                 .priority(55)
                 .inOverworldLevel()
                 .matchBiomes(Biomes.DESERT, Biomes.SAVANNA, Biomes.BADLANDS)
+                .candlePositions(new double[]{-0.34375, -0.1875, 0.59375}, new double[]{-0.375, -0.390625, 0.46875})
                 .buildAndRegister();
 
         // Nether biomes
@@ -42,6 +46,7 @@ public class DefaultVariantsRegistry {
                 .displayName("End")
                 .priority(60)
                 .inEndLevel()
+                .candlePositions(new double[]{0.375, -0.34375, 0.65625}, new double[]{-0.375, -0.34375, 0.46875})
                 .buildAndRegister();
 
         // Tropics biomes (jungle)
@@ -50,11 +55,12 @@ public class DefaultVariantsRegistry {
                 .priority(55)
                 .inOverworldLevel()
                 .matchBiomeTags(BiomeTags.IS_JUNGLE)
+                .candlePositions(new double[]{0.3125, -0.1875, 0.53125}, new double[]{0.28125, -0.390625, 0.40625})
                 .buildAndRegister();
 
         // Ocean biomes
         GraveVariantBuilder.create(YAGMCommon.MODID, GraveVariantTypes.OCEAN.getPath())
-                .displayName("ocean")
+                .displayName("Ocean")
                 .priority(55)
                 .inOverworldLevel()
                 .matchBiomeTags(BiomeTags.IS_OCEAN, BiomeTags.IS_DEEP_OCEAN, BiomeTags.IS_BEACH)

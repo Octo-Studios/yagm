@@ -36,6 +36,7 @@ public class EventRegistry {
         LifecycleEvent.SERVER_STOPPING.register(server -> {
             GhostSpawnHandler.reset();
             GraveStoneEvent.resetRuntimeState();
+            CemeteryManager.getInstance().resetRuntimeState();
         });
 
         TickEvent.SERVER_POST.register(GhostSpawnHandler::tick);

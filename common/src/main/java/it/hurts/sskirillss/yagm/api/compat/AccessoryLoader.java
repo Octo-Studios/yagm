@@ -5,6 +5,8 @@ import it.hurts.sskirillss.yagm.util.InventoryUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
@@ -84,6 +86,15 @@ public final class AccessoryLoader {
                 if (!accessories.isEmpty()) {
                     allAccessories.put(handlerName, accessories);
                 }
+            } else {
+                CompoundTag handlerData = tag.getCompound(handlerName);
+                Map<String, ItemStack> fallbackAccessories = parseUnknownAccessories(handlerData, registryAccess);
+                if (!fallbackAccessories.isEmpty()) {
+                    log.warn("[YAGM] No handler for '{}', {} items may be restored via inventory/drop fallback", handlerName, fallbackAccessories.size());
+                    allAccessories.put(handlerName, fallbackAccessories);
+                } else {
+                    log.warn("[YAGM] No handler for '{}', unable to decode accessory payload", handlerName);
+                }
             }
         }
         return allAccessories;
@@ -101,11 +112,44 @@ public final class AccessoryLoader {
             } else {
                 for (ItemStack stack : accessories.values()) {
                     if (!stack.isEmpty()) {
-                        InventoryUtils.giveOrDropItem(player, stack.copy());
+                        player.drop(stack.copy(), false);
                     }
                 }
             }
         }
+    }
+
+    private static Map<String, ItemStack> parseUnknownAccessories(CompoundTag handlerData, RegistryAccess registryAccess) {
+        Map<String, ItemStack> parsed = new HashMap<>();
+        int syntheticIndex = 0;
+
+        for (String key : handlerData.getAllKeys()) {
+            if (!handlerData.contains(key, Tag.TAG_LIST)) {
+                continue;
+            }
+
+            ListTag items = handlerData.getList(key, Tag.TAG_COMPOUND);
+            for (int i = 0; i < items.size(); i++) {
+                CompoundTag itemTag = items.getCompound(i);
+                if (!itemTag.contains("Item", Tag.TAG_COMPOUND)) {
+                    continue;
+                }
+
+                ItemStack stack = ItemStack.parseOptional(registryAccess, itemTag.getCompound("Item"));
+                if (stack.isEmpty()) {
+                    continue;
+                }
+
+                String slotKey = itemTag.getString("SlotKey");
+                if (slotKey.isEmpty()) {
+                    slotKey = key + "/unknown/" + (syntheticIndex++);
+                }
+
+                parsed.put(slotKey, stack);
+            }
+        }
+
+        return parsed;
     }
 
 }

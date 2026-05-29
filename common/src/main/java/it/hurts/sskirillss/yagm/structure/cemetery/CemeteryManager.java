@@ -1,13 +1,11 @@
 package it.hurts.sskirillss.yagm.structure.cemetery;
 
-
 import it.hurts.sskirillss.yagm.block.GraveStoneBlock;
 import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.structure.cemetery.config.CemeteryConfig;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeteryInfo;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeterySavedData;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.DimensionGraveData;
-import it.hurts.sskirillss.yagm.structure.cemetery.ICemeteryManager;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.core.BlockPos;
@@ -21,7 +19,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.*;
 import java.util.function.Function;
 
-@SuppressWarnings("all")
 public class CemeteryManager {
 
     @Getter
@@ -30,18 +27,27 @@ public class CemeteryManager {
     @Setter
     @Getter
     private int clusterRadius = CemeteryConfig.getDefaultRadius();
-
     @Setter
     @Getter
     private int minGravesForCemetery = CemeteryConfig.getDefaultMinGraves();
-
     private final Map<ResourceKey<Level>, DimensionGraveData> dimensions = new HashMap<>();
 
     private ICemeteryManager.CemeteryFormedCallback onCemeteryFormed;
+    @Setter
+    private ICemeteryManager.LevelChecker levelChecker;
+    private final Map<ResourceKey<Level>, Set<BlockPos>> formedCemeteries = new HashMap<>();
+    private final Map<ResourceKey<Level>, BlockPos> lastAddedGraves = new HashMap<>();
 
-    public void setOnCemeteryFormed(ICemeteryManager.CemeteryFormedCallback callback) {
-        this.onCemeteryFormed = callback;
-        dimensions.forEach((dimension, data) -> setupCallbacks(dimension, data));
+
+    public void addGrave(ResourceKey<Level> dimension, BlockPos pos) {
+        Level level = levelChecker != null ? levelChecker.getLevel(dimension) : null;
+        if (level != null && !isCemeteryGravePos(level, pos)) {
+            return;
+        }
+
+        DimensionGraveData data = getData(dimension);
+        data.addGrave(pos);
+        lastAddedGraves.put(dimension, pos.immutable());
     }
 
     private void setupCallbacks(ResourceKey<Level> dimension, DimensionGraveData data) {
@@ -56,24 +62,19 @@ public class CemeteryManager {
         data.setOnCemeteryDestroyed((removedPos) -> refreshFormedCemeteries(dimension, data));
     }
 
-    @Setter
-    private ICemeteryManager.LevelChecker levelChecker;
-
-    private final Map<ResourceKey<Level>, Set<BlockPos>> formedCemeteries = new HashMap<>();
-
-
-    public void addGrave(ResourceKey<Level> dimension, BlockPos pos) {
-        Level level = levelChecker != null ? levelChecker.getLevel(dimension) : null;
-        if (level != null && !isValidCemeteryGraveAtPosition(level, pos)) {
-            return;
-        }
-
-        getData(dimension).addGrave(pos);
-    }
-
-
     public void removeGrave(ResourceKey<Level> dimension, BlockPos pos) {
-        getData(dimension).removeGrave(pos);
+        DimensionGraveData data = getData(dimension);
+        data.removeGrave(pos);
+
+        BlockPos last = lastAddedGraves.get(dimension);
+        if (last != null && last.equals(pos)) {
+            BlockPos nextLast = data.getLastAddedGrave();
+            if (nextLast == null) {
+                lastAddedGraves.remove(dimension);
+            } else {
+                lastAddedGraves.put(dimension, nextLast.immutable());
+            }
+        }
     }
 
 
@@ -82,10 +83,6 @@ public class CemeteryManager {
     }
 
 
-    public Set<BlockPos> getClusterGraves(ResourceKey<Level> dimension, BlockPos pos) {
-        return getData(dimension).getClusterGraves(pos);
-    }
-
     public Set<BlockPos> getGravesInRadius(ResourceKey<Level> dimension, BlockPos pos, int radius) {
         return getData(dimension).getGravesInRadius(pos, radius);
     }
@@ -93,6 +90,25 @@ public class CemeteryManager {
 
     public int getGraveCountNear(ResourceKey<Level> dimension, BlockPos pos, int radius) {
         return getData(dimension).getGraveCountNear(pos, radius);
+    }
+
+    public BlockPos getLastAddedGrave(ResourceKey<Level> dimension) {
+        return lastAddedGraves.get(dimension);
+    }
+
+    public BlockPos getLastAddedCemeteryGrave(ResourceKey<Level> dimension) {
+        DimensionGraveData data = getData(dimension);
+        BlockPos last = lastAddedGraves.get(dimension);
+
+        if (last != null && data.isCemetery(last)) {
+            return last;
+        }
+
+        BlockPos fallback = data.getLastAddedCemeteryGrave();
+        if (fallback != null) {
+            lastAddedGraves.put(dimension, fallback.immutable());
+        }
+        return fallback;
     }
 
 
@@ -137,7 +153,7 @@ public class CemeteryManager {
                 Set<BlockPos> invalidGraves = new HashSet<>();
 
                 for (BlockPos pos : allGraves) {
-                    if (!isValidCemeteryGraveAtPosition(level, pos)) {
+                    if (!isCemeteryGravePos(level, pos)) {
                         invalidGraves.add(pos);
                     }
                 }
@@ -173,7 +189,7 @@ public class CemeteryManager {
         }
     }
 
-    private boolean isValidCemeteryGraveAtPosition(Level level, BlockPos pos) {
+    private boolean isCemeteryGravePos(Level level, BlockPos pos) {
         if (!level.isLoaded(pos)) {
             return true;
         }
@@ -211,6 +227,7 @@ public class CemeteryManager {
     public void load(CompoundTag tag, Function<String, ResourceKey<Level>> dimensionResolver) {
         dimensions.clear();
         formedCemeteries.clear();
+        lastAddedGraves.clear();
 
         for (String key : tag.getAllKeys()) {
             ResourceKey<Level> dimension = dimensionResolver.apply(key);
@@ -226,6 +243,11 @@ public class CemeteryManager {
                 for (CemeteryInfo cemetery : cemeteries) {
                     formed.add(cemetery.getCenter());
                 }
+
+                BlockPos last = data.getLastAddedGrave();
+                if (last != null) {
+                    lastAddedGraves.put(dimension, last.immutable());
+                }
             }
         }
     }
@@ -240,5 +262,13 @@ public class CemeteryManager {
 
     private DimensionGraveData createDimensionData() {
         return new DimensionGraveData(clusterRadius, minGravesForCemetery);
+    }
+
+    public void resetRuntimeState() {
+        dimensions.clear();
+        formedCemeteries.clear();
+        lastAddedGraves.clear();
+        onCemeteryFormed = null;
+        levelChecker = null;
     }
 }
