@@ -14,7 +14,10 @@ import java.util.EnumSet;
 public class GhostSnippedAttackGoal extends Goal {
 
     private final GhostEntity ghost;
+    private static final double RETREAT_DISTANCE = 5.0;
+    private static final double CHARGE_SPEED = 0.72;
     private int attackCooldown = 0;
+    private Vec3 retreatTarget;
 
     public GhostSnippedAttackGoal(GhostEntity ghost) {
         this.ghost = ghost;
@@ -24,6 +27,10 @@ public class GhostSnippedAttackGoal extends Goal {
     @Override
     public boolean canUse() {
         LivingEntity target = ghost.getTarget();
+        if (ghost.hasTameAttackDelay()) {
+            return false;
+        }
+
         return target != null && target.isAlive() && !(ghost.isTame() && target instanceof Player player && ghost.isOwnedBy(player));
     }
 
@@ -40,6 +47,11 @@ public class GhostSnippedAttackGoal extends Goal {
     @Override
     public void stop() {
         ghost.getNavigation().stop();
+        retreatTarget = null;
+
+        if (!ghost.isTame() && ghost.getTarget() == null) {
+            ghost.setMood(GhostMood.DEFAULT);
+        }
     }
 
     @Override
@@ -49,36 +61,38 @@ public class GhostSnippedAttackGoal extends Goal {
             return;
         }
 
-        double bob = Math.sin((ghost.tickCount + ghost.getId() * 11.0) * 0.22) * 0.14;
-        Vec3 targetPos = target.position().add(0, target.getEyeHeight() * 0.5 + bob, 0);
+        Vec3 targetPos = target.position().add(0, target.getEyeHeight() * 0.5, 0);
         Vec3 toTarget = targetPos.subtract(ghost.position());
 
         if (attackCooldown > 0) {
             attackCooldown--;
             ghost.getNavigation().stop();
+            faceVector(toTarget, 0.42f);
 
-            Vec3 look = ghost.getLookAngle();
-            Vec3 backward = new Vec3(-look.x, 0, -look.z);
+            if (retreatTarget != null) {
+                Vec3 toRetreat = retreatTarget.subtract(ghost.position());
+                double retreatDistance = toRetreat.length();
 
-            if (backward.lengthSqr() < 1e-4) {
-                Vec3 away = ghost.position().subtract(target.position());
-                backward = new Vec3(away.x, 0, away.z);
+                if (retreatDistance > 0.08) {
+                    Vec3 retreatStep = toRetreat.scale(Math.min(0.32, retreatDistance) / Math.max(retreatDistance, 1e-6));
+                    Vec3 retreatVelocity = ghost.getDeltaMovement().scale(0.55).add(retreatStep.scale(0.45));
+                    ghost.setDeltaMovement(retreatVelocity);
+                } else {
+                    retreatTarget = null;
+                    ghost.setDeltaMovement(ghost.getDeltaMovement().scale(0.6));
+                }
             }
-
-            if (backward.lengthSqr() < 1e-4) {
-                backward = new Vec3(1, 0, 0);
-            }
-
-            backward = backward.normalize();
-            double retreatBob = Math.sin((ghost.tickCount + ghost.getId() * 7.0) * 0.25) * 0.05;
-            Vec3 desired = backward.scale(0.65).add(0, 0.04 + retreatBob, 0);
-            Vec3 velocity = ghost.getDeltaMovement().scale(0.45).add(desired.scale(0.55));
-            ghost.setDeltaMovement(velocity);
             return;
         }
 
         faceVector(toTarget, 0.42f);
-        ghost.getNavigation().moveTo(targetPos.x, targetPos.y, targetPos.z, 1.75);
+        ghost.getNavigation().stop();
+
+        double distance = toTarget.length();
+        if (distance > 1e-4) {
+            Vec3 chargeVelocity = toTarget.scale(1.0 / distance).scale(Math.min(CHARGE_SPEED, distance));
+            ghost.setDeltaMovement(chargeVelocity);
+        }
 
         if (ghost.distanceToSqr(targetPos) < 3.0) {
             ghost.doHurtTarget(target);
@@ -86,14 +100,13 @@ public class GhostSnippedAttackGoal extends Goal {
 
             Vec3 look = ghost.getLookAngle();
             Vec3 backward = new Vec3(-look.x, 0, -look.z);
-            if (backward.lengthSqr() > 1e-4) {
-                backward = backward.normalize();
-            } else {
-                backward = new Vec3(0.6, 0, 0.0);
-            }
+            backward = backward.lengthSqr() > 1e-4 ? backward.normalize() : new Vec3(0.6, 0, 0.0);
+
+            retreatTarget = ghost.position().add(backward.scale(RETREAT_DISTANCE));
 
             ghost.getNavigation().stop();
-            ghost.setDeltaMovement(backward.scale(0.45).add(0, 0.05, 0));
+            faceVector(toTarget, 1.0f);
+            ghost.setDeltaMovement(backward.scale(0.45).add(0, 0.03, 0));
         }
     }
 

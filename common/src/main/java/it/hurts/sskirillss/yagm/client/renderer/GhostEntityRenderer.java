@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.client.model.GhostEntityModel;
+import it.hurts.sskirillss.yagm.component.ghost_mode.GhostMood;
 import it.hurts.sskirillss.yagm.entity.GhostEntity;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -24,12 +25,9 @@ public class GhostEntityRenderer extends MobRenderer<GhostEntity, EntityModel<Gh
     public void render(GhostEntity entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
         poseStack.pushPose();
 
-        var time = entity.tickCount + partialTicks;
-
-        var hoverOffset = Mth.sin(time * 0.12F) * 0.12F;
-        var driftX = Mth.sin(time * 0.04F) * 0.03F;
-
-        poseStack.translate(driftX, hoverOffset, 0.0D);
+        if (entity.isBaby()) {
+            poseStack.scale(0.5f, 0.5f, 0.5f);
+        }
 
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, packedLight);
 
@@ -51,6 +49,9 @@ public class GhostEntityRenderer extends MobRenderer<GhostEntity, EntityModel<Gh
     @Override
     public ResourceLocation getTextureLocation(GhostEntity entity) {
         String moodTexture = entity.getMoodTextureName();
+        if (entity.isBaby() && GhostMood.DEFAULT.getTextureName().equals(moodTexture)) {
+            moodTexture = GhostMood.HAPPY.getTextureName();
+        }
         return YAGMCommon.id("textures/entity/" + moodTexture + ".png");
     }
 }

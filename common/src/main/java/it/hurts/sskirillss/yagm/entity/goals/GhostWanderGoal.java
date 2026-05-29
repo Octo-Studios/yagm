@@ -4,13 +4,16 @@ import it.hurts.sskirillss.yagm.component.ghost_mode.BehaviorMode;
 import it.hurts.sskirillss.yagm.data.entitydata.GhostEntityData;
 import it.hurts.sskirillss.yagm.entity.GhostEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.EnumSet;
 
 public class GhostWanderGoal extends Goal {
+
+    private static final int UNTAMED_HOME_RADIUS = 7;
+    private static final int UNTAMED_HARD_RETURN_RADIUS = 9;
 
     private final GhostEntity ghost;
     private BlockPos wanderTarget = null;
@@ -24,7 +27,7 @@ public class GhostWanderGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        return ghost.getTarget() == null && (!ghost.isTame() || ghost.getBehaviorMode() == BehaviorMode.WANDER);
+        return ghost.getTarget() == null && !ghost.isInLove() && (!ghost.isTame() || ghost.getBehaviorMode() == BehaviorMode.WANDER);
     }
 
     @Override
@@ -39,19 +42,49 @@ public class GhostWanderGoal extends Goal {
         wobbleTick = 0;
     }
 
+    private void pickNewTarget() {
+        wanderTick = 0;
+
+        if (!ghost.isTame() && ghost.getHomePos() == null) {
+            ghost.setHomePos(ghost.blockPosition());
+        }
+
+        BlockPos anchor = ghost.blockPosition();
+        if (!ghost.isTame() && ghost.getHomePos() != null) {
+            anchor = ghost.getHomePos();
+
+            double homeDistSqr = ghost.distanceToSqr(anchor.getX() + 0.5, ghost.getY(), anchor.getZ() + 0.5);
+            if (homeDistSqr > UNTAMED_HARD_RETURN_RADIUS * UNTAMED_HARD_RETURN_RADIUS) {
+                int surfaceY = ghost.level().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, anchor.getX(), anchor.getZ());
+                int targetY = surfaceY + 2 + ghost.getRandom().nextInt(3);
+                wanderTarget = new BlockPos(anchor.getX(), targetY, anchor.getZ());
+                return;
+            }
+        }
+
+        int radius = !ghost.isTame() && ghost.getHomePos() != null ? UNTAMED_HOME_RADIUS : 8;
+        int dx = ghost.getRandom().nextInt(radius * 2 + 1) - radius;
+        int dz = ghost.getRandom().nextInt(radius * 2 + 1) - radius;
+        int baseX = anchor.getX() + dx;
+        int baseZ = anchor.getZ() + dz;
+        int surfaceY = ghost.level().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, baseX, baseZ);
+        int targetY = surfaceY + 1 + ghost.getRandom().nextInt(5); // 1–5 blocks above surface
+        wanderTarget = new BlockPos(baseX, targetY, baseZ);
+    }
+
     @Override
     public void tick() {
         wobbleTick++;
         wanderTick++;
 
         if (wanderTarget == null || wanderTick >= GhostEntityData.WANDER_RETARGET_TICKS) {
-            wanderTick = 0;
-            wanderTarget = ghost.blockPosition().offset(ghost.getRandom().nextInt(16) - 8, 0, ghost.getRandom().nextInt(16) - 8);
+            pickNewTarget();
         }
 
-        Vec3 toTarget = Vec3.atCenterOf(wanderTarget).add(0, 1.5, 0).subtract(ghost.position());
+        Vec3 toTarget = Vec3.atCenterOf(wanderTarget).subtract(ghost.position());
         if (toTarget.horizontalDistance() < GhostEntityData.WANDER_ARRIVAL_DIST) {
             ghost.setDeltaMovement(ghost.getDeltaMovement().scale(0.8));
+            pickNewTarget();
             return;
         }
 
@@ -70,13 +103,7 @@ public class GhostWanderGoal extends Goal {
             velocity = velocity.scale(max / speed);
         }
 
-        ghost.setDeltaMovement(velocity);
-
-        if (velocity.horizontalDistanceSqr() > 1e-4) {
-            float targetYaw = (float) Math.toDegrees(Mth.atan2(-velocity.x, velocity.z));
-            ghost.setYRot(Mth.rotLerp(GhostEntityData.YAW_NORMAL, ghost.getYRot(), targetYaw));
-            ghost.yHeadRot = ghost.yBodyRot = ghost.getYRot();
-        }
+        ghost.setSteeredDeltaMovement(velocity, GhostEntityData.YAW_WANDER_TURN_DEGREES, GhostEntityData.YAW_TURN_MIN_SPEED_FACTOR);
     }
 
 }

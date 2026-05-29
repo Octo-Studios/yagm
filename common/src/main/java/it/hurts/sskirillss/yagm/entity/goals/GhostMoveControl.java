@@ -34,33 +34,30 @@ public class GhostMoveControl extends MoveControl {
             return;
         }
 
-        Vec3 acceleration = toTarget.normalize().scale(speedModifier * 0.075);
+        Vec3 acceleration = toTarget.normalize().scale(speedModifier * ACCEL);
         Vec3 velocity = ghost.getDeltaMovement().add(acceleration);
 
         double speed = velocity.length();
-        double max = 0.96 * speedModifier;
+        double max = MAX_SPEED * speedModifier;
         if (speed > max) {
             velocity = velocity.scale(max / speed);
         }
 
-        ghost.setDeltaMovement(velocity);
-
-        Player owner = ghost.getOwner();
-
-        boolean lockOwnerLook = ghost.isTame() && ghost.getBehaviorMode() == BehaviorMode.FOLLOW && ghost.getTarget() == null && owner != null && !owner.isSpectator();
-
-        if (lockOwnerLook) {
-            return;
+        if (ghost.isTame() && ghost.getBehaviorMode() == BehaviorMode.FOLLOW && ghost.getTarget() == null && !ghost.isInLove()) {
+            Player owner = ghost.getOwner();
+            if (owner != null && !owner.isSpectator()) {
+                return;
+            }
         }
 
+        ghost.setDeltaMovement(velocity);
         if (ghost.getTarget() != null) {
             double dx = ghost.getTarget().getX() - ghost.getX();
             double dz = ghost.getTarget().getZ() - ghost.getZ();
-            ghost.setYRot(-((float) Mth.atan2(dx, dz)) * (180f / (float) Math.PI));
-        } else if (velocity.horizontalDistanceSqr() > 1e-6) {
-            ghost.setYRot(-((float) Mth.atan2(velocity.x, velocity.z)) * (180f / (float) Math.PI));
+            ghost.setYRot((float) -(Mth.atan2(dx, dz) * (180f / Math.PI)));
+        } else if (velocity.horizontalDistanceSqr() > 1e-6D) {
+            ghost.setYRot((float) -(Mth.atan2(velocity.x, velocity.z) * (180f / Math.PI)));
         }
-
         ghost.yBodyRot = ghost.getYRot();
     }
 }
