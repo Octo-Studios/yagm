@@ -12,7 +12,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.storage.LevelResource;
 
 import java.util.List;
 
@@ -32,20 +31,19 @@ public class YAGMCommands {
                                 .forEach(builder::suggest);
                             return builder.buildFuture();
                         })
-                        .then(Commands.argument("save", StringArgumentType.string())
+                        .then(Commands.argument("save", StringArgumentType.greedyString())
                             .suggests((context, builder) -> {
                                 String playerName = StringArgumentType.getString(context, "player");
                                 ServerLevel level = context.getSource().getLevel();
-                                String worldName = level.getServer().getWorldPath(LevelResource.ROOT).getFileName().toString();
                                 
                                 ServerPlayer targetPlayer = context.getSource().getServer().getPlayerList().getPlayerByName(playerName);
                                 if (targetPlayer != null) {
-                                    List<String> saves = GraveSaveManager.listSaves(worldName, targetPlayer.getUUID());
-                                    for (int i = 0; i < saves.size(); i++) {
-                                        String index = String.valueOf(i + 1);
-                                        if (index.startsWith(builder.getRemaining())) {
-                                            String displayName = GraveSaveManager.formatSaveDisplayName(saves.get(i));
-                                            builder.suggest(index, Component.literal(displayName));
+                                    List<CompoundTag> saves = GraveSaveManager.listSaves(level, targetPlayer.getUUID());
+                                    String remaining = builder.getRemaining();
+                                    for (CompoundTag save : saves) {
+                                        String displayName = GraveSaveManager.formatTime(save);
+                                        if (displayName.startsWith(remaining)) {
+                                            builder.suggest(displayName, Component.literal(playerName + " " + displayName));
                                         }
                                     }
                                 }
@@ -60,7 +58,7 @@ public class YAGMCommands {
 
     private static int restoreGrave(CommandContext<CommandSourceStack> context) {
         String playerName = StringArgumentType.getString(context, "player");
-        String saveArg = StringArgumentType.getString(context, "save");
+        String selector = StringArgumentType.getString(context, "save").trim();
 
         ServerLevel level = context.getSource().getLevel();
         ServerPlayer targetPlayer = level.getServer().getPlayerList().getPlayerByName(playerName);
@@ -70,37 +68,19 @@ public class YAGMCommands {
             return 0;
         }
 
-        String worldName = level.getServer().getWorldPath(LevelResource.ROOT).getFileName().toString();
-
-        String saveName;
-        try {
-            int index = Integer.parseInt(saveArg);
-            List<String> saves = GraveSaveManager.listSaves(worldName, targetPlayer.getUUID());
-            if (index < 1 || index > saves.size()) {
-                context.getSource().sendFailure(Component.literal("Save #" + index + " not found (total: " + saves.size() + ")"));
-                return 0;
-            }
-            saveName = saves.get(index - 1);
-        } catch (NumberFormatException e) {
-            saveName = saveArg.endsWith(".dat") ? saveArg : saveArg + ".dat";
-        }
-
-        String finalSaveName = saveName;
-        CompoundTag graveData = GraveSaveManager.loadGraveData(worldName, targetPlayer.getUUID(), saveName);
-
+        CompoundTag graveData = GraveSaveManager.loadGraveData(level, targetPlayer.getUUID(), selector);
         if (graveData == null) {
-            context.getSource().sendFailure(Component.literal("Save not found: " + saveName));
+            context.getSource().sendFailure(Component.literal("Save not found: " + selector));
             return 0;
         }
 
         try {
-            InventoryUtils.restoreFromNBT(targetPlayer, graveData, true);
-            context.getSource().sendSuccess(() -> Component.literal("Successfully restored grave for player " + playerName + " from save " + finalSaveName), true);
-            log.info("Restored grave data for player {} from save {}", playerName, finalSaveName);
+            InventoryUtils.restoreFullGrave(targetPlayer, graveData);
+
+            context.getSource().sendSuccess(() -> Component.literal("Grave restored for player " + playerName), true);
             return 1;
         } catch (Exception e) {
             context.getSource().sendFailure(Component.literal("Failed to restore grave: " + e.getMessage()));
-            log.error("Failed to restore grave for player {} from save {}: {}", playerName, saveName, e.getMessage(), e);
             return 0;
         }
     }
