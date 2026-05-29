@@ -36,6 +36,7 @@ public class GraveStoneEvent {
     private static final NbtKeys KEYS = NbtKeys.INSTANCE;
     private static final Set<UUID> activeDeaths = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private static final Map<UUID, TrackedSafePosition> lastSafePositions = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> lastHandledDeathTick = new ConcurrentHashMap<>();
 
     private record TrackedSafePosition(ResourceKey<Level> dimension, Vec3 position) {}
 
@@ -55,8 +56,12 @@ public class GraveStoneEvent {
         Direction facing = player.getDirection().getOpposite();
 
         if (!graveData.hasUUID(KEYS.getId())) graveData.putUUID(KEYS.getId(), UUID.randomUUID());
+        UUID graveId = graveData.getUUID(KEYS.getId());
 
         GraveDataManager manager = GraveDataManager.get(serverLevel);
+        if (manager.hasGrave(graveId)) {
+            return;
+        }
         manager.addGrave(graveData);
 
         long deathTime = System.currentTimeMillis();
@@ -79,11 +84,13 @@ public class GraveStoneEvent {
         }
 
         lastSafePositions.keySet().removeIf(uuid -> !onlinePlayers.contains(uuid));
+        lastHandledDeathTick.keySet().removeIf(uuid -> !onlinePlayers.contains(uuid));
     }
 
     public static void resetRuntimeState() {
         activeDeaths.clear();
         lastSafePositions.clear();
+        lastHandledDeathTick.clear();
     }
 
     public static void handlePlayerDeath(ServerPlayer player) {
@@ -92,6 +99,12 @@ public class GraveStoneEvent {
         }
 
         UUID uuid = player.getUUID();
+        long currentTick = player.serverLevel().getGameTime();
+        Long previousTick = lastHandledDeathTick.put(uuid, currentTick);
+        if (previousTick != null && currentTick - previousTick <= 2L) {
+            return;
+        }
+
         if (!activeDeaths.add(uuid)) {
             return;
         }

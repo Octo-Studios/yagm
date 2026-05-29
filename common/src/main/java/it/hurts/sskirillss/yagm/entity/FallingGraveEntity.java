@@ -114,6 +114,9 @@ public class FallingGraveEntity extends Entity {
         entity.entityData.set(DATA_ROTATION, 0f);
         entity.entityData.set(DATA_FACING, facing.get2DDataValue());
         entity.entityData.set(DATA_ROT_SPEED, entity.rotationSpeed);
+        if (level instanceof ServerLevel) {
+            entity.getChunkT();
+        }
 
         return entity;
     }
@@ -177,7 +180,7 @@ public class FallingGraveEntity extends Entity {
                 }
             }
 
-            if (!shouldPlace && lifetime > 300) {
+            if (!shouldPlace && lifetime > 1200 && canPlace()) {
                 shouldPlace = true;
             }
 
@@ -233,6 +236,10 @@ public class FallingGraveEntity extends Entity {
     }
 
     private void handleGravePlacement() {
+        if (level() instanceof ServerLevel serverLevel && isGravePlacedTick(serverLevel)) {
+            return;
+        }
+
         BlockPos landingPos = findLandingPosition();
 
         BlockPos gravePos = voidRecovery ? landingPos : PlaceableUtils.getGraveStoneBlockPosition(level(), landingPos);
@@ -254,9 +261,11 @@ public class FallingGraveEntity extends Entity {
     }
 
     private boolean tryPlaceGrave(BlockPos pos, Block graveBlock) {
-        boolean waterlogged = level().getFluidState(pos).isSourceOfType(Fluids.WATER);
+        if (graveData != null && graveData.hasUUID(KEYS.getId()) && level().getBlockEntity(pos) instanceof GraveStoneBlockEntity existing && graveData.getUUID(KEYS.getId()).equals(existing.getGraveData().getGraveId())) {
+            return true;
+        }
 
-        BlockState graveState = graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing).setValue(BlockStateProperties.WATERLOGGED, waterlogged);
+        BlockState graveState = graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing).setValue(BlockStateProperties.WATERLOGGED, level().getFluidState(pos).isSourceOfType(Fluids.WATER));
 
         boolean placed = voidRecovery ? PlaceableUtils.placeGraveStoneExact(level(), pos, graveState) : PlaceableUtils.placeGraveStone(level(), pos, graveState);
 
@@ -363,6 +372,60 @@ public class FallingGraveEntity extends Entity {
 
         activeChunkTickets.clear();
         activeChunkTickets.addAll(required);
+    }
+
+    private void getChunkT() {
+        if (!(level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        ChunkPos center = new ChunkPos(blockPosition());
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                ChunkPos chunk = new ChunkPos(center.x + dx, center.z + dz);
+                long chunkId = chunk.toLong();
+                if (activeChunkTickets.add(chunkId)) {
+                    serverLevel.getChunkSource().addRegionTicket(FALLING_GRAVE_TICKET, chunk, 2, chunkId);
+                }
+            }
+        }
+    }
+
+    private boolean isGravePlacedTick(ServerLevel serverLevel) {
+        if (graveData == null || !graveData.hasUUID(KEYS.getId())) {
+            return false;
+        }
+
+        UUID graveId = graveData.getUUID(KEYS.getId());
+        GraveDataManager manager = GraveDataManager.get(serverLevel);
+        BlockPos existingPos = manager.getGravePos(graveId);
+        if (existingPos == null) {
+            return false;
+        }
+
+        serverLevel.getChunk(existingPos.getX() >> 4, existingPos.getZ() >> 4);
+        return serverLevel.getBlockEntity(existingPos) instanceof GraveStoneBlockEntity blockEntity && graveId.equals(blockEntity.getGraveData().getGraveId());
+    }
+
+    private boolean canPlace() {
+        BlockPos current = blockPosition();
+        BlockState atCurrent = level().getBlockState(current);
+        if (!atCurrent.isAir() && !atCurrent.canBeReplaced()) {
+            return true;
+        }
+
+        int minY = level().getMinBuildHeight();
+        for (int offset = 1; offset <= 24; offset++) {
+            BlockPos below = current.below(offset);
+            if (below.getY() <= minY + 1) {
+                return true;
+            }
+            if (level().getBlockState(below).isSolid()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 

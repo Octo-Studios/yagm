@@ -63,7 +63,7 @@ public class DefaultVariantsRegistry {
                 .displayName("Ocean")
                 .priority(55)
                 .inOverworldLevel()
-                .matchBiomeTags(BiomeTags.IS_OCEAN, BiomeTags.IS_DEEP_OCEAN, BiomeTags.IS_BEACH)
+                .matchBiomeTags(BiomeTags.IS_OCEAN, BiomeTags.IS_DEEP_OCEAN, BiomeTags.IS_BEACH, BiomeTags.IS_RIVER)
                 .buildAndRegister();
     }
 }

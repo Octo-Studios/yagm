@@ -17,8 +17,14 @@ import net.minecraft.world.level.GameRules;
 
 @Slf4j
 public class EventRegistry {
+    private static boolean init = false;
 
     public static void init() {
+        if (init) {
+            return;
+        }
+        init = true;
+
         LifecycleEvent.SERVER_STARTED.register(server -> {
             CemeterySavedData.get(server.overworld());
             CemeteryManager.getInstance().setLevelChecker(dimension -> {
