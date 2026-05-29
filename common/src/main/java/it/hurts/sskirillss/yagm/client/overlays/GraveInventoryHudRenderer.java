@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -33,13 +34,12 @@ public final class GraveInventoryHudRenderer {
     private static final int HOTBAR_GAP = 2;
     private static final int SECTION_GAP = 6;
     private static final int LINE_H = 10;
-
+    private static final int OFFHAND_OFFSET = 2;
     private static final int PANEL_WIDTH = PAD + SLOT + ARMOR_GAP + 9 * SLOT + PAD;
     private static final int CONTENT_W = PANEL_WIDTH - PAD * 2;
     private static final int ACC_PER_ROW = CONTENT_W / SLOT;
 
     private static final int COLOR_BG = 0x00000000;
-    private static final int COLOR_SEPARATOR = 0x40FFFFFF;
     private static final int COLOR_NAME = 0xFFFFFFFF;
     private static final int COLOR_LABEL = 0xFFAAAAAA;
     private static final int COLOR_CAUSE = 0xFFFF7070;
@@ -89,6 +89,7 @@ public final class GraveInventoryHudRenderer {
     private static void render(GuiGraphics graphics, Font font, RegistryAccess registry, CompoundTag inventoryData, GraveData graveData) {
         NonNullList<ItemStack> armor = InventoryUtils.parseArmor(registry, inventoryData);
         NonNullList<ItemStack> main = InventoryUtils.parseMainInventory(registry, inventoryData);
+        NonNullList<ItemStack> offhand = InventoryUtils.parseOffHand(registry, inventoryData);
         List<ItemStack> accessories = BaseAccessoryCompat.parseAccessories(registry, inventoryData);
 
         int accRows = accessories.isEmpty() ? 0 : (int) Math.ceil(accessories.size() / (double) ACC_PER_ROW);
@@ -102,14 +103,18 @@ public final class GraveInventoryHudRenderer {
         int contentX = panelX + PAD;
         int y = panelY + PAD;
 
-        renderArmorColumn(graphics, font, armor, contentX, y);
-        renderInventoryGrid(graphics, font, main, contentX + SLOT + ARMOR_GAP, y);
-        y += 3 * SLOT + HOTBAR_GAP + SLOT;
+        renderArmorColumn(graphics, font, armor, contentX - SLOT, y);
+
+        renderOffHand(graphics, font, offhand, contentX, y);
+
+        renderInventoryGrid(graphics, font, main, contentX, y);
+
+        y += 4 * SLOT;
 
         if (!accessories.isEmpty()) {
             y += SECTION_GAP;
             y += 3;
-            graphics.drawString(font, "Accessories:", contentX, y, COLOR_LABEL, true);
+            graphics.drawString(font, Component.translatable("hud.yagm.accessories"), contentX, y, COLOR_LABEL, true);
             y += LINE_H;
             y += renderAccessories(graphics, font, accessories, contentX, y);
         }
@@ -125,17 +130,25 @@ public final class GraveInventoryHudRenderer {
         }
     }
 
+    private static void renderOffHand(GuiGraphics graphics, Font font, NonNullList<ItemStack> offhand, int x, int y) {
+        if (!offhand.isEmpty() && !offhand.getFirst().isEmpty()) {
+            renderSlot(graphics, font, offhand.getFirst(), x, y + 3 * SLOT + HOTBAR_GAP);
+        }
+    }
+
     private static void renderInventoryGrid(GuiGraphics graphics, Font font, NonNullList<ItemStack> main, int x, int y) {
+        int gridX = x + SLOT + ARMOR_GAP;
+
         for (int row = 0; row < 3; row++) {
             int rowY = y + row * SLOT;
             for (int col = 0; col < 9; col++) {
-                renderSlot(graphics, font, main.get(9 + row * 9 + col), x + col * SLOT, rowY);
+                renderSlot(graphics, font, main.get(9 + row * 9 + col), gridX + col * SLOT, rowY);
             }
         }
 
         int hotbarY = y + 3 * SLOT + HOTBAR_GAP;
         for (int col = 0; col < 9; col++) {
-            renderSlot(graphics, font, main.get(col), x + col * SLOT, hotbarY);
+            renderSlot(graphics, font, main.get(col), gridX + col * SLOT, hotbarY);
         }
     }
 
@@ -145,7 +158,6 @@ public final class GraveInventoryHudRenderer {
             int col = i % ACC_PER_ROW;
             renderSlot(graphics, font, accessories.get(i), x + col * SLOT, y + row * SLOT);
         }
-
         return (int) Math.ceil(accessories.size() / (double) ACC_PER_ROW) * SLOT;
     }
 
@@ -164,21 +176,10 @@ public final class GraveInventoryHudRenderer {
             y = y + LINE_H;
         }
 
-        String levelLabel = "Level " + toRoman(graveData.getGraveLevel().ordinal() + 1);
-        graphics.drawString(font, levelLabel, x, y, COLOR_LABEL, true);
-        y = y + LINE_H;
-
-        if (graveData.getVariantId() != null) {
-            String path = graveData.getVariantId().getPath();
-            String variant = Character.toUpperCase(path.charAt(0)) + path.substring(1);
-            graphics.drawString(font, variant, x, y, COLOR_LABEL, true);
-            y += LINE_H;
-        }
-
         if (inventoryData.contains(KEYS.getTotalExperience())) {
-            int xp = inventoryData.getInt(KEYS.getTotalExperience());
+            long xp = inventoryData.getLong(KEYS.getTotalExperience());
             if (xp > 0) {
-                graphics.drawString(font, xp + " XP", x, y, COLOR_LABEL, true);
+                graphics.drawString(font, Component.translatable("hud.yagm.experience_lvl", xpToLevel(xp)), x, y, COLOR_LABEL, true);
             }
         }
     }
@@ -188,9 +189,6 @@ public final class GraveInventoryHudRenderer {
         graphics.renderItemDecorations(font, stack, x, y);
     }
 
-    private static void drawSeparator(GuiGraphics graphics, int panelX, int y) {
-        graphics.fill(panelX + 4, y, panelX + PANEL_WIDTH - 4, y + 1, COLOR_SEPARATOR);
-    }
 
     private static int computePanelHeight(int accRows, GraveData graveData, CompoundTag inventoryData) {
         int height = PAD + 3 * SLOT + HOTBAR_GAP + SLOT;
@@ -225,20 +223,19 @@ public final class GraveInventoryHudRenderer {
             lines++;
         }
 
-        if (inventoryData.contains(KEYS.getTotalExperience()) && inventoryData.getInt(KEYS.getTotalExperience()) > 0) {
+        if (inventoryData.contains(KEYS.getTotalExperience()) && inventoryData.getLong(KEYS.getTotalExperience()) > 0) {
             lines++;
         }
 
         return lines;
     }
 
-    private static String toRoman(int number) {
-        return switch (number) {
-            case 1 -> "I";
-            case 2 -> "II";
-            case 3 -> "III";
-            case 4 -> "IV";
-            default -> String.valueOf(number);
-        };
+    private static int xpToLevel(long totalXp) {
+        int level = 0;
+        while (totalXp >= InventoryUtils.getXpForLevel(level)) {
+            totalXp -= InventoryUtils.getXpForLevel(level);
+            level++;
+        }
+        return level;
     }
 }

@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.entity.FallingGraveEntity;
-import it.hurts.sskirillss.yagm.init.BlockRegistry;
+import it.hurts.sskirillss.yagm.util.VariantUtils;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -45,7 +45,7 @@ public class FallingGraveEntityRenderer extends EntityRenderer<FallingGraveEntit
         ResourceLocation variantId = entity.getVariantId();
         String variantStr = variantId != null ? variantId.toString() : null;
 
-        Block block = BlockRegistry.getVariant(variantStr, level);
+        Block block = VariantUtils.getVariantId(variantStr, level);
         BlockState state = block.defaultBlockState();
 
         if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
