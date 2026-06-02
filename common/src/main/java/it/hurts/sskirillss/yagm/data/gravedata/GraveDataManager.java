@@ -29,7 +29,7 @@ public class GraveDataManager extends SavedData {
         if (!graveData.hasUUID(KEYS.getId())) return;
 
         UUID graveId = graveData.getUUID(KEYS.getId());
-        graves.put(graveId, graveData);
+        graves.put(graveId, graveData.copy());
         restoreKeyConsumed.remove(graveId);
 
 
@@ -42,6 +42,15 @@ public class GraveDataManager extends SavedData {
 
     public boolean hasGrave(UUID graveId) {
         return graveId != null && graves.containsKey(graveId);
+    }
+
+    public CompoundTag getGrave(UUID graveId) {
+        if (graveId == null) {
+            return null;
+        }
+
+        CompoundTag data = graves.get(graveId);
+        return data == null ? null : data.copy();
     }
 
     public void markRestoreKeyConsumed(UUID graveId) {
@@ -117,8 +126,7 @@ public class GraveDataManager extends SavedData {
             for (int i = 0; i < consumed.size(); i++) {
                 try {
                     data.restoreKeyConsumed.add(UUID.fromString(consumed.getString(i)));
-                } catch (IllegalArgumentException ignored) {
-                }
+                } catch (IllegalArgumentException ignored) {}
             }
         }
         return data;

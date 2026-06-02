@@ -56,14 +56,14 @@ shadowJar {
     configurations = [project.configurations.shadowCommon]
     exclude "architectury.common.json"
 
-    archiveClassifier = "dev-shadow"
+    archiveClassifier = "dev-" + loom.platform.get().name()
 }
 
 remapJar {
     input.set shadowJar.archiveFile
     dependsOn shadowJar
 
-    archiveClassifier = null
+    archiveClassifier = loom.platform.get().name()
 }
 
 jar {

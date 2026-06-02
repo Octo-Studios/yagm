@@ -61,6 +61,7 @@
   "block.yagm.ocean_grave_tier_4": "Ocean Gravestone IV",
 
   "entity.yagm.ghost": "Ghost",
+  "entity.yagm.falling_grave": "Falling Grave",
   "yagm.ghost.tamed": "Ghost tamed",
   "yagm.ghost.petted": "Ghost petted",
   "yagm.ghost.mode.follow": "Ghost following",

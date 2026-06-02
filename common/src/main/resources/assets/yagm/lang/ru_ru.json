@@ -61,6 +61,7 @@
   "block.yagm.ocean_grave_tier_4": "Морская могила IV",
 
   "entity.yagm.ghost": "Призрак",
+  "entity.yagm.falling_grave": "Падающая могила",
   "yagm.ghost.tamed": "Призрак приручён",
   "yagm.ghost.petted": "Призрак поглажен",
   "yagm.ghost.mode.follow": "Призрак следует",

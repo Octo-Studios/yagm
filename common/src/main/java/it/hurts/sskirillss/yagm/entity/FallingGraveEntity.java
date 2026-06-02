@@ -42,7 +42,6 @@ import java.util.UUID;
 
 @SuppressWarnings("deprecation")
 public class FallingGraveEntity extends Entity {
-
     private static final EntityDataAccessor<Integer> DATA_LEVEL = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> DATA_ROTATION = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<String> DATA_VARIANT = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.STRING);
@@ -59,6 +58,7 @@ public class FallingGraveEntity extends Entity {
     private ResourceLocation variantId;
 
     private static final NbtKeys KEYS = NbtKeys.INSTANCE;
+    private static final String[] INVENTORY_KEYS = { KEYS.getMainInventory(), KEYS.getArmorInventory(), KEYS.getOffhandInventory(), KEYS.getAccessories(), KEYS.getTotalExperience() };
     private static final FallingGraveMotionConfig MOTION = FallingGraveMotionConfig.DEFAULT;
 
     private float rotationSpeed;
@@ -275,8 +275,9 @@ public class FallingGraveEntity extends Entity {
 
         if (!level().isClientSide()) {
             if (level().getBlockEntity(pos) instanceof GraveStoneBlockEntity blockEntity) {
+                CompoundTag dataToLoad = resolvePlacementData();
                 if (graveData != null) {
-                    blockEntity.loadGraveData(graveData, level().registryAccess());
+                    blockEntity.loadGraveData(dataToLoad, level().registryAccess());
                 }
                 blockEntity.setVoidRecovery(voidRecovery);
 
@@ -421,6 +422,36 @@ public class FallingGraveEntity extends Entity {
                 return true;
             }
             if (level().getBlockState(below).isSolid()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    private CompoundTag resolvePlacementData() {
+        if (!(level() instanceof ServerLevel serverLevel) || graveData == null || !graveData.hasUUID(KEYS.getId()) || hasInventoryPayload(graveData)) {
+            return graveData;
+        }
+
+        UUID graveId = graveData.getUUID(KEYS.getId());
+        CompoundTag managerData = GraveDataManager.get(serverLevel).getGrave(graveId);
+        if (!hasInventoryPayload(managerData)) {
+            return graveData;
+        }
+
+        this.graveData = managerData;
+        return managerData;
+    }
+
+    private static boolean hasInventoryPayload(CompoundTag data) {
+        if (data == null || data.isEmpty()) {
+            return false;
+        }
+
+        for (String key : INVENTORY_KEYS) {
+            if (data.contains(key)) {
                 return true;
             }
         }

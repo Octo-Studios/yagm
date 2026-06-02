@@ -10,6 +10,7 @@ import it.hurts.sskirillss.yagm.component.type.GraveVariantTypes;
 import it.hurts.sskirillss.yagm.util.VariantUtils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
 import java.util.HashMap;
@@ -21,6 +22,10 @@ public final class BlockRegistry {
 
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(YAGMCommon.MODID, Registries.BLOCK);
 
+    private static RegistrySupplier<Block> registerWoodGrave(String id, GraveStoneShape shape) {
+        return BLOCKS.register(id, () -> new GraveStoneBlock(BlockBehaviour.Properties.of().strength(0.4F, 6.0F).sound(SoundType.WOOD).noOcclusion(), shape));
+    }
+
     private static RegistrySupplier<Block> registerGrave(String id, GraveStoneShape shape) {
         return BLOCKS.register(id, () -> new GraveStoneBlock(BlockBehaviour.Properties.of().strength(0.4F, 6.0F).noOcclusion(), shape));
     }
@@ -29,37 +34,37 @@ public final class BlockRegistry {
         return BLOCKS.register(id, () -> new GraveStoneBlock(BlockBehaviour.Properties.of().strength(0.4F, 6.0F).noOcclusion().lightLevel(state -> 6), shape));
     }
 
-    public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_1 = registerGrave("grave_tier_1", GraveStoneShape.TIER_1);
+    public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_1 = registerWoodGrave("grave_tier_1", GraveStoneShape.TIER_1);
     public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_2 = registerGrave("grave_tier_2", GraveStoneShape.TIER_2);
     public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_3 = registerLightGrave("grave_tier_3", GraveStoneShape.TIER_3);
     public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_4 = registerGrave("grave_tier_4", GraveStoneShape.TIER_4);
 
-    public static final RegistrySupplier<Block> COLD_GRAVESTONE_1 = registerGrave("cold_grave_tier_1", GraveStoneShape.TIER_1);
+    public static final RegistrySupplier<Block> COLD_GRAVESTONE_1 = registerWoodGrave("cold_grave_tier_1", GraveStoneShape.TIER_1);
     public static final RegistrySupplier<Block> COLD_GRAVESTONE_2 = registerGrave("cold_grave_tier_2", GraveStoneShape.TIER_2);
     public static final RegistrySupplier<Block> COLD_GRAVESTONE_3 = registerLightGrave("cold_grave_tier_3", GraveStoneShape.TIER_3);
     public static final RegistrySupplier<Block> COLD_GRAVESTONE_4 = registerGrave("cold_grave_tier_4", GraveStoneShape.TIER_4);
 
-    public static final RegistrySupplier<Block> HOT_GRAVESTONE_1 = registerGrave("hot_grave_tier_1", GraveStoneShape.TIER_1);
+    public static final RegistrySupplier<Block> HOT_GRAVESTONE_1 = registerWoodGrave("hot_grave_tier_1", GraveStoneShape.TIER_1);
     public static final RegistrySupplier<Block> HOT_GRAVESTONE_2 = registerGrave("hot_grave_tier_2", GraveStoneShape.TIER_2);
     public static final RegistrySupplier<Block> HOT_GRAVESTONE_3 = registerLightGrave("hot_grave_tier_3", GraveStoneShape.TIER_3);
     public static final RegistrySupplier<Block> HOT_GRAVESTONE_4 = registerGrave("hot_grave_tier_4", GraveStoneShape.TIER_4);
 
-    public static final RegistrySupplier<Block> NETHER_GRAVESTONE_1 = registerGrave("nether_grave_tier_1", GraveStoneShape.TIER_1);
+    public static final RegistrySupplier<Block> NETHER_GRAVESTONE_1 = registerWoodGrave("nether_grave_tier_1", GraveStoneShape.TIER_1);
     public static final RegistrySupplier<Block> NETHER_GRAVESTONE_2 = registerGrave("nether_grave_tier_2", GraveStoneShape.TIER_2);
     public static final RegistrySupplier<Block> NETHER_GRAVESTONE_3 = registerLightGrave("nether_grave_tier_3", GraveStoneShape.TIER_3);
     public static final RegistrySupplier<Block> NETHER_GRAVESTONE_4 = registerGrave("nether_grave_tier_4", GraveStoneShape.TIER_4);
 
-    public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_1 = registerGrave("tropics_grave_tier_1", GraveStoneShape.TIER_1);
+    public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_1 = registerWoodGrave("tropics_grave_tier_1", GraveStoneShape.TIER_1);
     public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_2 = registerGrave("tropics_grave_tier_2", GraveStoneShape.TIER_2);
     public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_3 = registerLightGrave("tropics_grave_tier_3", GraveStoneShape.TIER_3);
     public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_4 = registerGrave("tropics_grave_tier_4", GraveStoneShape.TIER_4);
 
-    public static final RegistrySupplier<Block> END_GRAVESTONE_1 = registerGrave("end_grave_tier_1", GraveStoneShape.TIER_1);
+    public static final RegistrySupplier<Block> END_GRAVESTONE_1 = registerWoodGrave("end_grave_tier_1", GraveStoneShape.TIER_1);
     public static final RegistrySupplier<Block> END_GRAVESTONE_2 = registerGrave("end_grave_tier_2", GraveStoneShape.TIER_2);
     public static final RegistrySupplier<Block> END_GRAVESTONE_3 = registerLightGrave("end_grave_tier_3", GraveStoneShape.TIER_3);
     public static final RegistrySupplier<Block> END_GRAVESTONE_4 = registerGrave("end_grave_tier_4", GraveStoneShape.TIER_4);
     
-    public static final RegistrySupplier<Block> OCEAN_GRAVESTONE_1 = registerGrave("ocean_grave_tier_1", GraveStoneShape.TIER_1);
+    public static final RegistrySupplier<Block> OCEAN_GRAVESTONE_1 = registerWoodGrave("ocean_grave_tier_1", GraveStoneShape.TIER_1);
     public static final RegistrySupplier<Block> OCEAN_GRAVESTONE_2 = registerGrave("ocean_grave_tier_2", GraveStoneShape.TIER_2);
     public static final RegistrySupplier<Block> OCEAN_GRAVESTONE_3 = registerLightGrave("ocean_grave_tier_3", GraveStoneShape.TIER_3);
     public static final RegistrySupplier<Block> OCEAN_GRAVESTONE_4 = registerGrave("ocean_grave_tier_4", GraveStoneShape.TIER_4);
