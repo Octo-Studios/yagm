@@ -17,6 +17,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.EnumSet;
 
 public class GhostBreedGoal extends Goal {
+    private static final int MIN_APPROACH_TICKS = 10;
+    private static final double BREED_DISTANCE_SQR = 2.25D;
     private final GhostEntity ghost;
     private GhostEntity partner;
     private int loveTime;
@@ -58,7 +60,7 @@ public class GhostBreedGoal extends Goal {
         ghost.getNavigation().moveTo(partner, 1.0D);
 
         loveTime++;
-        if (loveTime >= 60 && ghost.distanceToSqr(partner) < 9.0D) {
+        if (loveTime >= MIN_APPROACH_TICKS && ghost.distanceToSqr(partner) <= BREED_DISTANCE_SQR) {
             breed();
         }
     }
