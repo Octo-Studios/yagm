@@ -128,21 +128,21 @@ public class InventoryUtils {
     }
 
     private static final Map<String, Double> VALUABLE_ITEMS = new LinkedHashMap<>() {{
-        put("minecraft:saddle", 1.25d);
-        put("minecraft:name_tag", 1d);
-        put("#c:ingots", 5d);
-        put("#c:gems", 8d);
-        put("#c:storage_blocks", 16d);
-        put("#c:ores", 4d);
-        put("#c:raw_materials", 4d);
-        put("#c:rods", 6d);
-        put("#c:alloys", 6d);
-        put("#c:circuits", 8d);
-        put("#c:dusts", 1d);
-        put("#c:foods/golden", 16d);
-        put("#c:tools", 2d);
-        put("#c:armors", 2d);
-        put("#c:music_discs", 8d);
+        put("#c:ingots", 15d);
+        put("#c:block", 1d);
+        put("#c:gems", 24d);
+        put("#c:storage_blocks", 48d);
+        put("#c:ores", 12d);
+        put("#c:raw_materials", 12d);
+        put("#c:rods", 18d);
+        put("#c:alloys", 18d);
+        put("#c:circuits", 24d);
+        put("#c:dusts", 3d);
+        put("#c:foods/golden", 48d);
+        put("#c:tools", 6d);
+        put("#c:armors", 6d);
+        put("#c:blocks", 1d);
+        put("#c:music_discs", 24d);
     }};
 
     public static GraveStoneLevels calculateGraveLevel(Player player) {

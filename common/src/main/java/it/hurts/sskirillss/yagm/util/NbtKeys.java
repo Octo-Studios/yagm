@@ -62,6 +62,7 @@ public final class NbtKeys {
     private final String playerName = "PlayerName";
     private final String id = "Id";
 
+
     public final String dataName = YAGMCommon.MODID + "_grave_saves";
     public final String saveTime = "SavedAt";
     public final String players = "Players";

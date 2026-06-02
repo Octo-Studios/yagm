@@ -2,31 +2,38 @@ package it.hurts.sskirillss.yagm.event;
 
 import dev.architectury.event.EventResult;
 import it.hurts.sskirillss.yagm.api.compat.AccessoryLoader;
-import lombok.extern.slf4j.Slf4j;
 import it.hurts.sskirillss.yagm.api.event.IServerEvent;
-import it.hurts.sskirillss.yagm.entity.FallingGraveEntity;
-import it.hurts.sskirillss.yagm.vec3.FallingGraveMotionConfig;
+import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
+import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
+import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.component.placement.DeathPlacementMode;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveSaveManager;
+import it.hurts.sskirillss.yagm.entity.FallingGraveEntity;
 import it.hurts.sskirillss.yagm.util.InventoryUtils;
 import it.hurts.sskirillss.yagm.util.NbtKeys;
+import it.hurts.sskirillss.yagm.util.PlaceableUtils;
+import it.hurts.sskirillss.yagm.util.VariantUtils;
+import it.hurts.sskirillss.yagm.vec3.FallingGraveMotionConfig;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -69,11 +76,26 @@ public class GraveStoneEvent {
 
         GraveStoneLevels graveLevel = InventoryUtils.calculateGraveLevel(player);
 
-        serverLevel.getServer().execute(() -> {
-            FallingGraveEntity fallingGrave = FallingGraveEntity.create(serverLevel, deathPos, velocity, graveData, graveLevel, player.getUUID(), player.getName().getString(), facing, spawn.usedTrackedPosition());
-            serverLevel.addFreshEntity(fallingGrave);
-        });
+        DeathPlacementMode placementMode = resolvePlacementMode(player);
+
+        if (placementMode == DeathPlacementMode.FALLING) {
+            serverLevel.getServer().execute(() -> {
+                FallingGraveEntity fallingGrave = FallingGraveEntity.create(serverLevel, deathPos, velocity, graveData, graveLevel, player.getUUID(), player.getName().getString(), facing, spawn.usedTrackedPosition());
+                serverLevel.addFreshEntity(fallingGrave);
+            });
+        } else {
+            BlockPos immediatePos;
+            if (placementMode == DeathPlacementMode.UNDER_BEDROCK) {
+                immediatePos = PlaceableUtils.getBedrockPlacement(serverLevel, player.blockPosition());
+            } else {
+                immediatePos = PlaceableUtils.getVoidRecovery(serverLevel, player, trackedPlacementPos(serverLevel, player));
+            }
+
+            ensureVoidRecoverySupport(serverLevel, immediatePos);
+            placeImmediateGrave(serverLevel, immediatePos, graveData, graveLevel, player, facing);
+        }
     }
+
 
     public static void trackLastSafePositions(MinecraftServer server) {
         Set<UUID> onlinePlayers = new HashSet<>();
@@ -175,6 +197,98 @@ public class GraveStoneEvent {
         }
 
         return new DeathSpawn(tracked.position(), true);
+    }
+
+    private static DeathPlacementMode resolvePlacementMode(ServerPlayer player) {
+        Level level = player.level();
+        BlockPos pos = player.blockPosition();
+
+        if (pos.getY() < level.getMinBuildHeight()) {
+            return DeathPlacementMode.UNDER_BEDROCK;
+        }
+
+        if (isVoidDeath(player)) {
+            return DeathPlacementMode.VOID;
+        }
+
+        return DeathPlacementMode.FALLING;
+    }
+
+    private static BlockPos trackedPlacementPos(ServerLevel level, ServerPlayer player) {
+        TrackedSafePosition tracked = lastSafePositions.get(player.getUUID());
+        if (tracked != null && tracked.dimension().equals(level.dimension())) {
+            return BlockPos.containing(tracked.position());
+        }
+
+        return null;
+    }
+
+    private static void placeImmediateGrave(ServerLevel level, BlockPos pos, CompoundTag graveData, GraveStoneLevels graveLevel, ServerPlayer player, Direction facing) {
+        ResourceLocation variantId = null;
+        if (graveData.contains(KEYS.getVariantId())) {
+            variantId = ResourceLocation.tryParse(graveData.getString(KEYS.getVariantId()));
+        }
+
+        if (variantId == null) {
+            IGraveVariant variant = GraveVariantRegistry.getFor(level, pos);
+            if (variant != null && variant.getId() != null) {
+                variantId = variant.getId();
+                graveData.putString(KEYS.getVariantId(), variantId.toString());
+            }
+        }
+
+        Block graveBlock = VariantUtils.getVariantId(variantId != null ? variantId.toString() : null, graveLevel);
+        BlockState graveState = graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing).setValue(BlockStateProperties.WATERLOGGED, level.getFluidState(pos).isSourceOfType(Fluids.WATER));
+
+        if (!PlaceableUtils.placeGraveStoneExact(level, pos, graveState) && !PlaceableUtils.placeGraveStone(level, pos, graveState)) {
+            InventoryUtils.dropFullGrave(level, pos, graveData);
+            return;
+        }
+
+        BlockPos placedPos = findPlacedImmediateGravePos(level, pos, graveData);
+        if (level.getBlockEntity(placedPos) instanceof GraveStoneBlockEntity blockEntity) {
+            blockEntity.loadGraveData(graveData, level.registryAccess());
+
+            blockEntity.setVoidRecovery(true);
+
+            blockEntity.initializeGrave(player.getUUID(), player.getName().getString(), System.currentTimeMillis(), null, null, graveLevel);
+
+            if (variantId != null) {
+                blockEntity.setVariant(GraveVariantRegistry.get(variantId));
+            }
+        }
+
+        if (graveData.hasUUID(KEYS.getId())) {
+            GraveDataManager.get(level).setGravePos(graveData.getUUID(KEYS.getId()), placedPos);
+        }
+    }
+
+    private static void ensureVoidRecoverySupport(ServerLevel level, BlockPos pos) {
+        BlockPos supportPos = new BlockPos(pos.getX(), level.getMinBuildHeight(), pos.getZ());
+        BlockState supportState = level.getBlockState(supportPos);
+        if (supportState.isAir() || supportState.canBeReplaced()) {
+            level.setBlock(supportPos, PlaceableUtils.getBlockForLevel(level), 3);
+        }
+    }
+
+    private static BlockPos findPlacedImmediateGravePos(ServerLevel level, BlockPos origin, CompoundTag graveData) {
+        UUID graveId = graveData.hasUUID(KEYS.getId()) ? graveData.getUUID(KEYS.getId()) : null;
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    cursor.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz);
+                    if (level.getBlockEntity(cursor) instanceof GraveStoneBlockEntity blockEntity) {
+                        if (graveId == null || graveId.equals(blockEntity.getGraveData().getGraveId())) {
+                            return cursor.immutable();
+                        }
+                    }
+                }
+            }
+        }
+
+        return origin.immutable();
     }
 
     private static boolean isVoidDeath(ServerPlayer player) {

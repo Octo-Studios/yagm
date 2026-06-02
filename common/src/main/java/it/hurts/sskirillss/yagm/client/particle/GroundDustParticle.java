@@ -23,11 +23,12 @@ public class GroundDustParticle extends TextureSheetParticle {
         float scale = Math.abs(requestedScale);
         this.fixedSize = requestedScale < 0.0f;
 
-        float base = (0.38f + random.nextFloat() * 0.24f) * scale;
         if (fixedSize) {
+            float base = 1.0f * scale;
             this.startSize = base;
             this.endSize = base;
         } else {
+            float base = (0.38f + random.nextFloat() * 0.24f) * scale;
             boolean shrink = random.nextFloat() < 0.45f;
             this.startSize = shrink ? base * (1.25f + random.nextFloat() * 0.30f) : base * (0.70f + random.nextFloat() * 0.20f);
             this.endSize = shrink ? base * (0.62f + random.nextFloat() * 0.18f) : base * (1.35f + random.nextFloat() * 0.45f);

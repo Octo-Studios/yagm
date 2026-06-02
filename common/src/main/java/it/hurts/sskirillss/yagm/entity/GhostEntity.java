@@ -134,8 +134,7 @@ public class GhostEntity extends AgeableMob  {
             child.setOwnerUUID(ownerUuid);
         }
 
-        child.setBehaviorMode(BehaviorMode.FOLLOW);
-        child.setMood(GhostMood.HAPPY);
+        child.prepareForOwnerFollow();
         return child;
     }
 
@@ -288,6 +287,13 @@ public class GhostEntity extends AgeableMob  {
         entityData.set(DATA_BEHAVIOR_MODE, mode.getSerializedName());
     }
 
+    public void prepareForOwnerFollow() {
+        setTarget(null);
+        setBehaviorMode(BehaviorMode.FOLLOW);
+        setDeltaMovement(Vec3.ZERO);
+        updateMoodByBehavior();
+    }
+
     public int getShyTimer() {
         return entityData.get(DATA_SHY_TIMER);
     }
@@ -386,7 +392,9 @@ public class GhostEntity extends AgeableMob  {
             }
         }
 
-        tickBreedingState();
+        if (breedLoveTicks > 0) {
+            breedLoveTicks--;
+        }
         separateFromNearbyTamedGhosts();
 
         if (!isTame() && getTarget() == null) {
@@ -530,11 +538,6 @@ public class GhostEntity extends AgeableMob  {
         }
     }
 
-    private void tickBreedingState() {
-        if (breedLoveTicks > 0) {
-            breedLoveTicks--;
-        }
-    }
 
     private void tickServerSpawnAndDaylight() {
         if (!isTame() && level().isDay() && level().canSeeSky(blockPosition())) {
@@ -544,16 +547,11 @@ public class GhostEntity extends AgeableMob  {
 
         if (!spawnParticlesEmitted) {
             spawnParticlesEmitted = true;
-            spawnSoulParticleBurst();
+            if (level() instanceof ServerLevel serverLevel) {
+                serverLevel.sendParticles(ParticleTypes.SOUL, getX(), getY() + getBbHeight() * 0.5, getZ(), 15, 0.4, 0.5, 0.4, 0.02);
+            }
         }
     }
-
-    private void spawnSoulParticleBurst() {
-        if (level() instanceof ServerLevel serverLevel) {
-            serverLevel.sendParticles(ParticleTypes.SOUL, getX(), getY() + getBbHeight() * 0.5, getZ(), 15, 0.4, 0.5, 0.4, 0.02);
-        }
-    }
-
 
     @Override
     public @NotNull InteractionResult mobInteract(Player player, @NotNull InteractionHand hand) {
@@ -583,11 +581,7 @@ public class GhostEntity extends AgeableMob  {
                     setTarget(null);
                     feedCount = 0;
                     tameAttackDelayTicks = GhostEntityData.TAME_ATTACK_DELAY_TICKS;
-                    if (!isBaby()) {
-                        setAge(GhostEntityData.BREED_COOLDOWN_TICKS);
-                    }
-                    setBehaviorMode(BehaviorMode.FOLLOW);
-                    setMood(GhostMood.HAPPY);
+                    prepareForOwnerFollow();
                 }
 
                 return InteractionResult.SUCCESS;
@@ -666,6 +660,14 @@ public class GhostEntity extends AgeableMob  {
 
         if (result && !level().isClientSide()) {
             LivingEntity attacker = source.getEntity() instanceof LivingEntity living ? living : null;
+
+            if (isTame() && attacker instanceof Player player && isOwnedBy(player)) {
+                if (getTarget() == null) {
+                    updateMoodByBehavior();
+                }
+                return true;
+            }
+
             setMood(GhostMood.ANGRY);
 
             if (!isTame() && isValidUntamedTarget(attacker)) {

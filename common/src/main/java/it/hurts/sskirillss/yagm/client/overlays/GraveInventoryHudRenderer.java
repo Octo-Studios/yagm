@@ -34,7 +34,6 @@ public final class GraveInventoryHudRenderer {
     private static final int HOTBAR_GAP = 2;
     private static final int SECTION_GAP = 6;
     private static final int LINE_H = 10;
-    private static final int OFFHAND_OFFSET = 2;
     private static final int PANEL_WIDTH = PAD + SLOT + ARMOR_GAP + 9 * SLOT + PAD;
     private static final int CONTENT_W = PANEL_WIDTH - PAD * 2;
     private static final int ACC_PER_ROW = CONTENT_W / SLOT;

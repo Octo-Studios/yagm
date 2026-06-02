@@ -45,7 +45,7 @@ public class RestoreKey extends Item {
             return;
         }
 
-        boolean available = GraveSaveManager.peekLatestRestoreSave(serverPlayer.serverLevel(), serverPlayer.getUUID()) != null && !serverPlayer.getCooldowns().isOnCooldown(this);
+        boolean available = getLastRestorableSave(serverPlayer) != null && !serverPlayer.getCooldowns().isOnCooldown(this);
         boolean current = isRestoreReady(stack);
 
         if (current == available) {
@@ -86,7 +86,7 @@ public class RestoreKey extends Item {
             return InteractionResultHolder.fail(itemStack);
         }
 
-        if (GraveSaveManager.peekLatestRestoreSave(serverPlayer.serverLevel(), serverPlayer.getUUID()) == null) {
+        if (getLastRestorableSave(serverPlayer) == null) {
             return InteractionResultHolder.fail(itemStack);
         }
 
@@ -115,9 +115,18 @@ public class RestoreKey extends Item {
             return stack;
         }
 
+        CompoundTag restorableSave = getLastRestorableSave(serverPlayer);
+        if (restorableSave == null) {
+            return stack;
+        }
+
         CompoundTag lastSave = GraveSaveManager.consumeLatestRestoreSave(serverPlayer.serverLevel(), serverPlayer.getUUID());
 
         if (lastSave == null) {
+            return stack;
+        }
+
+        if (restorableSave.hasUUID(KEYS.getId()) && lastSave.hasUUID(KEYS.getId()) && !restorableSave.getUUID(KEYS.getId()).equals(lastSave.getUUID(KEYS.getId()))) {
             return stack;
         }
 
@@ -207,5 +216,21 @@ public class RestoreKey extends Item {
             return false;
         }
         return customData.copyTag().getBoolean(TAG_RESTORE_READY);
+    }
+
+    private static CompoundTag getLastRestorableSave(ServerPlayer serverPlayer) {
+        CompoundTag save = GraveSaveManager.peekLatestRestoreSave(serverPlayer.serverLevel(), serverPlayer.getUUID());
+        if (save == null || !save.hasUUID(KEYS.getId())) {
+            return null;
+        }
+
+        UUID graveId = save.getUUID(KEYS.getId());
+        ServerLevel saveLevel = resolveGraveLevel(serverPlayer, save);
+        GraveDataManager manager = GraveDataManager.get(saveLevel);
+        if (!manager.hasGrave(graveId)) {
+            return null;
+        }
+
+        return save;
     }
 }

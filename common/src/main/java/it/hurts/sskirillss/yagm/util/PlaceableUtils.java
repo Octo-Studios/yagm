@@ -3,6 +3,7 @@ package it.hurts.sskirillss.yagm.util;
 import it.hurts.sskirillss.yagm.block.GraveStoneBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -11,6 +12,7 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.material.Fluids;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import static net.minecraft.world.level.Level.NETHER;
@@ -20,6 +22,27 @@ import static net.minecraft.world.level.Level.NETHER;
 public class PlaceableUtils {
 
     public static final UUID NULL_UUID = new UUID(0, 0);
+
+    public static BlockPos getVoidRecovery(ServerLevel level, ServerPlayer player, @Nullable BlockPos trackedPos) {
+        return getGraveStoneBlockPosition(level, Objects.requireNonNullElseGet(trackedPos, player::blockPosition));
+
+    }
+
+    public static BlockPos getBedrockPlacement(ServerLevel level, BlockPos origin) {
+        int x = origin.getX();
+        int z = origin.getZ();
+        int minY = level.getMinBuildHeight();
+        int firstAboveBedrock = minY + 1;
+
+        for (int y = firstAboveBedrock; y < level.getMaxBuildHeight() - 1; y++) {
+            BlockPos candidate = new BlockPos(x, y, z);
+            if (isSafeImmediateGravePosition(level, candidate)) {
+                return candidate;
+            }
+        }
+
+        return new BlockPos(x, firstAboveBedrock, z);
+    }
 
     public static BlockPos getGraveStoneBlockPosition(Level level, BlockPos pos) {
         if (!level.getFluidState(pos).isEmpty()) {
@@ -115,6 +138,13 @@ public class PlaceableUtils {
         return (state.isAir() || state.canBeReplaced()) && below.isSolid() && level.getFluidState(pos).isEmpty() && hasEnoughSpace(level, pos, 1);
     }
 
+    private static boolean isSafeImmediateGravePosition(Level level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        BlockState below = level.getBlockState(pos.below());
+
+        return (state.isAir() || state.canBeReplaced()) && below.isSolid() && level.getFluidState(pos).isEmpty() && (level.getBlockState(pos.above()).isAir() || level.getBlockState(pos.above()).canBeReplaced() || level.getFluidState(pos.above()).isSourceOfType(Fluids.WATER));
+    }
+
 
     private static boolean isFluidBelow(Level level, BlockPos pos) {
         return !level.getBlockState(pos).isAir() && !level.getFluidState(pos).isEmpty();
@@ -184,11 +214,8 @@ public class PlaceableUtils {
                 return false;
             }
 
-            boolean lowerWaterlogged = level.getFluidState(pos).isSourceOfType(Fluids.WATER);
-            boolean upperWaterlogged = level.getFluidState(upperPos).isSourceOfType(Fluids.WATER);
-
-            BlockState lowerState = graveState.setValue(GraveStoneBlock.HALF, DoubleBlockHalf.LOWER).setValue(GraveStoneBlock.WATERLOGGED, lowerWaterlogged);
-            BlockState upperState = graveState.setValue(GraveStoneBlock.HALF, DoubleBlockHalf.UPPER).setValue(GraveStoneBlock.WATERLOGGED, upperWaterlogged);
+            BlockState lowerState = graveState.setValue(GraveStoneBlock.HALF, DoubleBlockHalf.LOWER).setValue(GraveStoneBlock.WATERLOGGED, level.getFluidState(pos).isSourceOfType(Fluids.WATER));
+            BlockState upperState = graveState.setValue(GraveStoneBlock.HALF, DoubleBlockHalf.UPPER).setValue(GraveStoneBlock.WATERLOGGED, level.getFluidState(upperPos).isSourceOfType(Fluids.WATER));
 
             if (!level.setBlock(upperPos, upperState, 3)) {
                 return false;
