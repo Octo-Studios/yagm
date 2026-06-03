@@ -1,12 +1,7 @@
 package it.hurts.sskirillss.yagm.neoforge.compat.curios;
 
-
-import it.hurts.sskirillss.yagm.api.compat.provider.IAccessoryHandler;
+import it.hurts.sskirillss.yagm.api.compat.BaseAccessoryCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.curios.slot.CurioSlotData;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
@@ -20,12 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-
-public class CuriosCompat implements IAccessoryHandler {
-
-    private static final String TAG_ACCESSORIES = "CuriosAccessories";
-    private static final String TAG_SLOT_KEY = "SlotKey";
-    private static final String TAG_ITEM = "Item";
+public class CuriosCompat extends BaseAccessoryCompat {
 
     @Override
     public boolean isModLoaded() {
@@ -38,33 +28,28 @@ public class CuriosCompat implements IAccessoryHandler {
     }
 
     @Override
+    protected String getNbtTag() {
+        return "CuriosData";
+    }
+
+    @Override
     public Map<String, ItemStack> collectAccessories(ServerPlayer player) {
         Map<String, ItemStack> accessories = new HashMap<>();
 
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosInventory(player);
-        if (curiosOpt.isEmpty()) {
-            return accessories;
-        }
+        if (curiosOpt.isEmpty()) return accessories;
 
-        ICuriosItemHandler curiosHandler = curiosOpt.get();
-        Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
-
-        for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
+        for (Map.Entry<String, ICurioStacksHandler> entry : curiosOpt.get().getCurios().entrySet()) {
             String slotType = entry.getKey();
             ICurioStacksHandler stacksHandler = entry.getValue();
-
 
             IDynamicStackHandler stacks = stacksHandler.getStacks();
             for (int i = 0; i < stacks.getSlots(); i++) {
                 ItemStack stack = stacks.getStackInSlot(i);
                 if (!stack.isEmpty()) {
-                    ItemStack stackCopy = stack.copy();
-                    CurioSlotData.SlotInfo slotData = new CurioSlotData.SlotInfo(slotType, i, true, false);
-                    stackCopy.set(CurioSlotData.CURIO_SLOT_DATA.get(), slotData);
-
-                    String key = slotType + "/" + i;
-                    accessories.put(key, stackCopy);
-
+                    ItemStack copy = stack.copy();
+                    copy.set(CurioSlotData.CURIO_SLOT_DATA.get(), new CurioSlotData.SlotInfo(slotType, i, true, false));
+                    accessories.put(slotType + "/" + i, copy);
                 }
             }
 
@@ -72,13 +57,9 @@ public class CuriosCompat implements IAccessoryHandler {
             for (int i = 0; i < cosmeticStacks.getSlots(); i++) {
                 ItemStack stack = cosmeticStacks.getStackInSlot(i);
                 if (!stack.isEmpty()) {
-                    ItemStack stackCopy = stack.copy();
-                    CurioSlotData.SlotInfo slotData = new CurioSlotData.SlotInfo(slotType, i, true, true);
-                    stackCopy.set(CurioSlotData.CURIO_SLOT_DATA.get(), slotData);
-
-
-                    String key = slotType + "/cosmetic/" + i;
-                    accessories.put(key, stackCopy);
+                    ItemStack copy = stack.copy();
+                    copy.set(CurioSlotData.CURIO_SLOT_DATA.get(), new CurioSlotData.SlotInfo(slotType, i, true, true));
+                    accessories.put(slotType + "/cosmetic/" + i, copy);
                 }
             }
         }
@@ -89,18 +70,14 @@ public class CuriosCompat implements IAccessoryHandler {
     @Override
     public void clearAccessories(ServerPlayer player) {
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosInventory(player);
-        if (curiosOpt.isEmpty()) {
-            return;
-        }
+        if (curiosOpt.isEmpty()) return;
 
-        ICuriosItemHandler curiosHandler = curiosOpt.get();
-        Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
-
-        for (ICurioStacksHandler stacksHandler : curios.values()) {
+        for (ICurioStacksHandler stacksHandler : curiosOpt.get().getCurios().values()) {
             IDynamicStackHandler stacks = stacksHandler.getStacks();
             for (int i = 0; i < stacks.getSlots(); i++) {
                 stacks.setStackInSlot(i, ItemStack.EMPTY);
             }
+
             IDynamicStackHandler cosmeticStacks = stacksHandler.getCosmeticStacks();
             for (int i = 0; i < cosmeticStacks.getSlots(); i++) {
                 cosmeticStacks.setStackInSlot(i, ItemStack.EMPTY);
@@ -110,110 +87,44 @@ public class CuriosCompat implements IAccessoryHandler {
 
     @Override
     public void restoreAccessories(ServerPlayer player, Map<String, ItemStack> accessories, boolean dropIfFull) {
-        if (accessories.isEmpty()) {
-            return;
-        }
+        if (accessories.isEmpty()) return;
 
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosInventory(player);
         if (curiosOpt.isEmpty()) {
-            for (ItemStack stack : accessories.values()) {
-                if (!stack.isEmpty()) {
-                    ItemStack cleanStack = stack.copy();
-                    cleanStack.remove(CurioSlotData.CURIO_SLOT_DATA.get());
-                    if (!player.getInventory().add(cleanStack)) {
-                        if (dropIfFull) {
-                            player.drop(cleanStack, false);
-                        }
-                    }
-                }
-            }
+            getInventoryOrDrop(player, accessories.values().stream().map(CuriosCompat::withoutSlotData).toList(), dropIfFull);
             return;
         }
 
-        ICuriosItemHandler curiosHandler = curiosOpt.get();
-        Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
+        Map<String, ICurioStacksHandler> curios = curiosOpt.get().getCurios();
 
         for (ItemStack stack : accessories.values()) {
             if (stack.isEmpty()) continue;
 
             CurioSlotData.SlotInfo slotData = stack.get(CurioSlotData.CURIO_SLOT_DATA.get());
-            
+
             if (slotData != null && slotData.wasEquipped()) {
                 ICurioStacksHandler stacksHandler = curios.get(slotData.slotType());
                 if (stacksHandler != null) {
-                    IDynamicStackHandler targetStacks = slotData.isCosmetic() ? stacksHandler.getCosmeticStacks() : stacksHandler.getStacks();
+                    IDynamicStackHandler target = slotData.isCosmetic() ? stacksHandler.getCosmeticStacks() : stacksHandler.getStacks();
+                    int idx = slotData.slotIndex();
 
-                    int slotIndex = slotData.slotIndex();
-                    if (slotIndex >= 0 && slotIndex < targetStacks.getSlots()) {
-                        ItemStack existing = targetStacks.getStackInSlot(slotIndex);
-                        if (existing.isEmpty()) {
-                            ItemStack cleanStack = stack.copy();
-                            cleanStack.remove(CurioSlotData.CURIO_SLOT_DATA.get());
-                            targetStacks.setStackInSlot(slotIndex, cleanStack);
-                            continue;
-                        }
+                    if (idx >= 0 && idx < target.getSlots() && target.getStackInSlot(idx).isEmpty()) {
+                        target.setStackInSlot(idx, withoutSlotData(stack));
+                        continue;
                     }
                 }
             }
 
-
-            ItemStack cleanStack = stack.copy();
-            cleanStack.remove(CurioSlotData.CURIO_SLOT_DATA.get());
-            
-            if (!tryEquipAccessory(player, cleanStack)) {
-                if (!player.getInventory().add(cleanStack)) {
-                    if (dropIfFull) {
-                        player.drop(cleanStack, false);
-                    }
-                }
+            ItemStack clean = withoutSlotData(stack);
+            if (!tryEquipAccessory(player, clean)) {
+                getInventoryOrDrop(player, clean, dropIfFull);
             }
         }
-    }
-
-    @Override
-    public CompoundTag saveToNBT(Map<String, ItemStack> accessories, RegistryAccess registryAccess) {
-        CompoundTag tag = new CompoundTag();
-        ListTag itemsList = new ListTag();
-
-        for (Map.Entry<String, ItemStack> entry : accessories.entrySet()) {
-            if (entry.getValue().isEmpty()) continue;
-
-            CompoundTag itemTag = new CompoundTag();
-            itemTag.putString(TAG_SLOT_KEY, entry.getKey());
-            itemTag.put(TAG_ITEM, entry.getValue().save(registryAccess));
-            itemsList.add(itemTag);
-        }
-
-        tag.put(TAG_ACCESSORIES, itemsList);
-        return tag;
-    }
-
-    @Override
-    public Map<String, ItemStack> loadFromNBT(CompoundTag tag, RegistryAccess registryAccess) {
-        Map<String, ItemStack> accessories = new HashMap<>();
-
-        if (!tag.contains(TAG_ACCESSORIES, Tag.TAG_LIST)) {
-            return accessories;
-        }
-
-        ListTag itemsList = tag.getList(TAG_ACCESSORIES, Tag.TAG_COMPOUND);
-
-        for (int i = 0; i < itemsList.size(); i++) {
-            CompoundTag itemTag = itemsList.getCompound(i);
-            String slotKey = itemTag.getString(TAG_SLOT_KEY);
-            ItemStack stack = ItemStack.parseOptional(registryAccess, itemTag.getCompound(TAG_ITEM));
-
-            if (!stack.isEmpty() && !slotKey.isEmpty()) {
-                accessories.put(slotKey, stack);
-            }
-        }
-        return accessories;
     }
 
     @Override
     public boolean canEquipAsAccessory(ServerPlayer player, ItemStack stack) {
         if (stack.isEmpty()) return false;
-
         var slotTypes = CuriosApi.getItemStackSlots(stack, player);
         return slotTypes != null && !slotTypes.isEmpty();
     }
@@ -225,30 +136,24 @@ public class CuriosCompat implements IAccessoryHandler {
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosInventory(player);
         if (curiosOpt.isEmpty()) return false;
 
-        ICuriosItemHandler curiosHandler = curiosOpt.get();
-        Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
-
         var slotTypes = CuriosApi.getItemStackSlots(stack, player);
         if (slotTypes == null || slotTypes.isEmpty()) return false;
+
+        Map<String, ICurioStacksHandler> curios = curiosOpt.get().getCurios();
 
         for (String slotType : slotTypes.keySet()) {
             ICurioStacksHandler stacksHandler = curios.get(slotType);
             if (stacksHandler == null) continue;
 
             SlotContext context = new SlotContext(slotType, player, 0, false, true);
-            if (!CuriosApi.isStackValid(context, stack)) {
-                continue;
-            }
-
-            IDynamicStackHandler stacks = stacksHandler.getStacks();
-            for (int i = 0; i < stacks.getSlots(); i++) {
-                if (stacks.getStackInSlot(i).isEmpty()) {
-                    stacks.setStackInSlot(i, stack.copy());
-                    return true;
-                }
-            }
+            CuriosApi.isStackValid(context, stack);
         }
-
         return false;
+    }
+
+    private static ItemStack withoutSlotData(ItemStack stack) {
+        ItemStack copy = stack.copy();
+        copy.remove(CurioSlotData.CURIO_SLOT_DATA.get());
+        return copy;
     }
 }

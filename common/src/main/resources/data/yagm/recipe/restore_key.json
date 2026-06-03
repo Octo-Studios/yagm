@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "E": {
+      "item": "minecraft:ender_pearl"
+    },
+    "G": {
+      "item": "minecraft:obsidian"
+    },
+    "T": {
+      "item": "yagm:ghost_pearl"
+    }
+  },
+  "pattern": [
+    " E ",
+    " T ",
+    " G "
+  ],
+  "result": {
+    "count": 1,
+    "id": "yagm:restore_key"
+  }
+}

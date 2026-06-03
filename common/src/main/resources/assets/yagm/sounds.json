@@ -1,0 +1,42 @@
+{
+  "ghost_death": {
+    "sounds": [
+      "yagm:ghost_death"
+    ]
+  },
+  "ghost_hurt_1": {
+    "sounds": [
+      "yagm:ghost_hurt_1"
+    ]
+  },
+  "ghost_hurt_2": {
+    "sounds": [
+      "yagm:ghost_hurt_2"
+    ]
+  },
+  "ghost_idle_1": {
+    "sounds": [
+      "yagm:ghost_idle_1"
+    ]
+  },
+  "ghost_idle_2": {
+    "sounds": [
+      "yagm:ghost_idle_2"
+    ]
+  },
+  "ghost_idle_3": {
+    "sounds": [
+      "yagm:ghost_idle_3"
+    ]
+  },
+  "ghost_pet_1": {
+    "sounds": [
+      "yagm:ghost_pet_1"
+    ]
+  },
+  "ghost_pet_2": {
+    "sounds": [
+      "yagm:ghost_pet_2"
+    ]
+  }
+}

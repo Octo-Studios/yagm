@@ -3,7 +3,10 @@
   "package": "it.hurts.sskirillss.yagm.mixin",
   "compatibilityLevel": "JAVA_21",
   "minVersion": "0.8",
-  "client": [],
+  "client": [
+    "ParticleEngineMixin",
+    "AbstractClientPlayerMixin"
+  ],
   "mixins": [],
   "injectors": {
     "defaultRequire": 1
