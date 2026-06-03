@@ -44,6 +44,22 @@ public class PlaceableUtils {
         return new BlockPos(x, firstAboveBedrock, z);
     }
 
+    @Nullable
+    public static BlockPos findColumnImmediatePlacement(Level level, BlockPos origin) {
+        int minY = level.getMinBuildHeight() + 1;
+        int maxY = level.getMaxBuildHeight() - 1;
+        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos(origin.getX(), minY, origin.getZ());
+
+        for (int y = minY; y < maxY; y++) {
+            mutable.setY(y);
+            if (isSafeImmediateGravePosition(level, mutable)) {
+                return mutable.immutable();
+            }
+        }
+
+        return null;
+    }
+
     public static BlockPos getGraveStoneBlockPosition(Level level, BlockPos pos) {
         if (!level.getFluidState(pos).isEmpty()) {
             return findFloorUnderFluid(level, pos);
@@ -91,18 +107,35 @@ public class PlaceableUtils {
         if (level.getBlockState(startPos).isAir()) {
             BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos(startPos.getX(), startPos.getY(), startPos.getZ());
 
-            for (int y = startPos.getY(); y >= level.getMinBuildHeight(); y--) {
-                mutable.setY(y);
+            if (level.dimension() == Level.END) {
+                for (int y = startPos.getY(); y >= level.getMinBuildHeight(); y--) {
+                    mutable.setY(y);
 
-                BlockState current = level.getBlockState(mutable);
-                BlockState below = level.getBlockState(mutable.below());
+                    BlockState current = level.getBlockState(mutable);
+                    BlockState below = level.getBlockState(mutable.below());
 
-                if (current.isAir() && below.isSolid()) {
-                    return mutable.immutable();
+                    if (current.isAir() && below.isSolid()) {
+                        return mutable.immutable();
+                    }
+
+                    if (!level.getFluidState(mutable).isEmpty()) {
+                        return findPosAboveFluid(level, mutable.immutable());
+                    }
                 }
+            } else {
+                for (int y = level.getMinBuildHeight(); y <= startPos.getY(); y++) {
+                    mutable.setY(y);
 
-                if (!level.getFluidState(mutable).isEmpty()) {
-                    return findPosAboveFluid(level, mutable.immutable());
+                    BlockState current = level.getBlockState(mutable);
+                    BlockState below = level.getBlockState(mutable.below());
+
+                    if (current.isAir() && below.isSolid()) {
+                        return mutable.immutable();
+                    }
+
+                    if (!level.getFluidState(mutable).isEmpty()) {
+                        return findPosAboveFluid(level, mutable.immutable());
+                    }
                 }
             }
         }

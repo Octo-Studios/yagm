@@ -177,7 +177,7 @@ public class GraveStoneBlockEntity extends BlockEntity {
             return;
         }
 
-        InventoryUtils.restoreFullGrave(player, inventoryData);
+        InventoryUtils.restoreFullGrave(player, inventoryData, getBlockPos());
         this.inventoryData = new CompoundTag();
         syncToClient();
 

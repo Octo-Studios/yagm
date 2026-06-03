@@ -2,13 +2,16 @@ package it.hurts.sskirillss.yagm.api.compat;
 
 import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.api.compat.provider.IAccessoryHandler;
+import net.minecraft.core.BlockPos;
 import it.hurts.sskirillss.yagm.util.NbtKeys;
+import net.minecraft.world.Containers;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import java.util.HashMap;
 import java.util.List;
@@ -76,6 +79,20 @@ public abstract class BaseAccessoryCompat implements IAccessoryHandler {
 
         if (!player.getInventory().add(stack.copy()) && dropIfFull) {
             player.drop(stack.copy(), false);
+        }
+    }
+
+    protected void getInventoryOrDrop(ServerPlayer player, Iterable<ItemStack> stacks, boolean dropIfFull, Level level, BlockPos dropPos) {
+        for (ItemStack stack : stacks) {
+            getInventoryOrDrop(player, stack, dropIfFull, level, dropPos);
+        }
+    }
+
+    protected void getInventoryOrDrop(ServerPlayer player, ItemStack stack, boolean dropIfFull, Level level, BlockPos dropPos) {
+        if (stack.isEmpty()) return;
+
+        if (!player.getInventory().add(stack.copy()) && dropIfFull) {
+            Containers.dropItemStack(level, dropPos.getX() + 0.5, dropPos.getY() + 0.5, dropPos.getZ() + 0.5, stack.copy());
         }
     }
 

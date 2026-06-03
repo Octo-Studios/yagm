@@ -3,6 +3,7 @@ package it.hurts.sskirillss.yagm.block;
 import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
 import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.entity.FallingGraveEntity;
 import it.hurts.sskirillss.yagm.entity.GhostlyFogEntity;
 import it.hurts.sskirillss.yagm.init.BlockEntityRegistry;
@@ -10,10 +11,12 @@ import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.util.NbtKeys;
 import it.hurts.sskirillss.yagm.util.ParticleUtils;
+import it.hurts.sskirillss.yagm.util.PlaceableUtils;
 import it.hurts.sskirillss.yagm.util.VariantUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -37,9 +40,9 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.*;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
@@ -49,6 +52,7 @@ import java.awt.*;
 import java.util.UUID;
 
 public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, EntityBlock {
+    private static final ResourceLocation TWILIGHT_PORTAL_ID = ResourceLocation.fromNamespaceAndPath("twilightforest", "twilight_portal");
 
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
@@ -337,19 +341,27 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+        boolean handledTwilightRelocation = false;
+
         if (!state.is(newState.getBlock()) && !level.isClientSide()) {
             if (!shape.isDouble() || state.getValue(HALF) == DoubleBlockHalf.LOWER) {
-                if (shape.isDouble()) {
+                if (isTwilightPortal(newState) || isTwilightPortalCleanup(level, pos, newState)) {
+                    handledTwilightRelocation = relocateTwilightPortalGrave(level, pos, state);
+                }
+
+                if (!handledTwilightRelocation && shape.isDouble()) {
                     BlockPos upperPos = pos.above();
                     if (level.getBlockState(upperPos).is(this)) {
                         level.removeBlock(upperPos, false);
                     }
                 }
-                GraveStoneBlockEntity be = getBlockEntity(level, pos);
-                if (be != null) {
-                    be.dropItems(level, pos);
+                if (!handledTwilightRelocation) {
+                    GraveStoneBlockEntity be = getBlockEntity(level, pos);
+                    if (be != null) {
+                        be.dropItems(level, pos);
+                    }
+                    CemeteryManager.getInstance().removeGrave(level.dimension(), pos);
                 }
-                CemeteryManager.getInstance().removeGrave(level.dimension(), pos);
             } else {
                 BlockPos lowerPos = pos.below();
                 if (level.getBlockState(lowerPos).is(this)) {
@@ -358,6 +370,70 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
             }
         }
         super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    private boolean relocateTwilightPortalGrave(Level level, BlockPos pos, BlockState state) {
+        GraveStoneBlockEntity blockEntity = getBlockEntity(level, pos);
+        if (blockEntity == null || blockEntity.isDecorative()) {
+            return false;
+        }
+
+        CompoundTag itemData = blockEntity.getItemData();
+        GraveStoneLevels graveLevel = blockEntity.getGraveLevel();
+        Direction facing = state.getValue(FACING);
+        String variantId = itemData.contains(KEYS.getVariantId()) ? itemData.getString(KEYS.getVariantId()) : null;
+        Block graveBlock = VariantUtils.getVariantId(variantId, graveLevel);
+        BlockState graveState = graveBlock.defaultBlockState().setValue(FACING, facing).setValue(WATERLOGGED, level.getFluidState(pos).isSourceOfType(Fluids.WATER));
+
+        BlockPos targetPos = PlaceableUtils.findP2P(level, pos, 4);
+        if (targetPos == null) {
+            targetPos = PlaceableUtils.getGraveStoneBlockPosition(level, pos);
+        }
+
+        if (targetPos == null || targetPos.equals(pos) || !PlaceableUtils.placeGraveStone(level, targetPos, graveState)) {
+            return false;
+        }
+
+        if (shape.isDouble()) {
+            BlockPos upperPos = pos.above();
+            if (level.getBlockState(upperPos).is(this)) {
+                level.removeBlock(upperPos, false);
+            }
+        }
+
+        if (level.getBlockEntity(targetPos) instanceof GraveStoneBlockEntity placedEntity) {
+            placedEntity.loadGraveData(itemData, level.registryAccess());
+
+            if (itemData.hasUUID(KEYS.getId()) && level instanceof ServerLevel serverLevel) {
+                GraveDataManager.get(serverLevel).setGravePos(itemData.getUUID(KEYS.getId()), targetPos);
+            }
+        }
+
+        CemeteryManager.getInstance().removeGrave(level.dimension(), pos);
+        CemeteryManager.getInstance().addGrave(level.dimension(), targetPos);
+        return true;
+    }
+
+    private static boolean isTwilightPortal(BlockState state) {
+        return TWILIGHT_PORTAL_ID.equals(BuiltInRegistries.BLOCK.getKey(state.getBlock()));
+    }
+
+    private static boolean isTwilightPortalCleanup(Level level, BlockPos pos, BlockState newState) {
+        if (!newState.isAir()) {
+            return false;
+        }
+
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                for (int dy = -5; dy <= -1; dy++) {
+                    if (isTwilightPortal(level.getBlockState(pos.offset(dx, dy, dz)))) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     @Override

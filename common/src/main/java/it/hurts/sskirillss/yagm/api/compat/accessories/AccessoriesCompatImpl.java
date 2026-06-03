@@ -5,11 +5,13 @@ import io.wispforest.accessories.api.AccessoriesCapability;
 import io.wispforest.accessories.api.AccessoriesContainer;
 import io.wispforest.accessories.impl.ExpandedSimpleContainer;
 import it.hurts.sskirillss.yagm.api.compat.BaseAccessoryCompat;
+import net.minecraft.core.BlockPos;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -84,6 +86,11 @@ public abstract class AccessoriesCompatImpl extends BaseAccessoryCompat {
 
     @Override
     public void restoreAccessories(ServerPlayer player, Map<String, ItemStack> accessories, boolean dropIfFull) {
+        restoreAccessories(player, accessories, dropIfFull, null, null);
+    }
+
+    @Override
+    public void restoreAccessories(ServerPlayer player, Map<String, ItemStack> accessories, boolean dropIfFull, Level level, BlockPos dropPos) {
         if (accessories.isEmpty()) {
             return;
         }
@@ -91,7 +98,11 @@ public abstract class AccessoriesCompatImpl extends BaseAccessoryCompat {
         Optional<Map<String, AccessoryContainer>> containersOpt = getContainers(player);
 
         if (containersOpt.isEmpty()) {
-            getInventoryOrDrop(player, accessories.values(), dropIfFull);
+            if (level != null && dropPos != null) {
+                getInventoryOrDrop(player, accessories.values(), dropIfFull, level, dropPos);
+            } else {
+                getInventoryOrDrop(player, accessories.values(), dropIfFull);
+            }
             return;
         }
 
@@ -144,7 +155,11 @@ public abstract class AccessoriesCompatImpl extends BaseAccessoryCompat {
 
             if (!restored) {
                 if (!tryEquipAccessory(player, stack)) {
-                    getInventoryOrDrop(player, stack, dropIfFull);
+                    if (level != null && dropPos != null) {
+                        getInventoryOrDrop(player, stack, dropIfFull, level, dropPos);
+                    } else {
+                        getInventoryOrDrop(player, stack, dropIfFull);
+                    }
                 }
             }
         }

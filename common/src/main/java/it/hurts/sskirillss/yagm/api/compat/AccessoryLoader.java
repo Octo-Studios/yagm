@@ -1,16 +1,19 @@
 package it.hurts.sskirillss.yagm.api.compat;
 
 import it.hurts.sskirillss.yagm.api.compat.provider.IAccessoryHandler;
-import it.hurts.sskirillss.yagm.util.InventoryUtils;
 import lombok.extern.slf4j.Slf4j;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -101,18 +104,26 @@ public final class AccessoryLoader {
     }
 
 
-    public static void restoreAccessories(ServerPlayer player, Map<String, Map<String, ItemStack>> allAccessories, boolean dropIfFull) {
+    public static void restoreAccessories(ServerPlayer player, Map<String, Map<String, ItemStack>> allAccessories, boolean dropIfFull, BlockPos dropPos, Level level) {
         for (Map.Entry<String, Map<String, ItemStack>> entry : allAccessories.entrySet()) {
             String handlerName = entry.getKey();
             Map<String, ItemStack> accessories = entry.getValue();
 
             IAccessoryHandler handler = handlers.get(handlerName);
             if (handler != null) {
-                handler.restoreAccessories(player, accessories, dropIfFull);
+                if (dropPos != null && level != null) {
+                    handler.restoreAccessories(player, accessories, dropIfFull, level, dropPos);
+                } else {
+                    handler.restoreAccessories(player, accessories, dropIfFull);
+                }
             } else {
                 for (ItemStack stack : accessories.values()) {
                     if (!stack.isEmpty()) {
-                        player.drop(stack.copy(), false);
+                        if (dropPos != null && level != null) {
+                            Containers.dropItemStack(level, dropPos.getX() + 0.5, dropPos.getY() + 0.5, dropPos.getZ() + 0.5, stack.copy());
+                        } else {
+                            player.drop(stack.copy(), false);
+                        }
                     }
                 }
             }

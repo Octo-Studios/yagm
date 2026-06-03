@@ -34,6 +34,10 @@ public final class BlockRegistry {
         return BLOCKS.register(id, () -> new GraveStoneBlock(BlockBehaviour.Properties.of().strength(0.4F, 6.0F).noOcclusion().lightLevel(state -> 6), shape));
     }
 
+    private static RegistrySupplier<Block> registerBambookGrave(String id, GraveStoneShape shape) {
+        return BLOCKS.register(id, () -> new GraveStoneBlock(BlockBehaviour.Properties.of().strength(0.4F, 6.0F).sound(SoundType.BAMBOO).noOcclusion(), shape));
+    }
+
     public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_1 = registerWoodGrave("grave_tier_1", GraveStoneShape.TIER_1);
     public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_2 = registerGrave("grave_tier_2", GraveStoneShape.TIER_2);
     public static final RegistrySupplier<Block> GRAVESTONE_LEVEL_3 = registerLightGrave("grave_tier_3", GraveStoneShape.TIER_3);
@@ -54,7 +58,7 @@ public final class BlockRegistry {
     public static final RegistrySupplier<Block> NETHER_GRAVESTONE_3 = registerLightGrave("nether_grave_tier_3", GraveStoneShape.TIER_3);
     public static final RegistrySupplier<Block> NETHER_GRAVESTONE_4 = registerGrave("nether_grave_tier_4", GraveStoneShape.TIER_4);
 
-    public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_1 = registerWoodGrave("tropics_grave_tier_1", GraveStoneShape.TIER_1);
+    public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_1 = registerBambookGrave("tropics_grave_tier_1", GraveStoneShape.TIER_1);
     public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_2 = registerGrave("tropics_grave_tier_2", GraveStoneShape.TIER_2);
     public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_3 = registerLightGrave("tropics_grave_tier_3", GraveStoneShape.TIER_3);
     public static final RegistrySupplier<Block> TROPICS_GRAVESTONE_4 = registerGrave("tropics_grave_tier_4", GraveStoneShape.TIER_4);

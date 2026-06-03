@@ -85,14 +85,16 @@ public class GraveStoneEvent {
             });
         } else {
             BlockPos immediatePos;
+            boolean strictPlacement = serverLevel.dimension() != Level.END;
+
             if (placementMode == DeathPlacementMode.UNDER_BEDROCK) {
-                immediatePos = PlaceableUtils.getBedrockPlacement(serverLevel, player.blockPosition());
+                immediatePos = serverLevel.dimension() == Level.END ? PlaceableUtils.getBedrockPlacement(serverLevel, player.blockPosition()) : resolveNonEndImmediatePlacement(serverLevel, player.blockPosition());
             } else {
-                immediatePos = PlaceableUtils.getVoidRecovery(serverLevel, player, trackedPlacementPos(serverLevel, player));
+                immediatePos = serverLevel.dimension() == Level.END ? PlaceableUtils.getVoidRecovery(serverLevel, player, trackedPlacementPos(serverLevel, player)) : resolveNonEndImmediatePlacement(serverLevel, player.blockPosition());
             }
 
-            ensureVoidRecoverySupport(serverLevel, immediatePos);
-            placeImmediateGrave(serverLevel, immediatePos, graveData, graveLevel, player, facing);
+            ensureImmediateSupportIfNeeded(serverLevel, immediatePos);
+            placeImmediateGrave(serverLevel, immediatePos, graveData, graveLevel, player, facing, strictPlacement);
         }
     }
 
@@ -223,7 +225,7 @@ public class GraveStoneEvent {
         return null;
     }
 
-    private static void placeImmediateGrave(ServerLevel level, BlockPos pos, CompoundTag graveData, GraveStoneLevels graveLevel, ServerPlayer player, Direction facing) {
+    private static void placeImmediateGrave(ServerLevel level, BlockPos pos, CompoundTag graveData, GraveStoneLevels graveLevel, ServerPlayer player, Direction facing, boolean strictPlacement) {
         ResourceLocation variantId = null;
         if (graveData.contains(KEYS.getVariantId())) {
             variantId = ResourceLocation.tryParse(graveData.getString(KEYS.getVariantId()));
@@ -240,12 +242,25 @@ public class GraveStoneEvent {
         Block graveBlock = VariantUtils.getVariantId(variantId != null ? variantId.toString() : null, graveLevel);
         BlockState graveState = graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing).setValue(BlockStateProperties.WATERLOGGED, level.getFluidState(pos).isSourceOfType(Fluids.WATER));
 
-        if (!PlaceableUtils.placeGraveStoneExact(level, pos, graveState) && !PlaceableUtils.placeGraveStone(level, pos, graveState)) {
-            InventoryUtils.dropFullGrave(level, pos, graveData);
-            return;
+        boolean placed = strictPlacement ? PlaceableUtils.placeGraveStoneExact(level, pos, graveState)
+                : PlaceableUtils.placeGraveStoneExact(level, pos, graveState) || PlaceableUtils.placeGraveStone(level, pos, graveState);
+
+        if (!placed) {
+            if (strictPlacement) {
+                InventoryUtils.dropFullGrave(level, pos, graveData);
+                return;
+            }
+
+            BlockPos supportTopPos = new BlockPos(pos.getX(), level.getMinBuildHeight() + 1, pos.getZ());
+            if (!supportTopPos.equals(pos) && (PlaceableUtils.placeGraveStoneExact(level, supportTopPos, graveState) || PlaceableUtils.placeGraveStone(level, supportTopPos, graveState))) {
+                pos = supportTopPos;
+            } else {
+                InventoryUtils.dropFullGrave(level, pos, graveData);
+                return;
+            }
         }
 
-        BlockPos placedPos = findPlacedImmediateGravePos(level, pos, graveData);
+        BlockPos placedPos = strictPlacement ? pos.immutable() : findPlacedImmediateGravePos(level, pos, graveData);
         if (level.getBlockEntity(placedPos) instanceof GraveStoneBlockEntity blockEntity) {
             blockEntity.loadGraveData(graveData, level.registryAccess());
 
@@ -269,6 +284,30 @@ public class GraveStoneEvent {
         if (supportState.isAir() || supportState.canBeReplaced()) {
             level.setBlock(supportPos, PlaceableUtils.getBlockForLevel(level), 3);
         }
+    }
+
+    private static void ensureImmediateSupportIfNeeded(ServerLevel level, BlockPos gravePos) {
+        BlockPos supportPos = gravePos.below();
+        BlockState supportState = level.getBlockState(supportPos);
+
+        if (supportState.isSolid() || supportPos.getY() != level.getMinBuildHeight()) {
+            return;
+        }
+
+        if (supportState.isAir() || supportState.canBeReplaced()) {
+            level.setBlock(supportPos, PlaceableUtils.getBlockForLevel(level), 3);
+        }
+    }
+
+    private static BlockPos resolveNonEndImmediatePlacement(ServerLevel level, BlockPos columnPos) {
+        ensureVoidRecoverySupport(level, columnPos);
+
+        BlockPos naturalPos = PlaceableUtils.findColumnImmediatePlacement(level, columnPos);
+        if (naturalPos != null) {
+            return naturalPos;
+        }
+
+        return new BlockPos(columnPos.getX(), level.getMinBuildHeight() + 1, columnPos.getZ());
     }
 
     private static BlockPos findPlacedImmediateGravePos(ServerLevel level, BlockPos origin, CompoundTag graveData) {

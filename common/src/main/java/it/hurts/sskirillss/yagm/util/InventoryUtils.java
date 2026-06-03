@@ -64,6 +64,30 @@ public class InventoryUtils {
         return nbt;
     }
 
+    public static boolean hasRecoverableItems(ServerPlayer player) {
+        Inventory inventory = player.getInventory();
+
+        for (ItemStack stack : inventory.items) {
+            if (!stack.isEmpty()) {
+                return true;
+            }
+        }
+
+        for (ItemStack stack : inventory.armor) {
+            if (!stack.isEmpty()) {
+                return true;
+            }
+        }
+
+        for (ItemStack stack : inventory.offhand) {
+            if (!stack.isEmpty()) {
+                return true;
+            }
+        }
+
+        return AccessoryLoader.hasAnyHandler() && !AccessoryLoader.collectAccessories(player).isEmpty();
+    }
+
     public static NonNullList<ItemStack> getAllItemsFromNBT(HolderLookup.Provider provider, CompoundTag nbt) {
         NonNullList<ItemStack>[] lists = createLists();
 
@@ -81,7 +105,7 @@ public class InventoryUtils {
         return result;
     }
 
-    public static void restoreFromNBT(ServerPlayer player, CompoundTag data, boolean restoreAccessories) {
+    public static void restoreFromNBT(ServerPlayer player, CompoundTag data, boolean restoreAccessories, BlockPos dropPos) {
         NonNullList<ItemStack>[] lists = createLists();
         var reg = player.registryAccess();
 
@@ -90,13 +114,13 @@ public class InventoryUtils {
         }
 
         Inventory inv = player.getInventory();
-        restoreInventory(inv.items, lists[0], player);
-        restoreInventory(inv.armor, lists[1], player);
-        restoreInventory(inv.offhand, lists[2], player);
+        restoreInventory(inv.items, lists[0], player, dropPos);
+        restoreInventory(inv.armor, lists[1], player, dropPos);
+        restoreInventory(inv.offhand, lists[2], player, dropPos);
 
         if (restoreAccessories && AccessoryLoader.hasAnyHandler() && data.contains(KEYS.getAccessories(), 10)) {
             var accessories = AccessoryLoader.loadNBT(data.getCompound(KEYS.getAccessories()), reg);
-            AccessoryLoader.restoreAccessories(player, accessories, true);
+            AccessoryLoader.restoreAccessories(player, accessories, true, dropPos, player.level());
         }
     }
 
@@ -108,7 +132,7 @@ public class InventoryUtils {
         };
     }
 
-    public static void restoreInventory(NonNullList<ItemStack> target, NonNullList<ItemStack> source, ServerPlayer player) {
+    public static void restoreInventory(NonNullList<ItemStack> target, NonNullList<ItemStack> source, ServerPlayer player, BlockPos dropPos) {
         for (int i = 0; i < Math.min(source.size(), target.size()); i++) {
             ItemStack item = source.get(i);
             if (item.isEmpty()) continue;
@@ -116,33 +140,36 @@ public class InventoryUtils {
             if (target.get(i).isEmpty()) {
                 target.set(i, item.copy());
             } else {
-                giveOrDropItem(player, item.copy());
+                giveOrDropItem(player, item.copy(), dropPos);
             }
         }
     }
 
-    public static void giveOrDropItem(ServerPlayer player, ItemStack stack) {
+    public static void giveOrDropItem(ServerPlayer player, ItemStack stack, BlockPos dropPos) {
         if (!stack.isEmpty() && !player.getInventory().add(stack)) {
-            player.drop(stack, false);
+            if (dropPos != null) {
+                Containers.dropItemStack(player.level(), dropPos.getX() + 0.5, dropPos.getY() + 0.5, dropPos.getZ() + 0.5, stack);
+            } else {
+                player.drop(stack, false);
+            }
         }
     }
 
     private static final Map<String, Double> VALUABLE_ITEMS = new LinkedHashMap<>() {{
-        put("#c:ingots", 15d);
-        put("#c:block", 1d);
-        put("#c:gems", 24d);
-        put("#c:storage_blocks", 48d);
-        put("#c:ores", 12d);
-        put("#c:raw_materials", 12d);
-        put("#c:rods", 18d);
-        put("#c:alloys", 18d);
-        put("#c:circuits", 24d);
-        put("#c:dusts", 3d);
-        put("#c:foods/golden", 48d);
-        put("#c:tools", 6d);
-        put("#c:armors", 6d);
-        put("#c:blocks", 1d);
-        put("#c:music_discs", 24d);
+        put("#c:ingots", 1.5d);
+        put("#c:gems", 2.4d);
+        put("#c:storage_blocks", 4.8d);
+        put("#c:ores", 1.2d);
+        put("#c:raw_materials", 1.2d);
+        put("#c:rods", 1.8d);
+        put("#c:alloys", 1.8d);
+        put("#c:circuits", 2.4d);
+        put("#c:dusts", 0.3d);
+        put("#c:foods/golden", 4.8d);
+        put("#c:tools", 0.6d);
+        put("#c:armors", 0.6d);
+        put("#c:blocks", 0.1d);
+        put("#c:music_discs", 2.4d);
     }};
 
     public static GraveStoneLevels calculateGraveLevel(Player player) {
@@ -183,7 +210,11 @@ public class InventoryUtils {
     }
 
     public static void restoreFullGrave(ServerPlayer player, CompoundTag data) {
-        restoreFromNBT(player, data, true);
+        restoreFullGrave(player, data, null);
+    }
+
+    public static void restoreFullGrave(ServerPlayer player, CompoundTag data, BlockPos dropPos) {
+        restoreFromNBT(player, data, true, dropPos);
 
         long xp = data.getLong(KEYS.getTotalExperience());
         if (xp > 0) {
