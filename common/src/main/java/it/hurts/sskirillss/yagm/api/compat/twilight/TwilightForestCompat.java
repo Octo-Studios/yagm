@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.api.compat.twilight;
 
 import dev.architectury.platform.Platform;
+import lombok.Getter;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -12,6 +13,7 @@ public final class TwilightForestCompat {
     private static final String PLAYER_PERSISTED_TAG = "PlayerPersisted";
     private static final String CONSUMED_CHARM_TAG = "CharmStack";
     private static final ResourceLocation KEEPING_CHARM_3 = ResourceLocation.fromNamespaceAndPath("twilightforest", "charm_of_keeping_3");
+    @Getter
     private static boolean lateDeathHandlerEnabled;
 
     public static void init() {
@@ -19,10 +21,6 @@ public final class TwilightForestCompat {
 
     public static void enableLateDeathHandler() {
         lateDeathHandlerEnabled = Platform.isModLoaded("twilightforest");
-    }
-
-    public static boolean isLateDeathHandlerEnabled() {
-        return lateDeathHandlerEnabled;
     }
 
     public static boolean shouldSuppressGraveAfterTwilight(ServerPlayer player) {

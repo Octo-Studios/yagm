@@ -14,9 +14,6 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 public final class TwilightForestNeoForgeEvents {
     private static boolean initialized;
 
-    private TwilightForestNeoForgeEvents() {
-    }
-
     public static void register() {
         if (initialized || !Platform.isModLoaded("twilightforest")) {
             return;
@@ -27,23 +24,14 @@ public final class TwilightForestNeoForgeEvents {
     }
 
     private static void onLivingDeath(LivingDeathEvent event) {
-        if (event.isCanceled() || event.getEntity().level().isClientSide() || !(event.getEntity() instanceof ServerPlayer player)) {
-            return;
-        }
-
-        if (player instanceof FakePlayer || player.isSpectator()) {
-            return;
-        }
-
-        if (player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
-            return;
-        }
-
-        if (TwilightForestCompat.shouldSuppressGraveAfterTwilight(player)) {
-            return;
-        }
-
-        if (!InventoryUtils.hasRecoverableItems(player)) {
+        if (event.isCanceled()
+                || !(event.getEntity() instanceof ServerPlayer player)
+                || player.level().isClientSide()
+                || player instanceof FakePlayer
+                || player.isSpectator()
+                || player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)
+                || TwilightForestCompat.shouldSuppressGraveAfterTwilight(player)
+                || !InventoryUtils.hasRecoverableItems(player)) {
             return;
         }
 

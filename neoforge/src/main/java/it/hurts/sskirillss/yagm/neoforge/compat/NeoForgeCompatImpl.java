@@ -16,8 +16,7 @@ public class NeoForgeCompatImpl {
 
         if (Platform.isModLoaded("accessories")) {
             AccessoryLoader.registerHandler(new AccessoriesCompat());
-        }
-        if (Platform.isModLoaded("curios")) {
+        } else if (Platform.isModLoaded("curios")) {
             AccessoryLoader.registerHandler(new CuriosCompat());
         }
     }

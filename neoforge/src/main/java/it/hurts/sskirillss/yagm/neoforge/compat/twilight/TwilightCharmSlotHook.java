@@ -3,169 +3,153 @@ package it.hurts.sskirillss.yagm.neoforge.compat.twilight;
 import dev.architectury.platform.Platform;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Container;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 
-import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Optional;
 
 public final class TwilightCharmSlotHook {
     private static final String CHARM_STACK_TAG = "CharmStack";
 
-    private TwilightCharmSlotHook() {
-    }
+    private enum CharmSource { NONE, ACCESSORIES, CURIOS }
 
-    public static boolean consumeInventoryItemPreferringEquipped(Player player, ItemLike itemLike, CompoundTag data, boolean saveCharm) {
-        if (hasEquippedCharm(itemLike.asItem(), player)) {
-            return false;
-        }
-
-        try {
-            Class<?> utils = Class.forName("twilightforest.util.TFItemStackUtils");
-            Object result = utils.getMethod("consumeInventoryItem", Player.class, ItemLike.class, CompoundTag.class, boolean.class)
-                    .invoke(null, player, itemLike, data, saveCharm);
-            return result instanceof Boolean consumed && consumed;
-        } catch (ReflectiveOperationException ignored) {
-            return false;
-        }
-    }
+    private static final ThreadLocal<CharmSource> pendingSource = ThreadLocal.withInitial(() -> CharmSource.NONE);
+    private static final ThreadLocal<AccessorySlot> pendingSlot   = ThreadLocal.withInitial(() -> null);
 
     public static boolean consumeEquippedCharm(Item item, Player player) {
-        if (consumeAccessoryCharm(item, player)) {
+        AccessorySlot slot = findAccessoryCharmSlot(item, player);
+        if (slot != null) {
+            pendingSource.set(CharmSource.ACCESSORIES);
+            pendingSlot.set(slot);
             return true;
         }
 
-        if (!Platform.isModLoaded("curios")) {
-            return false;
+        if (Platform.isModLoaded("curios")) {
+            Boolean consumed = callStatic("twilightforest.compat.curios.CuriosCompat", "findAndConsumeCurio", new Class[]{Item.class, Player.class}, item, player);
+            if (Boolean.TRUE.equals(consumed)) {
+                pendingSource.set(CharmSource.CURIOS);
+                return true;
+            }
         }
 
-        try {
-            Class<?> curiosCompat = Class.forName("twilightforest.compat.curios.CuriosCompat");
-            Object result = curiosCompat.getMethod("findAndConsumeCurio", Item.class, Player.class).invoke(null, item, player);
-            return result instanceof Boolean consumed && consumed;
-        } catch (ReflectiveOperationException ignored) {
-            return false;
-        }
+        pendingSource.set(CharmSource.NONE);
+        return false;
     }
+
+    public static boolean consumeInventoryItemPreferringEquipped(Player player, ItemLike itemLike, CompoundTag data, boolean saveCharm) {
+        CharmSource source = pendingSource.get();
+        AccessorySlot slot = pendingSlot.get();
+        pendingSource.set(CharmSource.NONE);
+        pendingSlot.set(null);
+
+        switch (source) {
+            case ACCESSORIES -> {
+                if (slot != null) {
+                    ItemStack stack = slot.container().getItem(slot.index()).copy();
+                    slot.consume();
+                    if (saveCharm) {
+                        data.put(CHARM_STACK_TAG, stack.save(player.registryAccess()));
+                    }
+                    return true;
+                }
+            }
+            case CURIOS -> {
+                return false;
+            }
+            default -> {
+                if (hasEquippedCharm(itemLike.asItem(), player)) return false;
+
+                Boolean result = callStatic("twilightforest.util.TFItemStackUtils", "consumeInventoryItem", new Class[]{Player.class, ItemLike.class, CompoundTag.class, boolean.class}, player, itemLike, data, saveCharm);
+                return Boolean.TRUE.equals(result);
+            }
+        }
+
+        return false;
+    }
+
 
     private static boolean hasEquippedCharm(Item item, Player player) {
         return hasCurioCharm(item, player) || hasAccessoryCharm(item, player);
     }
 
     private static boolean hasCurioCharm(Item item, Player player) {
-        if (!Platform.isModLoaded("curios")) {
-            return false;
-        }
+        if (!Platform.isModLoaded("curios")) return false;
 
-        try {
-            Class<?> curiosApi = Class.forName("top.theillusivec4.curios.api.CuriosApi");
-            Object helper = curiosApi.getMethod("getCuriosHelper").invoke(null);
-            if (helper == null) {
-                return false;
-            }
+        Object helper = callStatic("top.theillusivec4.curios.api.CuriosApi", "getCuriosHelper", new Class[0]);
+        if (helper == null) return false;
 
-            Object result = helper.getClass()
-                    .getMethod("findEquippedCurio", Item.class, net.minecraft.world.entity.LivingEntity.class)
-                    .invoke(helper, item, player);
-
-            return result instanceof Optional<?> optional && optional.isPresent();
-        } catch (ReflectiveOperationException ignored) {
-            return false;
-        }
+        Optional<?> result = callOn(helper, "findEquippedCurio", new Class[]{Item.class, LivingEntity.class}, item, player);
+        return result != null && result.isPresent();
     }
 
     private static boolean hasAccessoryCharm(Item item, Player player) {
         return findAccessoryCharmSlot(item, player) != null;
     }
 
-    private static boolean consumeAccessoryCharm(Item item, Player player) {
-        AccessorySlot slot = findAccessoryCharmSlot(item, player);
-        if (slot == null) {
-            return false;
-        }
-
-        CompoundTag data = getTwilightPlayerData(player);
-        if (data == null) {
-            return false;
-        }
-
-        data.put(CHARM_STACK_TAG, slot.container().getItem(slot.index()).save(player.registryAccess()));
-        slot.consume();
-        return true;
-    }
-
     private static AccessorySlot findAccessoryCharmSlot(Item item, Player player) {
-        if (!Platform.isModLoaded("accessories")) {
-            return null;
-        }
+        if (!Platform.isModLoaded("accessories")) return null;
 
-        try {
-            Class<?> capabilityClass = Class.forName("io.wispforest.accessories.api.AccessoriesCapability");
-            Object optionalResult = capabilityClass.getMethod("getOptionally", net.minecraft.world.entity.LivingEntity.class).invoke(null, player);
-            if (!(optionalResult instanceof Optional<?> optional) || optional.isEmpty()) {
-                return null;
-            }
+        Optional<?> optCapability = callStatic("io.wispforest.accessories.api.AccessoriesCapability", "getOptionally", new Class[]{LivingEntity.class}, player);
+        if (optCapability == null || optCapability.isEmpty()) return null;
 
-            Object capability = optional.get();
-            Object containersResult = capability.getClass().getMethod("getContainers").invoke(capability);
-            if (!(containersResult instanceof Map<?, ?> containers)) {
-                return null;
-            }
+        Map<?, ?> containers = callOn(optCapability.get(), "getContainers", new Class[0]);
+        if (containers == null) return null;
 
-            for (Object container : containers.values()) {
-                AccessorySlot main = findAccessoryCharmSlot(item, container, (Container) container.getClass().getMethod("getAccessories").invoke(container));
-                if (main != null) {
-                    return main;
-                }
+        for (Object container : containers.values()) {
+            Container main = callOn(container, "getAccessories", new Class[0]);
+            AccessorySlot slot = findSlotWithItem(item, container, main);
+            if (slot != null) return slot;
 
-                Object cosmetic = container.getClass().getMethod("getCosmeticAccessories").invoke(container);
-                if (cosmetic instanceof Container cosmeticContainer) {
-                    AccessorySlot cosmeticSlot = findAccessoryCharmSlot(item, container, cosmeticContainer);
-                    if (cosmeticSlot != null) {
-                        return cosmeticSlot;
-                    }
-                }
-            }
-        } catch (ReflectiveOperationException | ClassCastException ignored) {
+            Container cosmetic = callOn(container, "getCosmeticAccessories", new Class[0]);
+            slot = findSlotWithItem(item, container, cosmetic);
+            if (slot != null) return slot;
         }
 
         return null;
     }
 
-    private static AccessorySlot findAccessoryCharmSlot(Item item, Object owner, Container container) {
+    private static AccessorySlot findSlotWithItem(Item item, Object owner, Container container) {
+        if (container == null) return null;
+
         for (int i = 0; i < container.getContainerSize(); i++) {
             if (container.getItem(i).is(item)) {
                 return new AccessorySlot(owner, container, i);
             }
         }
-
         return null;
     }
 
-    private static CompoundTag getTwilightPlayerData(Player player) {
+    @SuppressWarnings("unchecked")
+    private static <T> T callStatic(String className, String methodName, Class<?>[] types, Object... args) {
         try {
-            Class<?> charmEvents = Class.forName("twilightforest.events.CharmEvents");
-            Object result = charmEvents.getMethod("getPlayerData", Player.class).invoke(null, player);
-            return result instanceof CompoundTag tag ? tag : null;
+            return (T) Class.forName(className).getMethod(methodName, types).invoke(null, args);
         } catch (ReflectiveOperationException ignored) {
             return null;
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private static <T> T callOn(Object instance, String methodName, Class<?>[] types, Object... args) {
+        try {
+            return (T) instance.getClass().getMethod(methodName, types).invoke(instance, args);
+        } catch (ReflectiveOperationException | ClassCastException ignored) {
+            return null;
+        }
+    }
+
+
     private record AccessorySlot(Object owner, Container container, int index) {
         void consume() {
             var stack = container.getItem(index);
-            if (!stack.isEmpty()) {
-                stack.shrink(1);
-                container.setChanged();
-                try {
-                    Method method = owner.getClass().getMethod("markChanged");
-                    method.invoke(owner);
-                } catch (ReflectiveOperationException ignored) {
-                }
-            }
+            if (stack.isEmpty()) return;
+
+            stack.shrink(1);
+            container.setChanged();
+            callOn(owner, "markChanged", new Class[0]);
         }
     }
 }
