@@ -1,20 +1,17 @@
 package it.hurts.sskirillss.yagm.fabric.compat.trinkets;
 
-import dev.emi.trinkets.api.Trinket;
 import dev.emi.trinkets.api.TrinketComponent;
 import dev.emi.trinkets.api.TrinketInventory;
 import dev.emi.trinkets.api.TrinketsApi;
 import it.hurts.sskirillss.yagm.api.compat.BaseAccessoryCompat;
 import lombok.Value;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 public class TrinketsCompat extends BaseAccessoryCompat {
 
@@ -128,10 +125,9 @@ public class TrinketsCompat extends BaseAccessoryCompat {
         for (var groupEntry : componentOpt.get().getInventory().entrySet()) {
             for (var slotEntry : groupEntry.getValue().entrySet()) {
                 TrinketInventory inv = slotEntry.getValue();
-                Set<ResourceLocation> predicates = inv.getSlotType().getValidatorPredicates();
 
                 for (int i = 0; i < inv.getContainerSize(); i++) {
-                    if (inv.getItem(i).isEmpty() && (predicates.isEmpty() || stack.getItem() instanceof Trinket)) {
+                    if (inv.getItem(i).isEmpty() && TrinketsApi.getTrinket(stack.getItem()) != null) {
                         inv.setItem(i, stack.copy());
                         return true;
                     }

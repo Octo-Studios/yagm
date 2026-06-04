@@ -145,8 +145,16 @@ public class CuriosCompat extends BaseAccessoryCompat {
             ICurioStacksHandler stacksHandler = curios.get(slotType);
             if (stacksHandler == null) continue;
 
-            SlotContext context = new SlotContext(slotType, player, 0, false, true);
-            CuriosApi.isStackValid(context, stack);
+            IDynamicStackHandler stacks = stacksHandler.getStacks();
+            for (int i = 0; i < stacks.getSlots(); i++) {
+                if (stacks.getStackInSlot(i).isEmpty()) {
+                    SlotContext context = new SlotContext(slotType, player, i, false, true);
+                    if (CuriosApi.isStackValid(context, stack)) {
+                        stacks.setStackInSlot(i, stack.copy());
+                        return true;
+                    }
+                }
+            }
         }
         return false;
     }
