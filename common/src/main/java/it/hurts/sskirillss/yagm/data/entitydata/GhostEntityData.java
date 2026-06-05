@@ -10,16 +10,11 @@ public class GhostEntityData {
     public static final int MOOD_UPDATE_INTERVAL = 10;
     public static final double FLY_SPEED = 0.24;
     public static final float YAW_WANDER_TURN_DEGREES = 28f;
-    public static final float YAW_FOLLOW_TURN_DEGREES = 36f;
-    public static final float YAW_ATTACK_TURN_DEGREES = 52f;
-    public static final float YAW_IDLE_TURN_DEGREES = 32f;
     public static final double YAW_TURN_MIN_SPEED_FACTOR = 0.32;
-    public static final double YAW_FOLLOW_MIN_SPEED_FACTOR = 0.55;
     public static final float PITCH_RETURN_SPEED = 0.08f;
     public static final float PITCH_MAX_DEGREES = 35f;
 
     public static final double TELEPORT_DISTANCE = 40.0;
-    public static final double FOLLOW_CATCH_UP_DISTANCE = 7.0;
     public static final double FOLLOW_ARRIVAL_DIST = 0.55;
     public static final double FOLLOW_ORBIT_RADIUS = 2.5;
     public static final double FOLLOW_ORBIT_HEIGHT = 1.5;
@@ -34,7 +29,6 @@ public class GhostEntityData {
     public static final int BABY_GROWTH_PER_FEED = BABY_GROW_TICKS / BABY_FAST_GROW_FEEDS;
     public static final int BREED_LOVE_TICKS = 600;
     public static final int BREED_COOLDOWN_TICKS = 6000;
-    public static final int DESPAWN_LIGHT_LEVEL = 11;
 
     public static final double CEMETERY_AGGRO_RADIUS = 16.0;
     public static final double ATTACK_TICKS_INTERVAL = 20;

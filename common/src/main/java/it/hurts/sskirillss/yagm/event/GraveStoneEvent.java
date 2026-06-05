@@ -125,6 +125,7 @@ public class GraveStoneEvent {
         UUID uuid = player.getUUID();
         long currentTick = player.serverLevel().getGameTime();
         Long previousTick = lastHandledDeathTick.put(uuid, currentTick);
+
         if (previousTick != null && currentTick - previousTick <= 2L) {
             return;
         }

@@ -33,6 +33,7 @@ public class InventoryUtils {
     private static final String[] KEY = {"MainInventory", "ArmorInventory", "OffhandInventory"};
     private static final int[] SIZES = {36, 4, 1};
 
+    @SuppressWarnings("unchecked")
     public static CompoundTag savePlayerInventory(Player player) {
         CompoundTag nbt = new CompoundTag();
         Inventory inv = player.getInventory();
@@ -124,6 +125,7 @@ public class InventoryUtils {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static NonNullList<ItemStack>[] createLists() {
         return new NonNullList[]{
                 NonNullList.withSize(SIZES[0], ItemStack.EMPTY),

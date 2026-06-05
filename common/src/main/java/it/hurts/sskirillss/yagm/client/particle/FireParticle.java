@@ -102,6 +102,7 @@ public class FireParticle extends TextureSheetParticle {
     };
 
 
+    @SuppressWarnings("all")
     @Data
     @Builder
     public static class Constructor {
