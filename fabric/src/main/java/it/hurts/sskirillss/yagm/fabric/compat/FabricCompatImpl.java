@@ -9,8 +9,7 @@ public class FabricCompatImpl {
     public static void registerPlatformHandlers() {
         if (Platform.isModLoaded("accessories")) {
             AccessoryLoader.registerHandler(new AccessoriesCompat());
-        }
-        if (Platform.isModLoaded("trinkets")) {
+        } else if (Platform.isModLoaded("trinkets")) {
             AccessoryLoader.registerHandler(new TrinketsCompat());
         }
     }
