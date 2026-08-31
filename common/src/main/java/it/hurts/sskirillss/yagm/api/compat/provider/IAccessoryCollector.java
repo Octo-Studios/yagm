@@ -8,7 +8,7 @@ import java.util.Map;
 public interface IAccessoryCollector {
 
     /**
-     * @return map: slot key → item (e.g. "ring/0", "necklace/cosmetic/1", "chest/necklace/0")
+     * @return map: slot key → item ("ring/0", "necklace/cosmetic/1", "chest/necklace/0")
      */
     Map<String, ItemStack> collectAccessories(ServerPlayer player);
 

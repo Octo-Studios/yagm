@@ -16,6 +16,7 @@ public class GraveVariantRegistry {
 
     private static final Map<ResourceLocation, IGraveVariant> GRAVESTONE_VARIANTS = new ConcurrentHashMap<>();
     private static final List<IGraveVariant> SORTED_LOADER = new ArrayList<>();
+
     private static volatile boolean needsSort = true;
 
     @Getter
@@ -63,6 +64,7 @@ public class GraveVariantRegistry {
         }
 
         GraveVariantContext ctx = new GraveVariantContext(level, pos);
+
         IGraveVariant fallback = defaultVariant;
 
         for (IGraveVariant variant : snapshot) {

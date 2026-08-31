@@ -21,8 +21,12 @@ configurations {
 
 repositories {
     maven { url "https://maven.neoforged.net/releases/" }
-    maven { url "https://maven.tamaized.com/releases" }
-    maven { url "https://www.cursemaven.com" }
+    maven {
+        url "https://www.cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
 }
 
 dependencies {
@@ -30,12 +34,16 @@ dependencies {
     modImplementation "dev.architectury:architectury-neoforge:${architectury_version}"
     common(project(path: ":common", configuration: "namedElements")) { transitive = false }
     shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive = false }
-    implementation ("it.hurts.octostudios.octolib:octolib-neoforge:$rootProject.octolib_version")
     compileOnly ("top.theillusivec4.curios:curios-neoforge:${rootProject.curios_api_version}:api")
     compileOnly ("top.theillusivec4.curios:curios-neoforge:${rootProject.curios_api_version}")
     compileOnly ("io.wispforest:accessories-neoforge:${rootProject.accessories_version}")
-    compileOnly "team-twilight:twilightforest:${rootProject.twilight_forest}:universal"
+    compileOnly "curse.maven:the-twilight-forest-227639:${rootProject.twilight_forest_file_id}"
     compileOnly "curse.maven:revive-me-${rootProject.revive_me}"
+    compileOnly "curse.maven:backpacked-352835:${rootProject.backpacked_neoforge_file_id}"
+    compileOnly "curse.maven:travelers-backpack-321117:${rootProject.travelers_backpack_neoforge_file_id}"
+    compileOnly "curse.maven:sophisticated-core-618298:${rootProject.sophisticated_core_file_id}"
+    compileOnly "curse.maven:sophisticated-backpacks-422301:${rootProject.sophisticated_backpacks_file_id}"
+    compileOnly "curse.maven:cosmetic-armor-reworked-237307:${rootProject.cosmetic_armor_reworked_file_id}"
 }
 
 def resourceTargets = ['META-INF/mods.toml', 'pack.mcmeta']

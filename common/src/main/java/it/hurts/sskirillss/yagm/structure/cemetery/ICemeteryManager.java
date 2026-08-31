@@ -15,6 +15,4 @@ public interface ICemeteryManager {
     interface LevelChecker {
         Level getLevel(ResourceKey<Level> dimension);
     }
-
-
 }

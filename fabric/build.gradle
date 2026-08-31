@@ -26,9 +26,10 @@ dependencies {
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
-    modImplementation ("it.hurts.octostudios.octolib:octolib-fabric:$rootProject.octolib_version")
     modCompileOnly "dev.emi:trinkets:${rootProject.trinkets_version}"
     modCompileOnly "io.wispforest:accessories-fabric:${rootProject.accessories_version}"
+    compileOnly "curse.maven:backpacked-352835:${rootProject.backpacked_neoforge_file_id}"
+    modCompileOnly "curse.maven:travelers-backpack-fabric-541171:${rootProject.travelers_backpack_fabric_file_id}"
 }
 
 def resourceTargets = ['fabric.mod.json']
