@@ -3,7 +3,7 @@ package it.hurts.sskirillss.yagm.data.gravedata;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
-import it.hurts.sskirillss.yagm.util.NbtKeys;
+import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.HolderLookup;

@@ -16,7 +16,6 @@ public class GhostEntityModel <T extends Entity> extends EntityModel<T> {
 
     public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(YAGMCommon.id("ghost"), "main");
 
-
     private final ModelPart bb_main;
 
     public GhostEntityModel(ModelPart root) {

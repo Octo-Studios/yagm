@@ -10,8 +10,8 @@ public class GhostDefendOwnerGoal extends TargetGoal {
 
     private final GhostEntity ghost;
     private LivingEntity attackTarget;
-    private int ownerLastHurtMobTimestamp = -1;
-    private int ownerLastHurtByMobTimestamp = -1;
+    private int LAST_HURT_TIME = -1;
+    private int LAST_HURT_TIMESTAMP = -1;
     private boolean ownerAttackTimestampInitialized = false;
 
     public GhostDefendOwnerGoal(GhostEntity ghost) {
@@ -30,24 +30,24 @@ public class GhostDefendOwnerGoal extends TargetGoal {
         if (isValidTarget(currentTarget) && isNearOwner(owner, currentTarget)) return false;
 
         if (!ownerAttackTimestampInitialized) {
-            ownerLastHurtMobTimestamp = owner.getLastHurtMobTimestamp();
-            ownerLastHurtByMobTimestamp = owner.getLastHurtByMobTimestamp();
+            LAST_HURT_TIME = owner.getLastHurtMobTimestamp();
+            LAST_HURT_TIMESTAMP = owner.getLastHurtByMobTimestamp();
             ownerAttackTimestampInitialized = true;
             return false;
         }
 
         LivingEntity ownerAssistTarget = owner.getLastHurtMob();
         int ownerAssistTs = owner.getLastHurtMobTimestamp();
-        if (ownerAssistTs != ownerLastHurtMobTimestamp && isValidTarget(ownerAssistTarget) && isNearOwner(owner, ownerAssistTarget)) {
-            ownerLastHurtMobTimestamp = ownerAssistTs;
+        if (ownerAssistTs != LAST_HURT_TIME && isValidTarget(ownerAssistTarget) && isNearOwner(owner, ownerAssistTarget)) {
+            LAST_HURT_TIME = ownerAssistTs;
             attackTarget = ownerAssistTarget;
             return true;
         }
 
         LivingEntity ownerDefendTarget = owner.getLastHurtByMob();
         int ownerDefendTs = owner.getLastHurtByMobTimestamp();
-        if (ownerDefendTs != ownerLastHurtByMobTimestamp && isValidTarget(ownerDefendTarget) && isNearOwner(owner, ownerDefendTarget)) {
-            ownerLastHurtByMobTimestamp = ownerDefendTs;
+        if (ownerDefendTs != LAST_HURT_TIMESTAMP && isValidTarget(ownerDefendTarget) && isNearOwner(owner, ownerDefendTarget)) {
+            LAST_HURT_TIMESTAMP = ownerDefendTs;
             attackTarget = ownerDefendTarget;
             return true;
         }

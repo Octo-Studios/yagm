@@ -7,6 +7,7 @@ import dev.architectury.event.events.common.TickEvent;
 import it.hurts.sskirillss.yagm.api.compat.twilight.TwilightForestCompat;
 import it.hurts.sskirillss.yagm.api.event.IServerEvent;
 import it.hurts.sskirillss.yagm.event.GraveStoneEvent;
+import it.hurts.sskirillss.yagm.event.death.tracker.GraveDeathTracker;
 import it.hurts.sskirillss.yagm.network.handler.GhostSpawnHandler;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeterySavedData;
@@ -67,6 +68,8 @@ public class EventRegistry {
     }
 
     private static boolean shouldCreateGrave(ServerPlayer player, DamageSource source) {
-        return !player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY) && !TwilightForestCompat.isLateDeathHandlerEnabled();
+        return !player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)
+                && !TwilightForestCompat.isPOST_DEATH()
+                && !GraveDeathTracker.isPostDeath();
     }
 }

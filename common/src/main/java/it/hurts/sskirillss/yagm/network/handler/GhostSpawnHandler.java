@@ -52,8 +52,9 @@ public class GhostSpawnHandler {
             }
 
             List<CemeteryInfo> cemeteries = manager.getAllCemeteries(dimension);
+
             for (CemeteryInfo cemetery : cemeteries) {
-                spawnAtCemetery(level, cemetery);
+                GhostSpawnHandler.spawnAtCemetery(level, cemetery);
             }
         }
     }
@@ -67,7 +68,9 @@ public class GhostSpawnHandler {
         }
 
         AABB searchBox = new AABB(center).inflate(GhostEntityData.GHOST_COUNT_SEARCH_RADIUS);
+
         int existingGhosts = level.getEntitiesOfClass(GhostEntity.class, searchBox, ghost -> !ghost.isTame()).size();
+
         if (existingGhosts >= GhostEntityData.MAX_GHOSTS_PER_CEMETERY) {
             return;
         }

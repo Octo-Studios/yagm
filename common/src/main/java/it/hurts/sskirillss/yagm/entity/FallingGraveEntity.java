@@ -5,11 +5,13 @@ import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
 import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.client.particle.options.GroundDustParticleOptions;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.component.placement.GravePlacementResult;
+import it.hurts.sskirillss.yagm.component.placement.GravePlacementService;
+import it.hurts.sskirillss.yagm.component.placement.GravePositionResolver;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
-import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
-import it.hurts.sskirillss.yagm.util.InventoryUtils;
-import it.hurts.sskirillss.yagm.util.NbtKeys;
+import it.hurts.sskirillss.yagm.util.ContainerUtils;
+import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import it.hurts.sskirillss.yagm.util.PlaceableUtils;
 import it.hurts.sskirillss.yagm.util.VariantUtils;
 import it.hurts.sskirillss.yagm.vec3.FallingGraveMotionConfig;
@@ -30,8 +32,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -58,7 +58,11 @@ public class FallingGraveEntity extends Entity {
     private ResourceLocation variantId;
 
     private static final NbtKeys KEYS = NbtKeys.INSTANCE;
-    private static final String[] INVENTORY_KEYS = { KEYS.getMainInventory(), KEYS.getArmorInventory(), KEYS.getOffhandInventory(), KEYS.getAccessories(), KEYS.getTotalExperience() };
+
+    private static final String[] INVENTORY_KEYS = {
+            KEYS.getMainInventory(), KEYS.getArmorInventory(), KEYS.getOffhandInventory(), KEYS.getAccessories(), KEYS.getTotalExperience()
+    };
+
     private static final FallingGraveMotionConfig MOTION = FallingGraveMotionConfig.DEFAULT;
 
     private float rotationSpeed;
@@ -67,7 +71,8 @@ public class FallingGraveEntity extends Entity {
     private boolean graveHandled = false;
     private BlockPos lastSafePos = null;
     private static final TicketType<Long> FALLING_GRAVE_TICKET = TicketType.create("yagm_falling_grave", Long::compareTo);
-    private final Set<Long> activeChunkTickets = new HashSet<>();
+
+    private final Set<Long> ticket = new HashSet<>();
 
     public FallingGraveEntity(EntityType<?> type, Level level) {
         super(type, level);
@@ -214,16 +219,16 @@ public class FallingGraveEntity extends Entity {
             handleGravePlacement();
         }
         if (!level().isClientSide()) {
-            if (!(level() instanceof ServerLevel serverLevel) || activeChunkTickets.isEmpty()) {
+            if (!(level() instanceof ServerLevel serverLevel) || ticket.isEmpty()) {
                 return;
             }
 
-            for (Long chunkId : activeChunkTickets) {
+            for (Long chunkId : ticket) {
                 ChunkPos chunk = new ChunkPos(chunkId);
                 serverLevel.getChunkSource().removeRegionTicket(FALLING_GRAVE_TICKET, chunk, 2, chunkId);
             }
 
-            activeChunkTickets.clear();
+            ticket.clear();
         }
         super.remove(reason);
     }
@@ -236,69 +241,48 @@ public class FallingGraveEntity extends Entity {
     }
 
     private void handleGravePlacement() {
-        if (level() instanceof ServerLevel serverLevel && isGravePlacedTick(serverLevel)) {
+        if (!(level() instanceof ServerLevel serverLevel)) {
             return;
         }
 
-        BlockPos landingPos = findLandingPosition();
+        if (isGravePlacedTick(serverLevel)) {
+            return;
+        }
 
-        BlockPos gravePos = voidRecovery ? landingPos : PlaceableUtils.getGraveStoneBlockPosition(level(), landingPos);
+        BlockPos landingPos = GravePositionResolver.resolveFallingLanding(serverLevel, position(), lastSafePos, voidRecovery);
+        BlockPos gravePos = voidRecovery ? landingPos : PlaceableUtils.getGraveStoneBlockPosition(serverLevel, landingPos);
 
-        String variantStr = variantId != null ? variantId.toString() : null;
-        Block graveBlock = VariantUtils.getVariantId(variantStr, graveLevel);
-
-        if (tryPlaceGrave(gravePos, graveBlock)) return;
+        if (tryPlaceGrave(serverLevel, gravePos)) return;
 
         if (!level().isClientSide()) {
             if (!voidRecovery) {
-                BlockPos altPos = PlaceableUtils.findP2P(level(), landingPos, 16);
-                if (altPos != null && tryPlaceGrave(altPos, graveBlock)) return;
+                BlockPos altPos = PlaceableUtils.findNear(serverLevel, landingPos, 16);
+                if (altPos != null && tryPlaceGrave(serverLevel, altPos)) return;
             }
 
             if (graveData == null) return;
-            InventoryUtils.dropFullGrave(level(), landingPos, graveData);
+            ContainerUtils.dropFullGrave(serverLevel, landingPos, graveData);
         }
     }
 
-    private boolean tryPlaceGrave(BlockPos pos, Block graveBlock) {
-        if (graveData != null && graveData.hasUUID(KEYS.getId()) && level().getBlockEntity(pos) instanceof GraveStoneBlockEntity existing && graveData.getUUID(KEYS.getId()).equals(existing.getGraveData().getGraveId())) {
-            return true;
-        }
-
-        BlockState graveState = graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing).setValue(BlockStateProperties.WATERLOGGED, level().getFluidState(pos).isSourceOfType(Fluids.WATER));
-
-        boolean placed = voidRecovery ? PlaceableUtils.placeGraveStoneExact(level(), pos, graveState) : PlaceableUtils.placeGraveStone(level(), pos, graveState);
-
-        if (!placed) {
+    private boolean tryPlaceGrave(ServerLevel level, BlockPos pos) {
+        CompoundTag dataToLoad = resolvePlacementData();
+        if (dataToLoad == null) {
             return false;
         }
 
-        if (!level().isClientSide()) {
-            if (level().getBlockEntity(pos) instanceof GraveStoneBlockEntity blockEntity) {
-                CompoundTag dataToLoad = resolvePlacementData();
-                if (graveData != null) {
-                    blockEntity.loadGraveData(dataToLoad, level().registryAccess());
-                }
-                blockEntity.setVoidRecovery(voidRecovery);
-
-                blockEntity.initializeGrave(ownerUUID, ownerName, System.currentTimeMillis(), null, null, graveLevel);
-
-                if (variantId != null) {
-                    blockEntity.setVariant(GraveVariantRegistry.get(variantId));
-                }
-
-                if (graveData != null && graveData.hasUUID(KEYS.getId()) && level() instanceof ServerLevel serverLevel) {
-                    GraveDataManager.get(serverLevel).setGravePos(graveData.getUUID(KEYS.getId()), pos);
-                }
-
-                if (!blockEntity.isDecorative()) {
-                    CemeteryManager.getInstance().addGrave(level().dimension(), pos);
-                }
-            }
-            spawnLandingDust(pos);
-            spawnLandingFogCycle(pos);
-            level().levelEvent(2001, pos, Block.getId(graveState));
+        GravePlacementResult result = GravePlacementService.placeFalling(level, pos, dataToLoad, graveLevel, ownerUUID, ownerName, facing, variantId, voidRecovery);
+        if (!result.placed()) {
+            return false;
         }
+
+        BlockPos placedPos = result.pos() == null ? pos : result.pos();
+        BlockState placedState = result.state() == null ? level.getBlockState(placedPos) : result.state();
+
+        spawnLandingDust(placedPos);
+        spawnLandingFogCycle(placedPos);
+        level.levelEvent(2001, placedPos, Block.getId(placedState));
+
         return true;
     }
 
@@ -358,21 +342,21 @@ public class FallingGraveEntity extends Entity {
                 long chunkId = chunk.toLong();
                 required.add(chunkId);
 
-                if (!activeChunkTickets.contains(chunkId)) {
+                if (!ticket.contains(chunkId)) {
                     serverLevel.getChunkSource().addRegionTicket(FALLING_GRAVE_TICKET, chunk, 2, chunkId);
                 }
             }
         }
 
-        for (Long chunkId : activeChunkTickets) {
+        for (Long chunkId : ticket) {
             if (!required.contains(chunkId)) {
                 ChunkPos chunk = new ChunkPos(chunkId);
                 serverLevel.getChunkSource().removeRegionTicket(FALLING_GRAVE_TICKET, chunk, 2, chunkId);
             }
         }
 
-        activeChunkTickets.clear();
-        activeChunkTickets.addAll(required);
+        ticket.clear();
+        ticket.addAll(required);
     }
 
     private void getChunkT() {
@@ -385,7 +369,7 @@ public class FallingGraveEntity extends Entity {
             for (int dz = -2; dz <= 2; dz++) {
                 ChunkPos chunk = new ChunkPos(center.x + dx, center.z + dz);
                 long chunkId = chunk.toLong();
-                if (activeChunkTickets.add(chunkId)) {
+                if (ticket.add(chunkId)) {
                     serverLevel.getChunkSource().addRegionTicket(FALLING_GRAVE_TICKET, chunk, 2, chunkId);
                 }
             }
@@ -459,59 +443,6 @@ public class FallingGraveEntity extends Entity {
         return false;
     }
 
-
-    private BlockPos findLandingPosition() {
-        if (voidRecovery) {
-            BlockPos base = lastSafePos != null ? lastSafePos : BlockPos.containing(position());
-
-            BlockPos dirtPos = new BlockPos(base.getX(), level().getMinBuildHeight(), base.getZ());
-
-            level().setBlock(dirtPos, PlaceableUtils.getBlockForLevel((ServerLevel) level()), 3);
-
-            return dirtPos.above();
-        }
-
-        BlockPos blockPos = BlockPos.containing(position());
-
-        if (blockPos.getY() <= level().getMinBuildHeight() + 4 && lastSafePos != null) {
-            blockPos = lastSafePos;
-        }
-
-        if (blockPos.getY() <= level().getMinBuildHeight() + 2) {
-            return new BlockPos(blockPos.getX(), level().getMinBuildHeight(), blockPos.getZ());
-        }
-
-        BlockState state = level().getBlockState(blockPos);
-        if (!state.isAir() && !state.canBeReplaced()) {
-            for (int y = 0; y <= 5; y++) {
-                BlockPos above = blockPos.above(y);
-
-
-                BlockState aboveState = level().getBlockState(above);
-
-                BlockState below = level().getBlockState(above.below());
-                if ((aboveState.isAir() || aboveState.canBeReplaced()) && below.isSolid()) {
-                    return above;
-                }
-            }
-        }
-
-        for (int y = 0; y <= 10; y++) {
-
-            BlockPos below = blockPos.below(y);
-            BlockState belowState = level().getBlockState(below);
-
-            BlockState atPos = level().getBlockState(below.above());
-
-
-            if (belowState.isSolid() && (atPos.isAir() || atPos.canBeReplaced())) {
-                return below.above();
-            }
-        }
-
-        return blockPos;
-    }
-
     public void stopRotation() {
         this.rotationSpeed = 0f;
         this.entityData.set(DATA_ROT_SPEED, 0f);
@@ -545,15 +476,6 @@ public class FallingGraveEntity extends Entity {
         }
         return variantId;
     }
-
-    @Nullable
-    public UUID getGraveId() {
-        if (graveData != null && graveData.hasUUID(KEYS.getId())) {
-            return graveData.getUUID(KEYS.getId());
-        }
-        return null;
-    }
-
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {

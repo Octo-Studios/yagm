@@ -46,7 +46,7 @@ public class FallingGraveMotionConfig {
         double h_val_fixed = 0.5;
         double discriminant = velg * velg - 4.0 * g_func * h_val_fixed;
         int landingTick = (discriminant < 0) ? maxLifetime : (int) ((-velg - Math.sqrt(discriminant)) / (2.0 * g_func));
-        landingTick = Math.max(1, Math.min(landingTick, maxLifetime));
+        landingTick = Math.clamp(landingTick, 1, maxLifetime);
 
         double d = drag.x;
         double geomSum = (Math.abs(1.0 - d) < 1e-9) ? landingTick : (1.0 - Math.pow(d, landingTick)) / (1.0 - d);
