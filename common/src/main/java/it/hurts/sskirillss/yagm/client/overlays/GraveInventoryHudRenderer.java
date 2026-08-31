@@ -1,11 +1,14 @@
 package it.hurts.sskirillss.yagm.client.overlays;
 
 import it.hurts.sskirillss.yagm.api.compat.BaseAccessoryCompat;
+import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackLoader;
 import it.hurts.sskirillss.yagm.block.GraveStoneBlock;
 import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
+import it.hurts.sskirillss.yagm.client.overlays.config.InventoryHudConfig;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveData;
-import it.hurts.sskirillss.yagm.util.InventoryUtils;
-import it.hurts.sskirillss.yagm.util.NbtKeys;
+import it.hurts.sskirillss.yagm.util.ArmorUtils;
+import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
+import it.hurts.sskirillss.yagm.util.TierUtils;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -27,21 +30,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public final class GraveInventoryHudRenderer {
-
-    private static final int SLOT = 18;
-    private static final int PAD = 8;
-    private static final int ARMOR_GAP = 4;
-    private static final int HOTBAR_GAP = 2;
-    private static final int SECTION_GAP = 6;
-    private static final int LINE_H = 10;
-    private static final int PANEL_WIDTH = PAD + SLOT + ARMOR_GAP + 9 * SLOT + PAD;
-    private static final int CONTENT_W = PANEL_WIDTH - PAD * 2;
-    private static final int ACC_PER_ROW = CONTENT_W / SLOT;
-
-    private static final int COLOR_BG = 0x00000000;
-    private static final int COLOR_NAME = 0xFFFFFFFF;
-    private static final int COLOR_LABEL = 0xFFAAAAAA;
-    private static final int COLOR_CAUSE = 0xFFFF7070;
 
     private static final NbtKeys KEYS = NbtKeys.INSTANCE;
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").withZone(ZoneId.systemDefault());
@@ -86,99 +74,129 @@ public final class GraveInventoryHudRenderer {
     }
 
     private static void render(GuiGraphics graphics, Font font, RegistryAccess registry, CompoundTag inventoryData, GraveData graveData) {
-        NonNullList<ItemStack> armor = InventoryUtils.parseArmor(registry, inventoryData);
-        NonNullList<ItemStack> main = InventoryUtils.parseMainInventory(registry, inventoryData);
-        NonNullList<ItemStack> offhand = InventoryUtils.parseOffHand(registry, inventoryData);
-        List<ItemStack> accessories = BaseAccessoryCompat.parseAccessories(registry, inventoryData);
+        InventoryHudConfig config = InventoryHudConfig.get();
 
-        int accRows = accessories.isEmpty() ? 0 : (int) Math.ceil(accessories.size() / (double) ACC_PER_ROW);
-        int panelHeight = computePanelHeight(accRows, graveData, inventoryData);
+        NonNullList<ItemStack> armor = ArmorUtils.parseArmor(registry, inventoryData);
+        NonNullList<ItemStack> main = ArmorUtils.parseMainInventory(registry, inventoryData);
+        NonNullList<ItemStack> offhand = ArmorUtils.parseOffHand(registry, inventoryData);
 
-        int panelX = graphics.guiWidth() - PANEL_WIDTH - PAD;
-        int panelY = PAD;
+        List<ItemStack> cosmeticArmor = BaseAccessoryCompat.parseAccessories(registry, inventoryData, "CosmeticArmorReworked");
+        List<ItemStack> backpacked = BackpackLoader.parseBackpacks(registry, inventoryData, "backpacked");
+        List<ItemStack> accessories = BaseAccessoryCompat.parseAccessoriesOrElse(registry, inventoryData, "CosmeticArmorReworked");
 
-        graphics.fillGradient(panelX, panelY, panelX + PANEL_WIDTH, panelY + panelHeight, COLOR_BG, COLOR_BG);
+        int cosmeticArmorRows = cosmeticArmor.isEmpty() ? 0 : (int) Math.ceil(cosmeticArmor.size() / (double) config.getAccessoriesPerRow());
+        int backpackedRows = backpacked.isEmpty() ? 0 : (int) Math.ceil(backpacked.size() / (double) config.getAccessoriesPerRow());
+        int accRows = accessories.isEmpty() ? 0 : (int) Math.ceil(accessories.size() / (double) config.getAccessoriesPerRow());
+        int panelHeight = computePanelHeight(cosmeticArmorRows, backpackedRows, accRows, graveData, inventoryData);
 
-        int contentX = panelX + PAD;
-        int y = panelY + PAD;
+        int panelX = graphics.guiWidth() - config.getPanelWidth() - config.getPad();
 
-        renderArmorColumn(graphics, font, armor, contentX - SLOT, y);
+        int panelY = config.getPad();
+
+        graphics.fillGradient(panelX, panelY, panelX + config.getPanelWidth(), panelY + panelHeight, config.getBackgroundColor(), config.getBackgroundColor());
+
+        int contentX = panelX + config.getPad();
+
+        int y = panelY + config.getPad();
+
+        renderArmorColumn(graphics, font, armor, contentX - config.getSlot(), y);
 
         renderOffHand(graphics, font, offhand, contentX, y);
 
         renderInventoryGrid(graphics, font, main, contentX, y);
 
-        y += 4 * SLOT;
+        y += 4 * config.getSlot();
+
+        if (!cosmeticArmor.isEmpty()) {
+            y += config.getSectionGap();
+            y += 3;
+            graphics.drawString(font, Component.translatable("hud.yagm.cosmetic_armor"), contentX, y, config.getLabelColor(), true);
+            y += config.getLineHeight();
+            y += renderAccessories(graphics, font, cosmeticArmor, contentX, y);
+        }
+
+        if (!backpacked.isEmpty()) {
+            y += config.getSectionGap();
+            y += 3;
+            graphics.drawString(font, Component.translatable("hud.yagm.backpacked"), contentX, y, config.getLabelColor(), true);
+            y += config.getLineHeight();
+            y += renderAccessories(graphics, font, backpacked, contentX, y);
+        }
 
         if (!accessories.isEmpty()) {
-            y += SECTION_GAP;
+            y += config.getSectionGap();
             y += 3;
-            graphics.drawString(font, Component.translatable("hud.yagm.accessories"), contentX, y, COLOR_LABEL, true);
-            y += LINE_H;
+            graphics.drawString(font, Component.translatable("hud.yagm.accessories"), contentX, y, config.getLabelColor(), true);
+            y += config.getLineHeight();
             y += renderAccessories(graphics, font, accessories, contentX, y);
         }
 
-        y += SECTION_GAP;
+        y += config.getSectionGap();
         y += 3;
         renderPlayerData(graphics, font, graveData, inventoryData, contentX, y);
     }
 
     private static void renderArmorColumn(GuiGraphics graphics, Font font, NonNullList<ItemStack> armor, int x, int y) {
+        InventoryHudConfig config = InventoryHudConfig.get();
         for (int row = 0; row < 4; row++) {
-            renderSlot(graphics, font, armor.get(3 - row), x, y + row * SLOT);
+            renderSlot(graphics, font, armor.get(3 - row), x, y + row * config.getSlot());
         }
     }
 
     private static void renderOffHand(GuiGraphics graphics, Font font, NonNullList<ItemStack> offhand, int x, int y) {
+        InventoryHudConfig config = InventoryHudConfig.get();
         if (!offhand.isEmpty() && !offhand.getFirst().isEmpty()) {
-            renderSlot(graphics, font, offhand.getFirst(), x, y + 3 * SLOT + HOTBAR_GAP);
+            renderSlot(graphics, font, offhand.getFirst(), x, y + 3 * config.getSlot() + config.getHotbarGap());
         }
     }
 
     private static void renderInventoryGrid(GuiGraphics graphics, Font font, NonNullList<ItemStack> main, int x, int y) {
-        int gridX = x + SLOT + ARMOR_GAP;
+        InventoryHudConfig config = InventoryHudConfig.get();
+        int gridX = x + config.getSlot() + config.getArmorGap();
 
         for (int row = 0; row < 3; row++) {
-            int rowY = y + row * SLOT;
+            int rowY = y + row * config.getSlot();
             for (int col = 0; col < 9; col++) {
-                renderSlot(graphics, font, main.get(9 + row * 9 + col), gridX + col * SLOT, rowY);
+                renderSlot(graphics, font, main.get(9 + row * 9 + col), gridX + col * config.getSlot(), rowY);
             }
         }
 
-        int hotbarY = y + 3 * SLOT + HOTBAR_GAP;
+        int hotbarY = y + 3 * config.getSlot() + config.getHotbarGap();
         for (int col = 0; col < 9; col++) {
-            renderSlot(graphics, font, main.get(col), gridX + col * SLOT, hotbarY);
+            renderSlot(graphics, font, main.get(col), gridX + col * config.getSlot(), hotbarY);
         }
     }
 
     private static int renderAccessories(GuiGraphics graphics, Font font, List<ItemStack> accessories, int x, int y) {
+        InventoryHudConfig config = InventoryHudConfig.get();
         for (int i = 0; i < accessories.size(); i++) {
-            int row = i / ACC_PER_ROW;
-            int col = i % ACC_PER_ROW;
-            renderSlot(graphics, font, accessories.get(i), x + col * SLOT, y + row * SLOT);
+            int row = i / config.getAccessoriesPerRow();
+            int col = i % config.getAccessoriesPerRow();
+            renderSlot(graphics, font, accessories.get(i), x + col * config.getSlot(), y + row * config.getSlot());
         }
-        return (int) Math.ceil(accessories.size() / (double) ACC_PER_ROW) * SLOT;
+        return (int) Math.ceil(accessories.size() / (double) config.getAccessoriesPerRow()) * config.getSlot();
     }
 
     private static void renderPlayerData(GuiGraphics graphics, Font font, GraveData graveData, CompoundTag inventoryData, int x, int y) {
+        InventoryHudConfig config = InventoryHudConfig.get();
         if (graveData.getOwnerName() != null) {
-            graphics.drawString(font, graveData.getOwnerName(), x, y, COLOR_NAME, true);
-            y += LINE_H;
+            graphics.drawString(font, graveData.getOwnerName(), x, y, config.getNameColor(), true);
+            y += config.getLineHeight();
         }
 
         String date = DATE_FMT.format(Instant.ofEpochMilli(graveData.getDeathTime()));
-        graphics.drawString(font, date, x, y, COLOR_LABEL, true);
-        y += LINE_H;
+        graphics.drawString(font, date, x, y, config.getLabelColor(), true);
+        y += config.getLineHeight();
 
         if (graveData.getDeathCause() != null) {
-            graphics.drawString(font, graveData.getDeathCause().getString(), x, y, COLOR_CAUSE, true);
-            y = y + LINE_H;
+            graphics.drawString(font, graveData.getDeathCause().getString(), x, y, config.getCauseColor(), true);
+            y = y + config.getLineHeight();
         }
 
         if (inventoryData.contains(KEYS.getTotalExperience())) {
             long xp = inventoryData.getLong(KEYS.getTotalExperience());
             if (xp > 0) {
-                graphics.drawString(font, Component.translatable("hud.yagm.experience_lvl", xpToLevel(xp)), x, y, COLOR_LABEL, true);
+                graphics.drawString(font, Component.translatable("hud.yagm.experience_lvl", xpToLevel(xp)), x, y, config.getLabelColor(), true);
             }
         }
     }
@@ -188,19 +206,31 @@ public final class GraveInventoryHudRenderer {
         graphics.renderItemDecorations(font, stack, x, y);
     }
 
+    private static int computePanelHeight(int cosmeticArmorRows, int backpackedRows, int accRows, GraveData graveData, CompoundTag inventoryData) {
+        InventoryHudConfig config = InventoryHudConfig.get();
+        int height = config.getPad() + 3 * config.getSlot() + config.getHotbarGap() + config.getSlot();
 
-    private static int computePanelHeight(int accRows, GraveData graveData, CompoundTag inventoryData) {
-        int height = PAD + 3 * SLOT + HOTBAR_GAP + SLOT;
-
-        if (accRows > 0) {
-            height += SECTION_GAP + 1;
-            height += LINE_H;
-            height += accRows * SLOT;
+        if (cosmeticArmorRows > 0) {
+            height += config.getSectionGap() + 1;
+            height += config.getLineHeight();
+            height += cosmeticArmorRows * config.getSlot();
         }
 
-        height += SECTION_GAP + 1;
-        height += countPlayerDataLines(graveData, inventoryData) * LINE_H;
-        height += PAD;
+        if (backpackedRows > 0) {
+            height += config.getSectionGap() + 1;
+            height += config.getLineHeight();
+            height += backpackedRows * config.getSlot();
+        }
+
+        if (accRows > 0) {
+            height += config.getSectionGap() + 1;
+            height += config.getLineHeight();
+            height += accRows * config.getSlot();
+        }
+
+        height += config.getSectionGap() + 1;
+        height += countPlayerDataLines(graveData, inventoryData) * config.getLineHeight();
+        height += config.getPad();
 
         return height;
     }
@@ -231,8 +261,8 @@ public final class GraveInventoryHudRenderer {
 
     private static int xpToLevel(long totalXp) {
         int level = 0;
-        while (totalXp >= InventoryUtils.getXpForLevel(level)) {
-            totalXp -= InventoryUtils.getXpForLevel(level);
+        while (totalXp >= TierUtils.getXpForLevel(level)) {
+            totalXp -= TierUtils.getXpForLevel(level);
             level++;
         }
         return level;

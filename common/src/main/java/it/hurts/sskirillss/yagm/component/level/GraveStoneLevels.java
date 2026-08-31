@@ -22,5 +22,4 @@ public enum GraveStoneLevels implements StringRepresentable {
     public String getSerializedName() {
         return this.name().toLowerCase();
     }
-
 }
