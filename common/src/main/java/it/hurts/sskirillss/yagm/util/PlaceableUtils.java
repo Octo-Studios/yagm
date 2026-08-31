@@ -17,7 +17,6 @@ import java.util.UUID;
 
 import static net.minecraft.world.level.Level.NETHER;
 
-
 @SuppressWarnings("deprecation")
 public class PlaceableUtils {
 
@@ -25,7 +24,6 @@ public class PlaceableUtils {
 
     public static BlockPos getVoidRecovery(ServerLevel level, ServerPlayer player, @Nullable BlockPos trackedPos) {
         return getGraveStoneBlockPosition(level, Objects.requireNonNullElseGet(trackedPos, player::blockPosition));
-
     }
 
     public static BlockPos getBedrockPlacement(ServerLevel level, BlockPos origin) {
@@ -44,20 +42,8 @@ public class PlaceableUtils {
         return new BlockPos(x, firstAboveBedrock, z);
     }
 
-    @Nullable
-    public static BlockPos findColumnImmediatePlacement(Level level, BlockPos origin) {
-        int minY = level.getMinBuildHeight() + 1;
-        int maxY = level.getMaxBuildHeight() - 1;
-        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos(origin.getX(), minY, origin.getZ());
-
-        for (int y = minY; y < maxY; y++) {
-            mutable.setY(y);
-            if (isSafeImmediateGravePosition(level, mutable)) {
-                return mutable.immutable();
-            }
-        }
-
-        return null;
+    public static boolean isSafeStand(Level level, BlockPos pos) {
+        return isValidGravePosition(level, pos);
     }
 
     public static BlockPos getGraveStoneBlockPosition(Level level, BlockPos pos) {
@@ -103,39 +89,23 @@ public class PlaceableUtils {
         return null;
     }
 
+    @Nullable
     private static BlockPos findPosInAir(Level level, BlockPos startPos) {
         if (level.getBlockState(startPos).isAir()) {
             BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos(startPos.getX(), startPos.getY(), startPos.getZ());
 
-            if (level.dimension() == Level.END) {
-                for (int y = startPos.getY(); y >= level.getMinBuildHeight(); y--) {
-                    mutable.setY(y);
+            for (int y = startPos.getY(); y >= level.getMinBuildHeight(); y--) {
+                mutable.setY(y);
 
-                    BlockState current = level.getBlockState(mutable);
-                    BlockState below = level.getBlockState(mutable.below());
+                BlockState current = level.getBlockState(mutable);
+                BlockState below = level.getBlockState(mutable.below());
 
-                    if (current.isAir() && below.isSolid()) {
-                        return mutable.immutable();
-                    }
-
-                    if (!level.getFluidState(mutable).isEmpty()) {
-                        return findPosAboveFluid(level, mutable.immutable());
-                    }
+                if (current.isAir() && below.isSolid()) {
+                    return mutable.immutable();
                 }
-            } else {
-                for (int y = level.getMinBuildHeight(); y <= startPos.getY(); y++) {
-                    mutable.setY(y);
 
-                    BlockState current = level.getBlockState(mutable);
-                    BlockState below = level.getBlockState(mutable.below());
-
-                    if (current.isAir() && below.isSolid()) {
-                        return mutable.immutable();
-                    }
-
-                    if (!level.getFluidState(mutable).isEmpty()) {
-                        return findPosAboveFluid(level, mutable.immutable());
-                    }
+                if (!level.getFluidState(mutable).isEmpty()) {
+                    return findPosAboveFluid(level, mutable.immutable());
                 }
             }
         }
@@ -173,6 +143,7 @@ public class PlaceableUtils {
 
     private static boolean isSafeImmediateGravePosition(Level level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
+
         BlockState below = level.getBlockState(pos.below());
 
         return (state.isAir() || state.canBeReplaced()) && below.isSolid() && level.getFluidState(pos).isEmpty() && (level.getBlockState(pos.above()).isAir() || level.getBlockState(pos.above()).canBeReplaced() || level.getFluidState(pos.above()).isSourceOfType(Fluids.WATER));
@@ -193,12 +164,17 @@ public class PlaceableUtils {
     }
 
     public static boolean placeGraveStone(Level level, BlockPos pos, BlockState graveState) {
+        return placeGraveStoneAndGetPos(level, pos, graveState) != null;
+    }
+
+    @Nullable
+    public static BlockPos placeGraveStoneAndGetPos(Level level, BlockPos pos, BlockState graveState) {
         if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
-            return false;
+            return null;
         }
 
-        if (pPosition(level, pos, graveState)) {
-            return true;
+        if (placeAt(level, pos, graveState)) {
+            return pos.immutable();
         }
 
         BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
@@ -211,14 +187,14 @@ public class PlaceableUtils {
 
                     mutable.set(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz);
 
-                    if (isValidGravePosition(level, mutable) && pPosition(level, mutable, graveState)) {
-                        return true;
+                    if (isValidGravePosition(level, mutable) && placeAt(level, mutable, graveState)) {
+                        return mutable.immutable();
                     }
                 }
             }
         }
 
-        return pPosition(level, pos, graveState);
+        return placeAt(level, pos, graveState) ? pos.immutable() : null;
     }
 
 
@@ -227,10 +203,10 @@ public class PlaceableUtils {
             return false;
         }
 
-        return pPosition(level, pos, graveState);
+        return placeAt(level, pos, graveState);
     }
 
-    private static boolean pPosition(Level level, BlockPos pos, BlockState graveState) {
+    private static boolean placeAt(Level level, BlockPos pos, BlockState graveState) {
         BlockState current = level.getBlockState(pos);
         if (!(current.isAir() || current.canBeReplaced())) {
             return false;
@@ -267,7 +243,13 @@ public class PlaceableUtils {
 
 
     @Nullable
+    @Deprecated
     public static BlockPos findP2P(Level level, BlockPos center, int radius) {
+        return findNear(level, center, radius);
+    }
+
+    @Nullable
+    public static BlockPos findNear(Level level, BlockPos center, int radius) {
         return findValidNearby(level, center, radius, radius);
     }
 
