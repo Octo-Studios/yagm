@@ -5,7 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveSaveManager;
 import lombok.extern.slf4j.Slf4j;
-import it.hurts.sskirillss.yagm.util.InventoryUtils;
+import it.hurts.sskirillss.yagm.util.ContainerUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.nbt.CompoundTag;
@@ -75,7 +75,7 @@ public class YAGMCommands {
         }
 
         try {
-            InventoryUtils.restoreFullGrave(targetPlayer, graveData);
+            ContainerUtils.restoreFullGrave(targetPlayer, graveData);
 
             context.getSource().sendSuccess(() -> Component.literal("Grave restored for player " + playerName), true);
             return 1;

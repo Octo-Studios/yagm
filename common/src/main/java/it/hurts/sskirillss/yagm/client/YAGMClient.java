@@ -9,6 +9,7 @@ import it.hurts.sskirillss.yagm.client.overlays.GraveInventoryHudRenderer;
 import it.hurts.sskirillss.yagm.client.particle.FireParticle;
 import it.hurts.sskirillss.yagm.client.particle.GhostlyFogParticle;
 import it.hurts.sskirillss.yagm.client.particle.GroundDustParticle;
+import it.hurts.sskirillss.yagm.client.network.RestoreKeyActivationHandler;
 import it.hurts.sskirillss.yagm.client.renderer.FallingGraveEntityRenderer;
 import it.hurts.sskirillss.yagm.client.renderer.GhostEntityRenderer;
 import it.hurts.sskirillss.yagm.client.renderer.GhostlyFogEntityRenderer;
@@ -43,7 +44,7 @@ public class YAGMClient {
     private static void registerPacket() {
         NetworkManager.registerReceiver(NetworkManager.Side.S2C, RestoreKeyActivationPacket.TYPE, RestoreKeyActivationPacket.CODEC,
                 (packet, context) -> {
-                    context.queue(() -> RestoreKeyActivationPacket.handle(packet));
+                    context.queue(() -> RestoreKeyActivationHandler.handle(packet));
                 }
         );
     }

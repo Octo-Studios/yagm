@@ -22,6 +22,7 @@ import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 
 @EventBusSubscriber(modid = YAGMCommon.MODID, value = Dist.CLIENT)
 public class YAGMNeoForgeClient {
+
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(YAGMClient::init);
