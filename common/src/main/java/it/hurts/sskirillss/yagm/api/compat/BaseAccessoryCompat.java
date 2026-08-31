@@ -1,9 +1,9 @@
 package it.hurts.sskirillss.yagm.api.compat;
 
-import it.hurts.sskirillss.yagm.YAGMCommon;
+import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackLoader;
 import it.hurts.sskirillss.yagm.api.compat.provider.IAccessoryHandler;
 import net.minecraft.core.BlockPos;
-import it.hurts.sskirillss.yagm.util.NbtKeys;
+import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import net.minecraft.world.Containers;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
@@ -13,16 +13,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-
+import java.util.function.Predicate;
 
 public abstract class BaseAccessoryCompat implements IAccessoryHandler {
 
-    private static final String TAG_SLOT_KEY = "SlotKey";
-    private static final String TAG_ITEM = "Item";
     private static final NbtKeys NBT_KEYS = NbtKeys.INSTANCE;
 
     protected abstract String getNbtTag();
@@ -36,8 +34,8 @@ public abstract class BaseAccessoryCompat implements IAccessoryHandler {
             if (entry.getValue().isEmpty()) continue;
 
             CompoundTag itemTag = new CompoundTag();
-            itemTag.putString(TAG_SLOT_KEY, entry.getKey());
-            itemTag.put(TAG_ITEM, entry.getValue().save(registryAccess));
+            itemTag.putString("SlotKey", entry.getKey());
+            itemTag.put("Item", BackpackLoader.copyInventoryStack(entry.getValue()).save(registryAccess));
             itemsList.add(itemTag);
         }
 
@@ -57,8 +55,8 @@ public abstract class BaseAccessoryCompat implements IAccessoryHandler {
 
         for (int i = 0; i < itemsList.size(); i++) {
             CompoundTag itemTag = itemsList.getCompound(i);
-            String slotKey = itemTag.getString(TAG_SLOT_KEY);
-            ItemStack stack = ItemStack.parseOptional(registryAccess, itemTag.getCompound(TAG_ITEM));
+            String slotKey = itemTag.getString("SlotKey");
+            ItemStack stack = ItemStack.parseOptional(registryAccess, itemTag.getCompound("Item"));
 
             if (!stack.isEmpty() && !slotKey.isEmpty()) {
                 accessories.put(slotKey, stack);
@@ -96,30 +94,53 @@ public abstract class BaseAccessoryCompat implements IAccessoryHandler {
         }
     }
 
-    public static List<ItemStack> parseAccessories(RegistryAccess registry, CompoundTag data) {
-        if (registry == null || data == null || !AccessoryLoader.hasAnyHandler() || !data.contains(NBT_KEYS.getAccessories(), Tag.TAG_COMPOUND)) {
+    public static List<ItemStack> parseAccessories(RegistryAccess registry, CompoundTag data, String handlerName) {
+        return parseAccessories(registry, data, name -> handlerName != null && handlerName.equals(name));
+    }
+
+    public static List<ItemStack> parseAccessoriesOrElse(RegistryAccess registry, CompoundTag data, String handlerName) {
+        return parseAccessories(registry, data, name -> handlerName == null || !handlerName.equals(name));
+    }
+
+    private static List<ItemStack> parseAccessories(RegistryAccess registry, CompoundTag data, Predicate<String> handlerFilter) {
+        if (registry == null || data == null || !data.contains(NBT_KEYS.getAccessories(), Tag.TAG_COMPOUND)) {
             return List.of();
         }
 
-        Map<String, Map<String, ItemStack>> accessories;
+        CompoundTag root = data.getCompound(NBT_KEYS.getAccessories());
 
-        try {
-            accessories = AccessoryLoader.loadNBT(data.getCompound(NBT_KEYS.getAccessories()), registry);
-        } catch (RuntimeException e) {
-            YAGMCommon.LOGGER.warn("Failed to load accessories from NBT", e);
-            return List.of();
+        List<ItemStack> accessories = new ArrayList<>();
+
+        for (String handlerName : root.getAllKeys()) {
+            if (!handlerFilter.test(handlerName) || !root.contains(handlerName, Tag.TAG_COMPOUND)) {
+                continue;
+            }
+
+            collectAccessoryItems(registry, root.getCompound(handlerName), accessories);
         }
 
-        if (accessories.isEmpty()) {
-            return List.of();
-        }
+        return List.copyOf(accessories);
+    }
 
-        return accessories.values().stream()
-                .filter(Objects::nonNull)
-                .flatMap(slots -> slots.values().stream())
-                .filter(Objects::nonNull)
-                .filter(stack -> !stack.isEmpty())
-                .map(ItemStack::copy)
-                .toList();
+    private static void collectAccessoryItems(RegistryAccess registry, CompoundTag handlerData, List<ItemStack> accessories) {
+        for (String key : handlerData.getAllKeys()) {
+            if (!handlerData.contains(key, Tag.TAG_LIST)) {
+                continue;
+            }
+
+            ListTag items = handlerData.getList(key, Tag.TAG_COMPOUND);
+
+            for (int i = 0; i < items.size(); i++) {
+                CompoundTag itemTag = items.getCompound(i);
+                if (!itemTag.contains("Item", Tag.TAG_COMPOUND)) {
+                    continue;
+                }
+
+                ItemStack stack = ItemStack.parseOptional(registry, itemTag.getCompound("Item"));
+                if (!stack.isEmpty()) {
+                    accessories.add(stack.copy());
+                }
+            }
+        }
     }
 }
