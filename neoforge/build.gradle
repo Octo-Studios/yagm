@@ -27,6 +27,12 @@ repositories {
             includeGroup "curse.maven"
         }
     }
+    maven {
+        url "https://maven.tamaized.com/releases"
+        content {
+            includeGroup "team-twilight"
+        }
+    }
 }
 
 dependencies {
@@ -37,8 +43,8 @@ dependencies {
     compileOnly ("top.theillusivec4.curios:curios-neoforge:${rootProject.curios_api_version}:api")
     compileOnly ("top.theillusivec4.curios:curios-neoforge:${rootProject.curios_api_version}")
     compileOnly ("io.wispforest:accessories-neoforge:${rootProject.accessories_version}")
-    compileOnly "curse.maven:the-twilight-forest-227639:${rootProject.twilight_forest_file_id}"
-    compileOnly "curse.maven:revive-me-${rootProject.revive_me}"
+    compileOnly("team-twilight:twilightforest:${rootProject.twilight_forest_version}:universal") { transitive = false }
+    compileOnly "curse.maven:revive-me-676140:${rootProject.revive_me_file_id}"
     compileOnly "curse.maven:backpacked-352835:${rootProject.backpacked_neoforge_file_id}"
     compileOnly "curse.maven:travelers-backpack-321117:${rootProject.travelers_backpack_neoforge_file_id}"
     compileOnly "curse.maven:sophisticated-core-618298:${rootProject.sophisticated_core_file_id}"
