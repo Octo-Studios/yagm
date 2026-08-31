@@ -1,6 +1,6 @@
 package it.hurts.sskirillss.yagm.data.gravedata;
 
-import it.hurts.sskirillss.yagm.util.NbtKeys;
+import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -20,18 +20,18 @@ import java.util.UUID;
 public class GraveDataManager extends SavedData {
 
     private static final NbtKeys KEYS = NbtKeys.INSTANCE;
-    private static final String TAG_BLOCK_POS = "BlockPos";
-    private static final String TAG_RESTORE_KEY_CONSUMED = "RestoreKeyConsumed";
+
     private final Map<UUID, CompoundTag> graves = new HashMap<>();
     private final Set<UUID> restoreKeyConsumed = new HashSet<>();
 
     public void addGrave(CompoundTag graveData) {
+
         if (!graveData.hasUUID(KEYS.getId())) return;
 
         UUID graveId = graveData.getUUID(KEYS.getId());
         graves.put(graveId, graveData.copy());
-        restoreKeyConsumed.remove(graveId);
 
+        restoreKeyConsumed.remove(graveId);
 
         setDirty();
     }
@@ -73,7 +73,7 @@ public class GraveDataManager extends SavedData {
             return;
         }
 
-        graveData.putLong(TAG_BLOCK_POS, pos.asLong());
+        graveData.putLong("BlockPos", pos.asLong());
         setDirty();
     }
 
@@ -83,11 +83,11 @@ public class GraveDataManager extends SavedData {
         }
 
         CompoundTag graveData = graves.get(graveId);
-        if (graveData == null || !graveData.contains(TAG_BLOCK_POS, Tag.TAG_LONG)) {
+        if (graveData == null || !graveData.contains("BlockPos", Tag.TAG_LONG)) {
             return null;
         }
 
-        return BlockPos.of(graveData.getLong(TAG_BLOCK_POS));
+        return BlockPos.of(graveData.getLong("BlockPos"));
     }
 
     @Override
@@ -101,7 +101,7 @@ public class GraveDataManager extends SavedData {
         for (UUID graveId : restoreKeyConsumed) {
             consumed.add(StringTag.valueOf(graveId.toString()));
         }
-        tag.put(TAG_RESTORE_KEY_CONSUMED, consumed);
+        tag.put("RestoreKeyConsumed", consumed);
         return tag;
     }
 
@@ -121,8 +121,8 @@ public class GraveDataManager extends SavedData {
             }
         }
 
-        if (tag.contains(TAG_RESTORE_KEY_CONSUMED, Tag.TAG_LIST)) {
-            ListTag consumed = tag.getList(TAG_RESTORE_KEY_CONSUMED, Tag.TAG_STRING);
+        if (tag.contains("RestoreKeyConsumed", Tag.TAG_LIST)) {
+            ListTag consumed = tag.getList("RestoreKeyConsumed", Tag.TAG_STRING);
             for (int i = 0; i < consumed.size(); i++) {
                 try {
                     data.restoreKeyConsumed.add(UUID.fromString(consumed.getString(i)));

@@ -1,6 +1,6 @@
 package it.hurts.sskirillss.yagm.data.gravedata;
 
-import it.hurts.sskirillss.yagm.util.NbtKeys;
+import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -18,12 +18,8 @@ import java.util.*;
 
 public class GraveSaveManager {
     private static final NbtKeys KEYS = NbtKeys.INSTANCE;
-    private static final String TAG_CONSUMED_LATEST = "ConsumedLatest";
-    private static final String TAG_CONSUMED_MARKER = "Marker";
-    private static final String TAG_CONSUMED_SORT_TIME = "SortTime";
-    private static final DateTimeFormatter DISPLAY_FORMATTER = DateTimeFormatter.ofPattern("yyyy:MM:dd-HH:mm:ss").withZone(ZoneId.systemDefault());
-    private static final Comparator<CompoundTag> SAVE_ASCENDING = Comparator.comparingLong(GraveSaveManager::extractSortTime);
 
+    private static final Comparator<CompoundTag> SAVE_ASCENDING = Comparator.comparingLong(GraveSaveManager::extractSortTime);
 
     public static String formatTime(CompoundTag saveData) {
         long time = saveData.getLong(KEYS.getSaveTime());
@@ -32,10 +28,10 @@ public class GraveSaveManager {
             time = saveData.getLong(KEYS.getDeathTime());
         }
 
-        return DISPLAY_FORMATTER.format(Instant.ofEpochMilli(time));
+        return DateTimeFormatter.ofPattern("yyyy:MM:dd-HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(time));
     }
 
-    public static void saveGraveData(ServerLevel level, UUID uuid, long deathTimeMillis, CompoundTag graveData) {
+    public static void savedata(ServerLevel level, UUID uuid, long deathTimeMillis, CompoundTag graveData) {
         if (uuid == null || graveData == null || graveData.isEmpty()) {
             return;
         }
@@ -135,9 +131,10 @@ public class GraveSaveManager {
     }
 
     private static class GraveSavesData extends SavedData {
+
         private final Map<UUID, List<CompoundTag>> savesByPlayer = new HashMap<>();
-        private final Map<UUID, String> consumedLatestMarkerByPlayer = new HashMap<>();
-        private final Map<UUID, Long> consumedLatestSortTimeByPlayer = new HashMap<>();
+        private final Map<UUID, String> LATEST_MARK = new HashMap<>();
+        private final Map<UUID, Long> LATEST_SORT = new HashMap<>();
 
         public void addSave(UUID playerId, CompoundTag saveData) {
             List<CompoundTag> saves = savesByPlayer.computeIfAbsent(playerId, ignored -> new ArrayList<>());
@@ -147,6 +144,7 @@ public class GraveSaveManager {
 
         public List<CompoundTag> getSaves(UUID playerId) {
             List<CompoundTag> saves = savesByPlayer.get(playerId);
+
             if (saves == null || saves.isEmpty()) {
                 return List.of();
             }
@@ -157,28 +155,33 @@ public class GraveSaveManager {
         @Nullable
         public CompoundTag consumeLatestRestoreSave(UUID playerId) {
             List<CompoundTag> saves = savesByPlayer.get(playerId);
+
             if (saves == null || saves.isEmpty()) {
                 return null;
             }
 
             CompoundTag latest = saves.getLast();
             String latestMarker = createMarker(latest);
+
             long latestSortTime = extractSortTime(latest);
-            String consumedMarker = consumedLatestMarkerByPlayer.get(playerId);
-            long consumedSortTime = consumedLatestSortTimeByPlayer.getOrDefault(playerId, -1L);
+
+            String consumedMarker = LATEST_MARK.get(playerId);
+
+            long consumedSortTime = LATEST_SORT.getOrDefault(playerId, -1L);
 
             if (latestMarker.equals(consumedMarker) || latestSortTime < consumedSortTime) {
                 return null;
             }
 
-            consumedLatestMarkerByPlayer.put(playerId, latestMarker);
-            consumedLatestSortTimeByPlayer.put(playerId, latestSortTime);
+            LATEST_MARK.put(playerId, latestMarker);
+            LATEST_SORT.put(playerId, latestSortTime);
             return latest.copy();
         }
 
         @Nullable
         public CompoundTag peekLatestRestoreSave(UUID playerId) {
             List<CompoundTag> saves = savesByPlayer.get(playerId);
+
             if (saves == null || saves.isEmpty()) {
                 return null;
             }
@@ -186,21 +189,14 @@ public class GraveSaveManager {
             CompoundTag latest = saves.getLast();
             String latestMarker = createMarker(latest);
             long latestSortTime = extractSortTime(latest);
-            String consumedMarker = consumedLatestMarkerByPlayer.get(playerId);
-            long consumedSortTime = consumedLatestSortTimeByPlayer.getOrDefault(playerId, -1L);
+            String consumedMarker = LATEST_MARK.get(playerId);
+            long consumedSortTime = LATEST_SORT.getOrDefault(playerId, -1L);
 
             if (latestMarker.equals(consumedMarker) || latestSortTime < consumedSortTime) {
                 return null;
             }
 
             return latest.copy();
-        }
-
-        public void removeLastSave(UUID playerId) {
-            List<CompoundTag> saves = savesByPlayer.get(playerId);
-            if (saves != null && !saves.isEmpty()) {
-                saves.removeLast();
-            }
         }
 
         @Override
@@ -208,13 +204,16 @@ public class GraveSaveManager {
             ListTag players = new ListTag();
 
             for (Map.Entry<UUID, List<CompoundTag>> entry : savesByPlayer.entrySet()) {
+
                 CompoundTag playerTag = new CompoundTag();
                 playerTag.putUUID(KEYS.getPlayer(), entry.getKey());
 
                 ListTag saves = new ListTag();
+
                 for (CompoundTag saveTag : entry.getValue()) {
                     saves.add(saveTag.copy());
                 }
+
                 playerTag.put(KEYS.getSaves(), saves);
                 players.add(playerTag);
             }
@@ -222,15 +221,15 @@ public class GraveSaveManager {
             tag.put(KEYS.getPlayers(), players);
 
             ListTag consumed = new ListTag();
-            for (Map.Entry<UUID, String> entry : consumedLatestMarkerByPlayer.entrySet()) {
+            for (Map.Entry<UUID, String> entry : LATEST_MARK.entrySet()) {
                 CompoundTag consumedTag = new CompoundTag();
                 consumedTag.putUUID(KEYS.getPlayer(), entry.getKey());
-                consumedTag.putString(TAG_CONSUMED_MARKER, entry.getValue());
-                consumedTag.putLong(TAG_CONSUMED_SORT_TIME, consumedLatestSortTimeByPlayer.getOrDefault(entry.getKey(), parseMarkerSortTime(entry.getValue())));
+                consumedTag.putString("Marker", entry.getValue());
+                consumedTag.putLong("SortTime", LATEST_SORT.getOrDefault(entry.getKey(), parseMarkerSortTime(entry.getValue())));
                 consumed.add(consumedTag);
             }
 
-            tag.put(TAG_CONSUMED_LATEST, consumed);
+            tag.put("ConsumedLatest", consumed);
             return tag;
         }
 
@@ -260,19 +259,21 @@ public class GraveSaveManager {
                 }
             }
 
-            if (tag.contains(TAG_CONSUMED_LATEST, Tag.TAG_LIST)) {
-                ListTag consumed = tag.getList(TAG_CONSUMED_LATEST, Tag.TAG_COMPOUND);
+            if (tag.contains("ConsumedLatest", Tag.TAG_LIST)) {
+                ListTag consumed = tag.getList("ConsumedLatest", Tag.TAG_COMPOUND);
+
                 for (int i = 0; i < consumed.size(); i++) {
                     CompoundTag consumedTag = consumed.getCompound(i);
-                    if (!consumedTag.hasUUID(KEYS.getPlayer()) || !consumedTag.contains(TAG_CONSUMED_MARKER, Tag.TAG_STRING)) {
+                    if (!consumedTag.hasUUID(KEYS.getPlayer()) || !consumedTag.contains("Marker", Tag.TAG_STRING)) {
                         continue;
                     }
 
                     UUID playerId = consumedTag.getUUID(KEYS.getPlayer());
-                    String marker = consumedTag.getString(TAG_CONSUMED_MARKER);
 
-                    data.consumedLatestMarkerByPlayer.put(playerId, marker);
-                    data.consumedLatestSortTimeByPlayer.put(playerId, consumedTag.contains(TAG_CONSUMED_SORT_TIME, Tag.TAG_LONG) ? consumedTag.getLong(TAG_CONSUMED_SORT_TIME) : parseMarkerSortTime(marker));
+                    String marker = consumedTag.getString("Marker");
+
+                    data.LATEST_MARK.put(playerId, marker);
+                    data.LATEST_SORT.put(playerId, consumedTag.contains("SortTime", Tag.TAG_LONG) ? consumedTag.getLong("SortTime") : parseMarkerSortTime(marker));
                 }
             }
 
