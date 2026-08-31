@@ -14,12 +14,12 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(targets = "twilightforest.events.CharmEvents")
 public abstract class TwilightCharmEventsMixin {
     @Redirect(method = "applyCharm", at = @At(value = "INVOKE", target = "Ltwilightforest/util/TFItemStackUtils;consumeInventoryItem(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/level/ItemLike;Lnet/minecraft/nbt/CompoundTag;Z)Z"))
-    private static boolean yagm$preferEquippedCharm(Player player, ItemLike itemLike, CompoundTag data, boolean saveCharm) {
+    private static boolean preferEquippedCharm(Player player, ItemLike itemLike, CompoundTag data, boolean saveCharm) {
         return TwilightCharmSlotHook.consumeItemEquipped(player, itemLike, data, saveCharm);
     }
 
     @Redirect(method = "applyCharm", at = @At(value = "INVOKE", target = "Ltwilightforest/events/CharmEvents;hasCharmCurio(Lnet/minecraft/world/item/Item;Lnet/minecraft/world/entity/player/Player;)Z"))
-    private static boolean yagm$consumeEquippedCharm(Item item, Player player) {
+    private static boolean consumeEquippedCharm(Item item, Player player) {
         return TwilightCharmSlotHook.consumeEquippedCharm(item, player);
     }
 }

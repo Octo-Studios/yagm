@@ -43,7 +43,10 @@ public final class TwilightForestNeoForgeEvents {
 
     private static boolean SuppressGrave(ServerPlayer player) {
         CompoundTag persisted = player.getPersistentData().getCompound("PlayerPersisted");
-        if (!persisted.contains("CharmStack", Tag.TAG_COMPOUND)) return false;
+
+        if (!persisted.contains("CharmStack", Tag.TAG_COMPOUND)) {
+            return false;
+        }
 
         ItemStack charm = ItemStack.parseOptional(player.registryAccess(), persisted.getCompound("CharmStack"));
         return !charm.isEmpty() && ResourceLocation.fromNamespaceAndPath("twilightforest", "charm_of_keeping_3").equals(BuiltInRegistries.ITEM.getKey(charm.getItem()));
