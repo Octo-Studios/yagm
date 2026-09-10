@@ -247,7 +247,10 @@ public final class BackpackLoader {
             return;
         }
 
-        if (player.getInventory().add(stack.copy())) {
+        ItemStack rem = stack.copy();
+
+        player.getInventory().add(rem);
+        if (rem.isEmpty()) {
             return;
         }
 
@@ -257,9 +260,9 @@ public final class BackpackLoader {
 
         if (context.hasDropPosition()) {
             BlockPos dropPos = context.dropPos();
-            Containers.dropItemStack(context.level(), dropPos.getX() + 0.5, dropPos.getY() + 0.5, dropPos.getZ() + 0.5, stack.copy());
+            Containers.dropItemStack(context.level(), dropPos.getX() + 0.5, dropPos.getY() + 0.5, dropPos.getZ() + 0.5, rem);
         } else {
-            player.drop(stack.copy(), false);
+            player.drop(rem, false);
         }
     }
 

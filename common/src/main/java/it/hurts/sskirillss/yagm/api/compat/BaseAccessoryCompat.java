@@ -75,8 +75,12 @@ public abstract class BaseAccessoryCompat implements IAccessoryHandler {
     protected void getInventoryOrDrop(ServerPlayer player, ItemStack stack, boolean dropIfFull) {
         if (stack.isEmpty()) return;
 
-        if (!player.getInventory().add(stack.copy()) && dropIfFull) {
-            player.drop(stack.copy(), false);
+        ItemStack rem = stack.copy();
+
+        player.getInventory().add(rem);
+
+        if (!rem.isEmpty() && dropIfFull) {
+            player.drop(rem, false);
         }
     }
 
@@ -89,8 +93,11 @@ public abstract class BaseAccessoryCompat implements IAccessoryHandler {
     protected void getInventoryOrDrop(ServerPlayer player, ItemStack stack, boolean dropIfFull, Level level, BlockPos dropPos) {
         if (stack.isEmpty()) return;
 
-        if (!player.getInventory().add(stack.copy()) && dropIfFull) {
-            Containers.dropItemStack(level, dropPos.getX() + 0.5, dropPos.getY() + 0.5, dropPos.getZ() + 0.5, stack.copy());
+        ItemStack rem = stack.copy();
+
+        player.getInventory().add(rem);
+        if (!rem.isEmpty() && dropIfFull) {
+            Containers.dropItemStack(level, dropPos.getX() + 0.5, dropPos.getY() + 0.5, dropPos.getZ() + 0.5, rem);
         }
     }
 

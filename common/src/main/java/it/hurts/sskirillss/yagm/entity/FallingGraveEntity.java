@@ -10,7 +10,6 @@ import it.hurts.sskirillss.yagm.component.placement.GravePlacementService;
 import it.hurts.sskirillss.yagm.component.placement.GravePositionResolver;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
-import it.hurts.sskirillss.yagm.util.ContainerUtils;
 import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import it.hurts.sskirillss.yagm.util.PlaceableUtils;
 import it.hurts.sskirillss.yagm.util.VariantUtils;
@@ -261,7 +260,7 @@ public class FallingGraveEntity extends Entity {
             }
 
             if (graveData == null) return;
-            ContainerUtils.dropFullGrave(serverLevel, landingPos, graveData);
+            GravePlacementService.dropUnplacedGrave(serverLevel, landingPos, graveData);
         }
     }
 

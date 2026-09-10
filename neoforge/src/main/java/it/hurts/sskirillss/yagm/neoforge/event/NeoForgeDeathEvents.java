@@ -35,6 +35,7 @@ public final class NeoForgeDeathEvents {
 
         if (GraveStoneEvent.handlePlayerDeathDrops(player, event.getDrops())) {
             event.getDrops().clear();
+            player.skipDropExperience();
         }
     }
 }

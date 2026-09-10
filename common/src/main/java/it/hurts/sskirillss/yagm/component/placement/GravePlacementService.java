@@ -46,11 +46,12 @@ public final class GravePlacementService {
 
         if (placedPos == null) {
             if (strictPlacement) {
-                ContainerUtils.dropFullGrave(level, pos, graveData);
+                dropUnplacedGrave(level, pos, graveData);
                 return false;
             }
 
             BlockPos supportTopPos = new BlockPos(pos.getX(), level.getMinBuildHeight() + 1, pos.getZ());
+
             if (!supportTopPos.equals( pos) && PlaceableUtils.placeGraveStoneExact(level, supportTopPos, graveState)) {
                 placedPos = supportTopPos.immutable();
             } else if (!supportTopPos.equals(pos)) {
@@ -58,7 +59,7 @@ public final class GravePlacementService {
             }
 
             if (placedPos == null) {
-                ContainerUtils.dropFullGrave(level, pos, graveData);
+                dropUnplacedGrave(level, pos, graveData);
                 return false;
             }
         }
@@ -89,6 +90,14 @@ public final class GravePlacementService {
         finishPlacement(level, placedPos, graveData, graveLevel, ownerUUID, ownerName, variantId, voidRecovery, true);
 
         return GravePlacementResult.placed(placedPos, graveState);
+    }
+
+    public static void dropUnplacedGrave(ServerLevel level, BlockPos pos, CompoundTag graveData) {
+        ContainerUtils.dropFullGrave(level, pos, graveData);
+
+        if (graveData.hasUUID(KEYS.getId())) {
+            GraveDataManager.get(level).removeGrave(graveData.getUUID(KEYS.getId()));
+        }
     }
 
     @Nullable
