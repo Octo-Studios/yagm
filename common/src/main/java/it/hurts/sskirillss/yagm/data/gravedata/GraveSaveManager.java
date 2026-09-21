@@ -31,7 +31,7 @@ public class GraveSaveManager {
         return DateTimeFormatter.ofPattern("yyyy:MM:dd-HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(time));
     }
 
-    public static void savedata(ServerLevel level, UUID uuid, long deathTimeMillis, CompoundTag graveData) {
+    public static void save(ServerLevel level, UUID uuid, long deathTimeMillis, CompoundTag graveData) {
         if (uuid == null || graveData == null || graveData.isEmpty()) {
             return;
         }
@@ -53,7 +53,7 @@ public class GraveSaveManager {
     }
 
     @Nullable
-    public static CompoundTag loadGraveData(ServerLevel level, UUID uuid, String selector) {
+    public static CompoundTag load(ServerLevel level, UUID uuid, String selector) {
         List<CompoundTag> saves = listSaves(level, uuid);
         if (saves.isEmpty()) {
             return null;

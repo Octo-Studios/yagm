@@ -83,7 +83,6 @@ public final class ContainerUtils {
     }
 
     public static void dropFullGrave(Level level, BlockPos pos, CompoundTag data) {
-
         for (ItemStack item : NBTReaderUtils.getAllItemsFromNBT(level.registryAccess(), data)) {
             if (!item.isEmpty()) {
                 Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, item);

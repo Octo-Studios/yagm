@@ -35,7 +35,7 @@ public final class Placer {
                 return true;
             }
 
-            BlockPos fallbackPos = PlaceableUtils.getGraveStoneBlockPosition(level, player.blockPosition());
+            BlockPos fallbackPos = PlaceableUtils.getGraveStoneBlockPosition(level, player.blockPosition(), PlaceableUtils.getGraveHeight(graveLevel));
 
             return GravePlacementService.placeImmediate(
                     level,

@@ -68,7 +68,7 @@ public class YAGMCommands {
             return 0;
         }
 
-        CompoundTag graveData = GraveSaveManager.loadGraveData(level, targetPlayer.getUUID(), selector);
+        CompoundTag graveData = GraveSaveManager.load(level, targetPlayer.getUUID(), selector);
         if (graveData == null) {
             context.getSource().sendFailure(Component.literal("Save not found: " + selector));
             return 0;

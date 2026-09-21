@@ -17,11 +17,11 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 public final class TwilightForestNeoForgeEvents {
 
-    private static boolean initialized;
+    private static boolean registered;
 
     public static void register() {
-        if (initialized || !Platform.isModLoaded("twilightforest")) return;
-        initialized = true;
+        if (registered || !Platform.isModLoaded("twilightforest")) return;
+        registered = true;
 
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, TwilightForestNeoForgeEvents::onLivingDeath);
     }

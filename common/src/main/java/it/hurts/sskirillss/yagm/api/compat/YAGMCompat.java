@@ -4,11 +4,11 @@ import dev.architectury.injectables.annotations.ExpectPlatform;
 
 public class YAGMCompat {
 
-    private static boolean initialized = false;
+    private static boolean registered = false;
 
     public static void init() {
-        if (initialized) return;
-        initialized = true;
+        if (registered) return;
+        registered = true;
         registerPlatformHandlers();
     }
 

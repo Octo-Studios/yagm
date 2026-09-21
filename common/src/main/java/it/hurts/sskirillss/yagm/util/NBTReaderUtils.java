@@ -52,6 +52,7 @@ public final class NBTReaderUtils {
         }
 
         Inventory inv = player.getInventory();
+        
         ContainerUtils.restoreInventory(inv.items, lists[0], player, dropPos);
         ContainerUtils.restoreInventory(inv.armor, lists[1], player, dropPos);
         ContainerUtils.restoreInventory(inv.offhand, lists[2], player, dropPos);

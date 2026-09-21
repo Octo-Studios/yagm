@@ -248,14 +248,14 @@ public class FallingGraveEntity extends Entity {
             return;
         }
 
-        BlockPos landingPos = GravePositionResolver.resolveFallingLanding(serverLevel, position(), lastSafePos, voidRecovery);
-        BlockPos gravePos = voidRecovery ? landingPos : PlaceableUtils.getGraveStoneBlockPosition(serverLevel, landingPos);
+        BlockPos landingPos = GravePositionResolver.fallingLand(serverLevel, position(), lastSafePos, voidRecovery);
+        BlockPos gravePos = voidRecovery ? landingPos : PlaceableUtils.getGraveStoneBlockPosition(serverLevel, landingPos, PlaceableUtils.getGraveHeight(graveLevel));
 
         if (tryPlaceGrave(serverLevel, gravePos)) return;
 
         if (!level().isClientSide()) {
             if (!voidRecovery) {
-                BlockPos altPos = PlaceableUtils.findNear(serverLevel, landingPos, 16);
+                BlockPos altPos = PlaceableUtils.getNear(serverLevel, landingPos, 16, PlaceableUtils.getGraveHeight(graveLevel));
                 if (altPos != null && tryPlaceGrave(serverLevel, altPos)) return;
             }
 
