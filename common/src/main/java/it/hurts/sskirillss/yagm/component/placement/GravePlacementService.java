@@ -35,13 +35,13 @@ public final class GravePlacementService {
         BlockPos placedPos = null;
 
         if (strictPlacement) {
-            if (PlaceableUtils.placeGraveStoneExact(level, pos, graveState)) {
+            if (PlaceableUtils.placeGraveExact(level, pos, graveState)) {
                 placedPos = pos.immutable();
             }
-        } else if (PlaceableUtils.placeGraveStoneExact(level, pos, graveState)) {
+        } else if (PlaceableUtils.placeGraveExact(level, pos, graveState)) {
             placedPos = pos.immutable();
         } else {
-            placedPos = PlaceableUtils.placeGraveStoneAndGetPos(level, pos, graveState);
+            placedPos = PlaceableUtils.placeandGetPos(level, pos, graveState);
         }
 
         if (placedPos == null) {
@@ -52,10 +52,10 @@ public final class GravePlacementService {
 
             BlockPos supportTopPos = new BlockPos(pos.getX(), level.getMinBuildHeight() + 1, pos.getZ());
 
-            if (!supportTopPos.equals( pos) && PlaceableUtils.placeGraveStoneExact(level, supportTopPos, graveState)) {
+            if (!supportTopPos.equals( pos) && PlaceableUtils.placeGraveExact(level, supportTopPos, graveState)) {
                 placedPos = supportTopPos.immutable();
             } else if (!supportTopPos.equals(pos)) {
-                placedPos = PlaceableUtils.placeGraveStoneAndGetPos(level, supportTopPos, graveState);
+                placedPos = PlaceableUtils.placeandGetPos(level, supportTopPos, graveState);
             }
 
             if (placedPos == null) {
@@ -75,12 +75,13 @@ public final class GravePlacementService {
         }
 
         BlockState graveState = createState(VariantUtils.getVariantId(variantId != null ? variantId.toString() : null, graveLevel), level, pos, facing);
+
         BlockPos placedPos;
 
         if (voidRecovery) {
-            placedPos = PlaceableUtils.placeGraveStoneExact(level, pos, graveState) ? pos.immutable() : null;
+            placedPos = PlaceableUtils.placeGraveExact(level, pos, graveState) ? pos.immutable() : null;
         } else {
-            placedPos = PlaceableUtils.placeGraveStoneAndGetPos(level, pos, graveState);
+            placedPos = PlaceableUtils.placeandGetPos(level, pos, graveState);
         }
 
         if (placedPos == null) {
@@ -103,12 +104,14 @@ public final class GravePlacementService {
     @Nullable
     private static ResourceLocation getVariantId(ServerLevel level, BlockPos pos, CompoundTag graveData) {
         ResourceLocation variantId = null;
+
         if (graveData.contains(KEYS.getVariantId())) {
             variantId = ResourceLocation.tryParse(graveData.getString(KEYS.getVariantId()));
         }
 
         if (variantId == null) {
             IGraveVariant variant = GraveVariantRegistry.getFor(level, pos);
+
             if (variant != null && variant.getId() != null) {
                 variantId = variant.getId();
                 graveData.putString(KEYS.getVariantId(), variantId.toString());
@@ -124,7 +127,9 @@ public final class GravePlacementService {
 
     private static void finishPlacement(ServerLevel level, BlockPos pos, CompoundTag graveData, GraveStoneLevels graveLevel, UUID ownerUUID, String ownerName, @Nullable ResourceLocation variantId, boolean recovery, boolean addCemetery) {
         if (level.getBlockEntity(pos) instanceof GraveStoneBlockEntity blockEntity) {
+
             blockEntity.loadGraveData(graveData, level.registryAccess());
+
             blockEntity.setVoidRecovery(recovery);
             blockEntity.initializeGrave(ownerUUID, ownerName, System.currentTimeMillis(), null, null, graveLevel);
 
@@ -143,7 +148,6 @@ public final class GravePlacementService {
     }
 
     private static boolean isSameGraveAlreadyPlaced(ServerLevel level, BlockPos pos, CompoundTag graveData) {
-        return graveData != null && graveData.hasUUID(KEYS.getId()) && level.getBlockEntity(pos) instanceof GraveStoneBlockEntity existing
-                && graveData.getUUID(KEYS.getId()).equals(existing.getGraveData().getGraveId());
+        return graveData != null && graveData.hasUUID(KEYS.getId()) && level.getBlockEntity(pos) instanceof GraveStoneBlockEntity existing && graveData.getUUID(KEYS.getId()).equals(existing.getGraveData().getGraveId());
     }
 }

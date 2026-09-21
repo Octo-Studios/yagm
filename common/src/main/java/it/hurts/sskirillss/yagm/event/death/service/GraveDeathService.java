@@ -79,7 +79,6 @@ public final class GraveDeathService {
     }
 
     public static void place(ServerPlayer player, CompoundTag graveData) {
-
         if (!(player.level() instanceof ServerLevel level)) {
             suppressgrave(graveData);
             return;
@@ -91,9 +90,9 @@ public final class GraveDeathService {
 
         GraveStoneLevels graveLevel = GraveLevelUtils.calculateGraveLevel(player);
 
-        GravePlacementPlan plan = GravePositionResolver.resolveDeath(player, GraveDeathTracker.trackedSpawnPos(level, player), GraveDeathTracker.trackedPlacementPos(level, player));
+        GravePlacementPlan placement = GravePositionResolver.resolveDeath(player, graveLevel, GraveDeathTracker.trackedSpawnPos(level, player), GraveDeathTracker.trackedPlacementPos(level, player));
 
-        boolean placed = Placer.place(level, player, graveData, graveLevel, plan);
+        boolean placed = Placer.place(level, player, graveData, graveLevel, placement);
 
         if (!placed) {
             return;
@@ -123,6 +122,6 @@ public final class GraveDeathService {
             manager.addGrave(graveData);
         }
 
-        GraveSaveManager.savedata(level, player.getUUID(), System.currentTimeMillis(), graveData);
+        GraveSaveManager.save(level, player.getUUID(), System.currentTimeMillis(), graveData);
     }
 }
