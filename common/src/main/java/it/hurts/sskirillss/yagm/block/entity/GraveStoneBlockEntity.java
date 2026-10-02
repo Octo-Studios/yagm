@@ -9,8 +9,8 @@ import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.init.BlockEntityRegistry;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeterySavedData;
-import it.hurts.sskirillss.yagm.util.InventoryUtils;
-import it.hurts.sskirillss.yagm.util.NbtKeys;
+import it.hurts.sskirillss.yagm.util.ContainerUtils;
+import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import it.hurts.sskirillss.yagm.util.VariantUtils;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
@@ -43,7 +43,7 @@ public class GraveStoneBlockEntity extends BlockEntity {
 
     private static final String[] INVENTORY_KEYS = {
             KEYS.getMainInventory(), KEYS.getArmorInventory(), KEYS.getOffhandInventory(),
-            KEYS.getAccessories(), KEYS.getTotalExperience()
+            KEYS.getAccessories(), KEYS.getBackpacks(), KEYS.getTotalExperience(), KEYS.getDroppedItems()
     };
 
     private static final Map<String, GraveStoneLevels> LEVEL_PATTERNS = new LinkedHashMap<>();
@@ -177,7 +177,7 @@ public class GraveStoneBlockEntity extends BlockEntity {
             return;
         }
 
-        InventoryUtils.restoreFullGrave(player, inventoryData, getBlockPos());
+        ContainerUtils.restoreFullGrave(player, inventoryData, getBlockPos());
         this.inventoryData = new CompoundTag();
         syncToClient();
 
@@ -187,7 +187,7 @@ public class GraveStoneBlockEntity extends BlockEntity {
     public void dropItems(Level level, BlockPos pos) {
         if (suppressDropsOnRemove) return;
         if (inventoryData != null && !inventoryData.isEmpty()) {
-            InventoryUtils.dropFullGrave(level, pos, inventoryData);
+            ContainerUtils.dropFullGrave(level, pos, inventoryData);
             this.inventoryData = new CompoundTag();
         }
 

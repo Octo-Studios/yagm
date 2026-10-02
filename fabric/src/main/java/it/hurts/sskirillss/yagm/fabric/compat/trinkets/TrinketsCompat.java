@@ -92,6 +92,7 @@ public class TrinketsCompat extends BaseAccessoryCompat {
 
             if (slotInfo != null) {
                 Map<String, TrinketInventory> group = inventory.get(slotInfo.getGroupName());
+
                 if (group != null) {
                     TrinketInventory inv = group.get(slotInfo.getSlotName());
                     if (inv != null && slotInfo.getIndex() >= 0 && slotInfo.getIndex() < inv.getContainerSize()) {
@@ -142,6 +143,7 @@ public class TrinketsCompat extends BaseAccessoryCompat {
         if (key == null || key.isEmpty()) return null;
 
         String[] parts = key.split("/");
+
         if (parts.length != 3) return null;
 
         try {

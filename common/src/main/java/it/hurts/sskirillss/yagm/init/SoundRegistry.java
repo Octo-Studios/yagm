@@ -10,7 +10,6 @@ public class SoundRegistry {
 
     public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(YAGMCommon.MODID, Registries.SOUND_EVENT);
 
-
     public static final RegistrySupplier<SoundEvent> GHOST_DEATH = SOUNDS.register("ghost_death", () -> SoundEvent.createVariableRangeEvent(YAGMCommon.id("ghost_death")));
     public static final RegistrySupplier<SoundEvent> GHOST_HURT_1 = SOUNDS.register("ghost_hurt_1", () -> SoundEvent.createVariableRangeEvent(YAGMCommon.id("ghost_hurt_1")));
     public static final RegistrySupplier<SoundEvent> GHOST_HURT_2 = SOUNDS.register("ghost_hurt_2", () -> SoundEvent.createVariableRangeEvent(YAGMCommon.id("ghost_hurt_2")));

@@ -82,6 +82,7 @@ public class GraveVariantBuilder {
         return this;
     }
 
+    @SuppressWarnings("ClassEscapesDefinedScope")
     public BuiltGraveVariant build() {
         String name = Objects.requireNonNullElse(displayName, id.getPath());
         return new BuiltGraveVariant(id, name, priority, List.copyOf(conditions), candlePositions);
@@ -100,8 +101,7 @@ public class GraveVariantBuilder {
         private final String displayName;
         private final int priority;
         private final List<Predicate<GraveVariantContext>> conditions;
-        @Nullable
-        private final double[][] candlePositions;
+        private final double @Nullable [][] candlePositions;
 
         @Override
         public boolean matches(GraveVariantContext context) {
@@ -112,8 +112,7 @@ public class GraveVariantBuilder {
         }
 
         @Override
-        @Nullable
-        public double[][] getCandlePositions() {
+        public double @Nullable [][] getCandlePositions() {
             return candlePositions;
         }
     }

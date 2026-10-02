@@ -68,5 +68,7 @@
   "yagm.ghost.mode.wander": "Ghost wander",
   "hud.yagm.accessories": "Accessories:",
   "hud.yagm.experience_lvl": "Experience lvl: %d",
-  "categorie.yagm.main": "YAGM"
+  "categorie.yagm.main": "YAGM",
+  "hud.yagm.cosmetic_armor": "Cosmetic Armor:",
+  "hud.yagm.backpacked": "Backpacked:"
 }

@@ -9,7 +9,7 @@ import it.hurts.sskirillss.yagm.entity.GhostlyFogEntity;
 import it.hurts.sskirillss.yagm.init.BlockEntityRegistry;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
-import it.hurts.sskirillss.yagm.util.NbtKeys;
+import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import it.hurts.sskirillss.yagm.util.ParticleUtils;
 import it.hurts.sskirillss.yagm.util.PlaceableUtils;
 import it.hurts.sskirillss.yagm.util.VariantUtils;
@@ -52,6 +52,7 @@ import java.awt.*;
 import java.util.UUID;
 
 public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, EntityBlock {
+
     private static final ResourceLocation TWILIGHT_PORTAL_ID = ResourceLocation.fromNamespaceAndPath("twilightforest", "twilight_portal");
 
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
@@ -81,6 +82,7 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
         }
 
         boolean waterlogged = level.getFluidState(pos).isSourceOfType(Fluids.WATER);
+
         return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite()).setValue(HALF, DoubleBlockHalf.LOWER).setValue(WATERLOGGED, waterlogged);
     }
 
@@ -92,6 +94,7 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
             BlockPos upperPos = pos.above();
             BlockState upperCurrent = level.getBlockState(upperPos);
             if (upperCurrent.isAir() || upperCurrent.is(Blocks.WATER)) {
+
                 boolean upperWaterlogged = level.getFluidState(upperPos).isSourceOfType(Fluids.WATER);
                 level.setBlock(upperPos, state.setValue(HALF, DoubleBlockHalf.UPPER).setValue(WATERLOGGED, upperWaterlogged), 3);
             }
@@ -123,6 +126,7 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
         }
 
         GraveStoneBlockEntity be = getBlockEntity(level, gravePos);
+
         if (be == null || be.isDecorative() || player.isShiftKeyDown()) {
             return InteractionResult.PASS;
         }
@@ -210,6 +214,7 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
 
 
         IGraveVariant variant = blockEntity.getVariant();
+
         double[][] candles = variant != null ? variant.getCandlePositions() : null;
 
         if (candles == null) {
@@ -284,6 +289,7 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
         }
 
         AABB checkBox = new AABB(pos).inflate(2.2);
+
         for (GhostlyFogEntity fogEntity : level.getEntitiesOfClass(GhostlyFogEntity.class, checkBox)) {
             if (fogEntity.isBoundToGrave(pos)) {
                 return;
@@ -291,7 +297,9 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
         }
 
         float[] color = VariantUtils.getVariantColor(variantId != null ? variantId.getPath() : null);
+
         GhostlyFogEntity fog = EntityRegistry.GHOSTLY_FOG.get().create(level);
+
         if (fog == null) {
             return;
         }
@@ -310,6 +318,7 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
 
     private static void clearCemeteryFogForGrave(ServerLevel level, BlockPos pos) {
         AABB checkBox = new AABB(pos).inflate(2.2);
+
         for (GhostlyFogEntity fogEntity : level.getEntitiesOfClass(GhostlyFogEntity.class, checkBox)) {
             if (fogEntity.isBoundToGrave(pos)) {
                 fogEntity.discard();
@@ -380,7 +389,9 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
 
         CompoundTag itemData = blockEntity.getItemData();
         GraveStoneLevels graveLevel = blockEntity.getGraveLevel();
+
         Direction facing = state.getValue(FACING);
+
         String variantId = itemData.contains(KEYS.getVariantId()) ? itemData.getString(KEYS.getVariantId()) : null;
         Block graveBlock = VariantUtils.getVariantId(variantId, graveLevel);
         BlockState graveState = graveBlock.defaultBlockState().setValue(FACING, facing).setValue(WATERLOGGED, level.getFluidState(pos).isSourceOfType(Fluids.WATER));
@@ -493,6 +504,7 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
         if (blockEntity.isDecorative()) return;
 
         boolean hasLandingSurface = false;
+
         for (int y = pos.getY() - 1; y >= level.getMinBuildHeight(); y--) {
             if (!FallingBlock.isFree(level.getBlockState(new BlockPos(pos.getX(), y, pos.getZ())))) {
                 hasLandingSurface = true;

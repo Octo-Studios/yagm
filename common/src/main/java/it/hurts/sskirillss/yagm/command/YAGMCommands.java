@@ -5,7 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveSaveManager;
 import lombok.extern.slf4j.Slf4j;
-import it.hurts.sskirillss.yagm.util.InventoryUtils;
+import it.hurts.sskirillss.yagm.util.ContainerUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.nbt.CompoundTag;
@@ -68,14 +68,14 @@ public class YAGMCommands {
             return 0;
         }
 
-        CompoundTag graveData = GraveSaveManager.loadGraveData(level, targetPlayer.getUUID(), selector);
+        CompoundTag graveData = GraveSaveManager.load(level, targetPlayer.getUUID(), selector);
         if (graveData == null) {
             context.getSource().sendFailure(Component.literal("Save not found: " + selector));
             return 0;
         }
 
         try {
-            InventoryUtils.restoreFullGrave(targetPlayer, graveData);
+            ContainerUtils.restoreFullGrave(targetPlayer, graveData);
 
             context.getSource().sendSuccess(() -> Component.literal("Grave restored for player " + playerName), true);
             return 1;

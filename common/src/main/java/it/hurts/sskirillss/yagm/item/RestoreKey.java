@@ -6,8 +6,8 @@ import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveSaveManager;
 import it.hurts.sskirillss.yagm.network.packet.RestoreKeyActivationPacket;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
-import it.hurts.sskirillss.yagm.util.InventoryUtils;
-import it.hurts.sskirillss.yagm.util.NbtKeys;
+import it.hurts.sskirillss.yagm.util.ContainerUtils;
+import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
@@ -30,8 +30,8 @@ import net.minecraft.world.level.Level;
 import java.util.UUID;
 
 public class RestoreKey extends Item {
+
     private static final NbtKeys KEYS = NbtKeys.INSTANCE;
-    private static final String TAG_RESTORE_READY = "YAGMRestoreReady";
 
     public RestoreKey(Properties properties) {
         super(properties.stacksTo(1));
@@ -54,9 +54,9 @@ public class RestoreKey extends Item {
 
         CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
             if (available) {
-                tag.putBoolean(TAG_RESTORE_READY, true);
+                tag.putBoolean("YAGMRestoreReady", true);
             } else {
-                tag.remove(TAG_RESTORE_READY);
+                tag.remove("YAGMRestoreReady");
             }
         });
     }
@@ -130,7 +130,7 @@ public class RestoreKey extends Item {
             return stack;
         }
 
-        InventoryUtils.restoreFullGrave(serverPlayer, lastSave);
+        ContainerUtils.restoreFullGrave(serverPlayer, lastSave);
         cleanupSourceGrave(serverPlayer, lastSave);
 
         serverPlayer.getCooldowns().addCooldown(this, 60);
@@ -149,6 +149,7 @@ public class RestoreKey extends Item {
         }
 
         UUID graveId = saveData.getUUID(KEYS.getId());
+
         ServerLevel graveLevel = resolveGraveLevel(serverPlayer, saveData);
 
         GraveDataManager manager = GraveDataManager.get(graveLevel);
@@ -212,20 +213,23 @@ public class RestoreKey extends Item {
 
     private static boolean isRestoreReady(ItemStack stack) {
         CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
-        if (!customData.contains(TAG_RESTORE_READY)) {
+
+        if (!customData.contains("YAGMRestoreReady")) {
             return false;
         }
-        return customData.copyTag().getBoolean(TAG_RESTORE_READY);
+
+        return customData.copyTag().getBoolean("YAGMRestoreReady");
     }
 
     private static CompoundTag getLastRestorableSave(ServerPlayer serverPlayer) {
         CompoundTag save = GraveSaveManager.peekLatestRestoreSave(serverPlayer.serverLevel(), serverPlayer.getUUID());
+
         if (save == null || !save.hasUUID(KEYS.getId())) {
             return null;
         }
 
         UUID graveId = save.getUUID(KEYS.getId());
-        ServerLevel saveLevel = resolveGraveLevel(serverPlayer, save);
+        ServerLevel saveLevel = RestoreKey.resolveGraveLevel(serverPlayer, save);
         GraveDataManager manager = GraveDataManager.get(saveLevel);
         if (!manager.hasGrave(graveId)) {
             return null;

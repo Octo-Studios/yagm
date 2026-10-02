@@ -1,4 +1,4 @@
-package it.hurts.sskirillss.yagm.util;
+package it.hurts.sskirillss.yagm.nbt.keys;
 
 import it.hurts.sskirillss.yagm.YAGMCommon;
 import lombok.AccessLevel;
@@ -29,6 +29,9 @@ public final class NbtKeys {
     private final String offhandInventory = "OffhandInventory";
     private final String totalExperience = "TotalExperience";
     private final String accessories = "Accessories";
+    private final String backpacks = "Backpacks";
+    private final String droppedItems = "DroppedItems";
+    private final String interrupted = "Interrupted";
 
     // Ghost entity
     private final String mood = "Mood";
@@ -62,12 +65,16 @@ public final class NbtKeys {
     private final String playerName = "PlayerName";
     private final String id = "Id";
 
-
+    // Other things
     public final String dataName = YAGMCommon.MODID + "_grave_saves";
     public final String saveTime = "SavedAt";
     public final String players = "Players";
     public final String player = "Player";
     public final String saves = "Saves";
+
+    public String interrupted() {
+        return interrupted;
+    }
 }
 
 

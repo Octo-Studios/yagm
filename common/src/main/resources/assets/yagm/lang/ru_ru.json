@@ -68,5 +68,7 @@
   "yagm.ghost.mode.wander": "Призрак бродит",
   "hud.yagm.accessories": "Аксессуары:",
   "hud.yagm.experience_lvl": "Уровень опыта: %d",
-  "categorie.yagm.main": "YAGM"
+  "categorie.yagm.main": "YAGM",
+  "hud.yagm.cosmetic_armor": "Косметическая броня:",
+  "hud.yagm.backpacked": "Рюкзак Backpacked:"
 }

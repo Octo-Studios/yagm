@@ -44,8 +44,11 @@ public class CuriosCompat extends BaseAccessoryCompat {
             ICurioStacksHandler stacksHandler = entry.getValue();
 
             IDynamicStackHandler stacks = stacksHandler.getStacks();
+
             for (int i = 0; i < stacks.getSlots(); i++) {
+
                 ItemStack stack = stacks.getStackInSlot(i);
+
                 if (!stack.isEmpty()) {
                     ItemStack copy = stack.copy();
                     copy.set(CurioSlotData.CURIO_SLOT_DATA.get(), new CurioSlotData.SlotInfo(slotType, i, true, false));
@@ -106,6 +109,7 @@ public class CuriosCompat extends BaseAccessoryCompat {
                 ICurioStacksHandler stacksHandler = curios.get(slotData.slotType());
                 if (stacksHandler != null) {
                     IDynamicStackHandler target = slotData.isCosmetic() ? stacksHandler.getCosmeticStacks() : stacksHandler.getStacks();
+
                     int idx = slotData.slotIndex();
 
                     if (idx >= 0 && idx < target.getSlots() && target.getStackInSlot(idx).isEmpty()) {
@@ -124,7 +128,10 @@ public class CuriosCompat extends BaseAccessoryCompat {
 
     @Override
     public boolean canEquipAsAccessory(ServerPlayer player, ItemStack stack) {
-        if (stack.isEmpty()) return false;
+        if (stack.isEmpty()) {
+            return false;
+        }
+
         var slotTypes = CuriosApi.getItemStackSlots(stack, player);
         return slotTypes != null && !slotTypes.isEmpty();
     }
@@ -146,6 +153,7 @@ public class CuriosCompat extends BaseAccessoryCompat {
             if (stacksHandler == null) continue;
 
             IDynamicStackHandler stacks = stacksHandler.getStacks();
+
             for (int i = 0; i < stacks.getSlots(); i++) {
                 if (stacks.getStackInSlot(i).isEmpty()) {
                     SlotContext context = new SlotContext(slotType, player, i, false, true);

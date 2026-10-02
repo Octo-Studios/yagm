@@ -6,11 +6,11 @@ import lombok.Getter;
 public final class TwilightForestCompat {
 
     @Getter
-    private static boolean lateDeathHandlerEnabled;
+    private static boolean POST_DEATH;
 
     public static void init() {}
 
-    public static void enableLateDeathHandler() {
-        lateDeathHandlerEnabled = Platform.isModLoaded("twilightforest");
+    public static void setdeathHandler() {
+        POST_DEATH = Platform.isModLoaded("twilightforest");
     }
 }

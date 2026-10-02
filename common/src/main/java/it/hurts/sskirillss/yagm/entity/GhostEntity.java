@@ -7,7 +7,7 @@ import it.hurts.sskirillss.yagm.entity.goals.*;
 import it.hurts.sskirillss.yagm.init.DamageSourceRegistry;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.init.SoundRegistry;
-import it.hurts.sskirillss.yagm.util.NbtKeys;
+import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.BlockPos;

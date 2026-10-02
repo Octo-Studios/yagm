@@ -1,6 +1,5 @@
 package it.hurts.sskirillss.yagm.structure.cemetery.data;
 
-
 import it.hurts.sskirillss.yagm.structure.cemetery.config.CemeteryConfig;
 import it.hurts.sskirillss.yagm.structure.cemetery.util.SpatialGraveHash;
 import it.hurts.sskirillss.yagm.structure.cemetery.util.UnionFind;
@@ -69,7 +68,9 @@ public class DimensionGraveData {
     public void removeGrave(BlockPos pos) {
         if (!spatialHash.remove(pos)) return;
         insertionOrder.remove(pos);
+
         Set<BlockPos> oldClusterMembers = new HashSet<>(unionFind.getClusterMembers(pos));
+
         int oldClusterSize = oldClusterMembers.size();
 
         unionFind.remove(pos);
@@ -82,7 +83,9 @@ public class DimensionGraveData {
             rebuildCluster(oldClusterMembers);
 
             if (oldClusterSize >= minGravesForCemetery && onCemeteryDestroyed != null) {
+
                 boolean anyCemeteryRemains = false;
+
                 Set<BlockPos> checkedRoots = new HashSet<>();
 
                 for (BlockPos member : oldClusterMembers) {
@@ -240,12 +243,15 @@ public class DimensionGraveData {
 
     public void load(CompoundTag tag) {
         clear();
+
         ListTag gravesList = tag.getList("graves", Tag.TAG_INT_ARRAY);
+
         for (Tag value : gravesList) {
             BlockPos.CODEC.parse(NbtOps.INSTANCE, value).resultOrPartial(e -> {}).ifPresent(this::loadGravePos);
         }
 
         ListTag orderList = tag.getList("order", Tag.TAG_INT_ARRAY);
+
         for (Tag value : orderList) {
             BlockPos.CODEC.parse(NbtOps.INSTANCE, value).resultOrPartial(e -> {}).ifPresent(pos -> {
                 if (spatialHash.getAll().contains(pos)) {
@@ -257,6 +263,7 @@ public class DimensionGraveData {
 
         if (insertionOrder.isEmpty()) {
             List<BlockPos> sorted = new ArrayList<>(spatialHash.getAll());
+
             sorted.sort(Comparator.comparingLong(BlockPos::asLong));
             for (BlockPos pos : sorted) {
                 insertionOrder.addLast(pos.immutable());

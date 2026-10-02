@@ -18,11 +18,12 @@ import java.util.Optional;
 
 public final class TwilightCharmSlotHook {
 
-    private enum Source { NONE, ACCESSORIES, CURIOS }
+    private enum Source {NONE, ACCESSORIES, CURIOS}
 
     private record CharmState(Source source, AccessorySlot slot) {
         static final CharmState NONE = new CharmState(Source.NONE, null);
         static final CharmState CURIOS = new CharmState(Source.CURIOS, null);
+
         static CharmState of(AccessorySlot slot) {
             return new CharmState(Source.ACCESSORIES, slot);
         }
@@ -32,10 +33,12 @@ public final class TwilightCharmSlotHook {
 
     public static boolean consumeEquippedCharm(Item item, Player player) {
         AccessorySlot slot = findAccessoryCharmSlot(item, player);
+
         if (slot != null) {
             pending.set(CharmState.of(slot));
             return true;
         }
+
         if (Platform.isModLoaded("curios") && CuriosCompat.findAndConsumeCurio(item, player)) {
             pending.set(CharmState.CURIOS);
             return true;
@@ -50,16 +53,23 @@ public final class TwilightCharmSlotHook {
         pending.set(CharmState.NONE);
 
         return switch (state.source()) {
+
             case ACCESSORIES -> {
                 ItemStack stack = state.slot().container().getItem(state.slot().index()).copy();
                 state.slot().consume();
-                if (saveCharm) data.put("CharmStack", stack.save(player.registryAccess()));
+
+                if (saveCharm) {
+                    data.put("CharmStack", stack.save(player.registryAccess()));
+                }
                 yield true;
             }
+
             case CURIOS -> false;
 
             case NONE -> {
-                if (isCharmEquipped(itemLike.asItem(), player)) yield false;
+                if (isCharmEquipped(itemLike.asItem(), player)){
+                    yield false;
+                }
                 yield TFItemStackUtils.consumeInventoryItem(player, itemLike, data, saveCharm);
             }
         };
@@ -75,7 +85,6 @@ public final class TwilightCharmSlotHook {
 
         return CuriosApi.getCuriosInventory(player).map(handler -> {
 
-
             for (var stacksHandler : handler.getCurios().values()) {
                 IDynamicStackHandler stacks = stacksHandler.getStacks();
 
@@ -85,7 +94,6 @@ public final class TwilightCharmSlotHook {
             }
             return false;
         }).orElse(false);
-
     }
 
     private static AccessorySlot findAccessoryCharmSlot(Item item, Player player) {
@@ -115,7 +123,6 @@ public final class TwilightCharmSlotHook {
         for (int i = 0; i < container.getContainerSize(); i++) {
             if (container.getItem(i).is(item)) return new AccessorySlot(owner, container, i);
         }
-
         return null;
     }
 

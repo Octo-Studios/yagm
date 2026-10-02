@@ -1,15 +1,14 @@
 package it.hurts.sskirillss.yagm.api.compat;
 
 import dev.architectury.injectables.annotations.ExpectPlatform;
-import org.jetbrains.annotations.ApiStatus;
 
 public class YAGMCompat {
 
-    private static boolean initialized = false;
+    private static boolean registered = false;
 
     public static void init() {
-        if (initialized) return;
-        initialized = true;
+        if (registered) return;
+        registered = true;
         registerPlatformHandlers();
     }
 

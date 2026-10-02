@@ -27,14 +27,17 @@ public class CemeteryManager {
     @Setter
     @Getter
     private int clusterRadius = CemeteryConfig.getDefaultRadius();
+
     @Setter
     @Getter
     private int minGravesForCemetery = CemeteryConfig.getDefaultMinGraves();
     private final Map<ResourceKey<Level>, DimensionGraveData> dimensions = new HashMap<>();
 
     private ICemeteryManager.CemeteryFormedCallback onCemeteryFormed;
+
     @Setter
     private ICemeteryManager.LevelChecker levelChecker;
+
     private final Map<ResourceKey<Level>, Set<BlockPos>> formedCemeteries = new HashMap<>();
     private final Map<ResourceKey<Level>, BlockPos> lastAddedGraves = new HashMap<>();
 
@@ -92,9 +95,6 @@ public class CemeteryManager {
         return getData(dimension).getGraveCountNear(pos, radius);
     }
 
-    public BlockPos getLastAddedGrave(ResourceKey<Level> dimension) {
-        return lastAddedGraves.get(dimension);
-    }
 
     public BlockPos getLastAddedCemeteryGrave(ResourceKey<Level> dimension) {
         DimensionGraveData data = getData(dimension);
@@ -245,6 +245,7 @@ public class CemeteryManager {
                 }
 
                 BlockPos last = data.getLastAddedGrave();
+
                 if (last != null) {
                     lastAddedGraves.put(dimension, last.immutable());
                 }

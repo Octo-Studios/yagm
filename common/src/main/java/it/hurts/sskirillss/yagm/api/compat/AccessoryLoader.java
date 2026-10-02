@@ -70,7 +70,6 @@ public final class AccessoryLoader {
                 CompoundTag handlerData = handler.saveToNBT(accessories, registryAccess);
                 if (handlerData != null && !handlerData.isEmpty()) {
                     root.put(handlerName, handlerData);
-
                 }
             }
         }
@@ -83,15 +82,20 @@ public final class AccessoryLoader {
 
         for (String handlerName : tag.getAllKeys()) {
             IAccessoryHandler handler = handlers.get(handlerName);
+
             if (handler != null) {
+
                 CompoundTag handlerData = tag.getCompound(handlerName);
+
                 Map<String, ItemStack> accessories = handler.loadFromNBT(handlerData, registryAccess);
                 if (!accessories.isEmpty()) {
                     allAccessories.put(handlerName, accessories);
                 }
             } else {
                 CompoundTag handlerData = tag.getCompound(handlerName);
+
                 Map<String, ItemStack> fallbackAccessories = parseUnknownAccessories(handlerData, registryAccess);
+
                 if (!fallbackAccessories.isEmpty()) {
                     log.warn("[YAGM] No handler for '{}', {} items may be restored via inventory/drop fallback", handlerName, fallbackAccessories.size());
                     allAccessories.put(handlerName, fallbackAccessories);
@@ -107,15 +111,18 @@ public final class AccessoryLoader {
     public static void restoreAccessories(ServerPlayer player, Map<String, Map<String, ItemStack>> allAccessories, boolean dropIfFull, BlockPos dropPos, Level level) {
         for (Map.Entry<String, Map<String, ItemStack>> entry : allAccessories.entrySet()) {
             String handlerName = entry.getKey();
+
             Map<String, ItemStack> accessories = entry.getValue();
 
             IAccessoryHandler handler = handlers.get(handlerName);
             if (handler != null) {
                 if (dropPos != null && level != null) {
+
                     handler.restoreAccessories(player, accessories, dropIfFull, level, dropPos);
                 } else {
                     handler.restoreAccessories(player, accessories, dropIfFull);
                 }
+
             } else {
                 for (ItemStack stack : accessories.values()) {
                     if (!stack.isEmpty()) {
@@ -132,6 +139,7 @@ public final class AccessoryLoader {
 
     private static Map<String, ItemStack> parseUnknownAccessories(CompoundTag handlerData, RegistryAccess registryAccess) {
         Map<String, ItemStack> parsed = new HashMap<>();
+
         int syntheticIndex = 0;
 
         for (String key : handlerData.getAllKeys()) {
@@ -140,6 +148,7 @@ public final class AccessoryLoader {
             }
 
             ListTag items = handlerData.getList(key, Tag.TAG_COMPOUND);
+
             for (int i = 0; i < items.size(); i++) {
                 CompoundTag itemTag = items.getCompound(i);
                 if (!itemTag.contains("Item", Tag.TAG_COMPOUND)) {
@@ -147,11 +156,13 @@ public final class AccessoryLoader {
                 }
 
                 ItemStack stack = ItemStack.parseOptional(registryAccess, itemTag.getCompound("Item"));
+
                 if (stack.isEmpty()) {
                     continue;
                 }
 
                 String slotKey = itemTag.getString("SlotKey");
+
                 if (slotKey.isEmpty()) {
                     slotKey = key + "/unknown/" + (syntheticIndex++);
                 }
@@ -159,8 +170,6 @@ public final class AccessoryLoader {
                 parsed.put(slotKey, stack);
             }
         }
-
         return parsed;
     }
-
 }

@@ -26,6 +26,7 @@ subprojects {
     group = rootProject.maven_group
 
     repositories {
+        maven { url "https://maven.fabricmc.net/" }
         maven { url "https://maven.shedaniel.me" }
         maven { url "https://maven.neoforged.net/releases" }
         maven { url "https://maven.blamejared.com/" }
@@ -38,7 +39,12 @@ subprojects {
         maven { url 'https://maven.wispforest.io/releases' }
         maven { url 'https://maven.su5ed.dev/releases' }
         maven { url 'https://jitpack.io' }
-        maven { url("https://maven.octo-studios.com/releases")}
+        maven {
+            url "https://www.cursemaven.com"
+            content {
+                includeGroup "curse.maven"
+            }
+        }
     }
 
     dependencies {

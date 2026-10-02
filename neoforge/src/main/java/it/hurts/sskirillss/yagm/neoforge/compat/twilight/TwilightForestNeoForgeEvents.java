@@ -17,11 +17,11 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 public final class TwilightForestNeoForgeEvents {
 
-    private static boolean initialized;
+    private static boolean registered;
 
     public static void register() {
-        if (initialized || !Platform.isModLoaded("twilightforest")) return;
-        initialized = true;
+        if (registered || !Platform.isModLoaded("twilightforest")) return;
+        registered = true;
 
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, TwilightForestNeoForgeEvents::onLivingDeath);
     }
@@ -43,7 +43,10 @@ public final class TwilightForestNeoForgeEvents {
 
     private static boolean SuppressGrave(ServerPlayer player) {
         CompoundTag persisted = player.getPersistentData().getCompound("PlayerPersisted");
-        if (!persisted.contains("CharmStack", Tag.TAG_COMPOUND)) return false;
+
+        if (!persisted.contains("CharmStack", Tag.TAG_COMPOUND)) {
+            return false;
+        }
 
         ItemStack charm = ItemStack.parseOptional(player.registryAccess(), persisted.getCompound("CharmStack"));
         return !charm.isEmpty() && ResourceLocation.fromNamespaceAndPath("twilightforest", "charm_of_keeping_3").equals(BuiltInRegistries.ITEM.getKey(charm.getItem()));

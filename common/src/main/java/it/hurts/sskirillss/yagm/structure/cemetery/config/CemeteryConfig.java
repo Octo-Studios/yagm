@@ -7,19 +7,15 @@ import lombok.Getter;
 @AllArgsConstructor
 public class CemeteryConfig {
 
-    private static final int DEFAULT_CLUSTER_RADIUS = 48;
-    private static final int DEFAULT_MIN_GRAVES = 10;
-    private static final int CELL_SIZE = 16;
-
     public static int getDefaultRadius(){
-        return DEFAULT_CLUSTER_RADIUS;
+        return 48;
     }
 
     public static int getDefaultMinGraves(){
-        return DEFAULT_MIN_GRAVES;
+        return 10;
     }
 
     public static int getCellSize(){
-        return CELL_SIZE;
+        return 16;
     }
 }

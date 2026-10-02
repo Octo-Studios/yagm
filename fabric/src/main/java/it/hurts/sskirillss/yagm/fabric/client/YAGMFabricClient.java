@@ -19,7 +19,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry;
 
 public class YAGMFabricClient implements ClientModInitializer {
 
-    public static void registerEntityRenderers(){
+    public static void registerEntityRenderers() {
         EntityRendererRegistry.register(EntityRegistry.FALLING_GRAVE, FallingGraveEntityRenderer::new);
         EntityRendererRegistry.register(EntityRegistry.GHOST, GhostEntityRenderer::new);
         EntityRendererRegistry.register(EntityRegistry.GHOSTLY_FOG, GhostlyFogEntityRenderer::new);
