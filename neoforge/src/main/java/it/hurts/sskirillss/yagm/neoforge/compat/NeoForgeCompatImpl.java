@@ -6,7 +6,6 @@ import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackLoader;
 import it.hurts.sskirillss.yagm.api.compat.twilight.TwilightForestCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.accessories.AccessoriesCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.backpack.NeoForgeBackPackedCompat;
-import it.hurts.sskirillss.yagm.neoforge.compat.backpack.NeoForgeSophisticatedBackpacksCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.backpack.NeoForgeTravelersBackpackCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.cosmeticarmor.CosmeticArmorCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.curios.CuriosCompat;
@@ -33,10 +32,11 @@ public class NeoForgeCompatImpl {
         );
 
         CompatRunnable.run(
+                CompatRunnable.getModId("accessories", () -> AccessoryLoader.registerHandler(new AccessoriesCompat())),
+                CompatRunnable.getModId("curios", () -> AccessoryLoader.registerHandler(new CuriosCompat())),
                 CompatRunnable.getModId("cosmeticarmorreworked", () -> AccessoryLoader.registerHandler(new CosmeticArmorCompat())),
                 CompatRunnable.getModId("backpacked", () -> BackpackLoader.registerHandler(new NeoForgeBackPackedCompat())),
-                CompatRunnable.getModId("travelersbackpack", () -> BackpackLoader.registerHandler(new NeoForgeTravelersBackpackCompat())),
-                CompatRunnable.getModId("sophisticatedbackpacks", () -> BackpackLoader.registerItemHandler(new NeoForgeSophisticatedBackpacksCompat()))
+                CompatRunnable.getModId("travelersbackpack", () -> BackpackLoader.registerHandler(new NeoForgeTravelersBackpackCompat()))
         );
     }
 

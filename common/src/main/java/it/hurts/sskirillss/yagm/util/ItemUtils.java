@@ -1,6 +1,5 @@
 package it.hurts.sskirillss.yagm.util;
 
-import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackLoader;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
@@ -18,7 +17,7 @@ public class ItemUtils {
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack stack = inventory.get(i);
             if (!stack.isEmpty()) {
-                CompoundTag itemTag = (CompoundTag) BackpackLoader.copyInventoryStack(stack).save(provider);
+                CompoundTag itemTag = (CompoundTag) stack.copy().save(provider);
                 itemTag.putByte("Slot", (byte) i);
                 listTag.add(itemTag);
             }
@@ -52,7 +51,7 @@ public class ItemUtils {
 
         for (ItemStack stack : items) {
             if (!stack.isEmpty()) {
-                listTag.add(BackpackLoader.copyInventoryStack(stack).save(provider));
+                listTag.add(stack.copy().save(provider));
             }
         }
 
