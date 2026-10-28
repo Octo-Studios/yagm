@@ -53,6 +53,7 @@ public final class NbtKeys {
     private final String rotationSpeed = "RotationSpeed";
     private final String lifetime = "Lifetime";
     private final String voidRecovery = "VoidRecovery";
+    private final String lastSafePos = "LastSafePos";
 
     // Death position (InventoryUtils.savePlayerInventory)
     private final String deathPosX = "PosX";

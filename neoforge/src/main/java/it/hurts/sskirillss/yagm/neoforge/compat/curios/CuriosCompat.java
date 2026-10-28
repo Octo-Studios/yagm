@@ -1,17 +1,26 @@
 package it.hurts.sskirillss.yagm.neoforge.compat.curios;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import it.hurts.sskirillss.yagm.api.compat.BaseAccessoryCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.curios.slot.CurioSlotData;
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 import top.theillusivec4.curios.api.CuriosApi;
+import top.theillusivec4.curios.api.SlotAttribute;
 import top.theillusivec4.curios.api.SlotContext;
 import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
 import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 import top.theillusivec4.curios.api.type.inventory.IDynamicStackHandler;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -50,9 +59,7 @@ public class CuriosCompat extends BaseAccessoryCompat {
                 ItemStack stack = stacks.getStackInSlot(i);
 
                 if (!stack.isEmpty()) {
-                    ItemStack copy = stack.copy();
-                    copy.set(CurioSlotData.CURIO_SLOT_DATA.get(), new CurioSlotData.SlotInfo(slotType, i, true, false));
-                    accessories.put(slotType + "/" + i, copy);
+                    accessories.put(slotType + "/" + i, stack.copy());
                 }
             }
 
@@ -60,9 +67,7 @@ public class CuriosCompat extends BaseAccessoryCompat {
             for (int i = 0; i < cosmeticStacks.getSlots(); i++) {
                 ItemStack stack = cosmeticStacks.getStackInSlot(i);
                 if (!stack.isEmpty()) {
-                    ItemStack copy = stack.copy();
-                    copy.set(CurioSlotData.CURIO_SLOT_DATA.get(), new CurioSlotData.SlotInfo(slotType, i, true, true));
-                    accessories.put(slotType + "/cosmetic/" + i, copy);
+                    accessories.put(slotType + "/cosmetic/" + i, stack.copy());
                 }
             }
         }
@@ -98,31 +103,27 @@ public class CuriosCompat extends BaseAccessoryCompat {
             return;
         }
 
-        Map<String, ICurioStacksHandler> curios = curiosOpt.get().getCurios();
+        ICuriosItemHandler curiosHandler = curiosOpt.get();
+        List<Map.Entry<String, ItemStack>> remaining = new ArrayList<>(accessories.entrySet());
 
-        for (ItemStack stack : accessories.values()) {
-            if (stack.isEmpty()) continue;
+        restoreOriginalSlots(player, curiosHandler, remaining);
 
-            CurioSlotData.SlotInfo slotData = stack.get(CurioSlotData.CURIO_SLOT_DATA.get());
+        boolean equipped;
+        do {
+            equipped = false;
 
-            if (slotData != null && slotData.wasEquipped()) {
-                ICurioStacksHandler stacksHandler = curios.get(slotData.slotType());
-                if (stacksHandler != null) {
-                    IDynamicStackHandler target = slotData.isCosmetic() ? stacksHandler.getCosmeticStacks() : stacksHandler.getStacks();
-
-                    int idx = slotData.slotIndex();
-
-                    if (idx >= 0 && idx < target.getSlots() && target.getStackInSlot(idx).isEmpty()) {
-                        target.setStackInSlot(idx, withoutSlotData(stack));
-                        continue;
-                    }
+            Iterator<Map.Entry<String, ItemStack>> iterator = remaining.iterator();
+            while (iterator.hasNext()) {
+                ItemStack clean = withoutSlotData(iterator.next().getValue());
+                if (tryEquipAccessory(player, clean)) {
+                    iterator.remove();
+                    equipped = true;
                 }
             }
+        } while (equipped && !remaining.isEmpty());
 
-            ItemStack clean = withoutSlotData(stack);
-            if (!tryEquipAccessory(player, clean)) {
-                getInventoryOrDrop(player, clean, dropIfFull);
-            }
+        for (Map.Entry<String, ItemStack> entry : remaining) {
+            getInventoryOrDrop(player, withoutSlotData(entry.getValue()), dropIfFull);
         }
     }
 
@@ -158,13 +159,108 @@ public class CuriosCompat extends BaseAccessoryCompat {
                 if (stacks.getStackInSlot(i).isEmpty()) {
                     SlotContext context = new SlotContext(slotType, player, i, false, true);
                     if (CuriosApi.isStackValid(context, stack)) {
-                        stacks.setStackInSlot(i, stack.copy());
+                        ItemStack copy = stack.copy();
+                        stacks.setStackInSlot(i, copy);
+                        if (curiosOpt.get().isSlotActive(slotType, i)) {
+                            applySlotModifiers(curiosOpt.get(), context, copy);
+                        }
                         return true;
                     }
                 }
             }
         }
         return false;
+    }
+
+    private static void restoreOriginalSlots(ServerPlayer player, ICuriosItemHandler curiosHandler, List<Map.Entry<String, ItemStack>> remaining) {
+        boolean restored;
+
+        do {
+            restored = false;
+
+            Iterator<Map.Entry<String, ItemStack>> iterator = remaining.iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, ItemStack> entry = iterator.next();
+                ItemStack stack = entry.getValue();
+
+                if (stack.isEmpty()) {
+                    iterator.remove();
+                    continue;
+                }
+
+                CurioSlotData.SlotInfo slotData = parseSlotKey(entry.getKey());
+                if (slotData == null) {
+                    slotData = stack.get(CurioSlotData.CURIO_SLOT_DATA.get());
+                }
+
+                if (slotData == null || !slotData.wasEquipped()) {
+                    continue;
+                }
+
+                ICurioStacksHandler stacksHandler = curiosHandler.getCurios().get(slotData.slotType());
+
+                if (stacksHandler == null) {
+                    continue;
+                }
+
+                IDynamicStackHandler target = slotData.isCosmetic() ? stacksHandler.getCosmeticStacks() : stacksHandler.getStacks();
+
+                int index = slotData.slotIndex();
+
+                if (index < 0 || index >= target.getSlots() || !target.getStackInSlot(index).isEmpty()) {
+                    continue;
+                }
+
+                ItemStack clean = withoutSlotData(stack);
+
+                target.setStackInSlot(index, clean);
+
+                if (!slotData.isCosmetic() && curiosHandler.isSlotActive(slotData.slotType(), index)) {
+                    SlotContext context = new SlotContext(slotData.slotType(), player, index, false, true);
+                    applySlotModifiers(curiosHandler, context, clean);
+                }
+
+                iterator.remove();
+
+                restored = true;
+            }
+        } while (restored && !remaining.isEmpty());
+    }
+
+    private static void applySlotModifiers(ICuriosItemHandler curiosHandler, SlotContext context, ItemStack stack) {
+        Multimap<Holder<Attribute>, AttributeModifier> attributes = CuriosApi.getAttributeModifiers(context, CuriosApi.getSlotId(context), stack);
+
+        Multimap<String, AttributeModifier> slotModifiers = HashMultimap.create();
+
+        for (Holder<Attribute> attribute : attributes.keySet()) {
+            if (attribute.value() instanceof SlotAttribute slotAttribute) {
+                slotModifiers.putAll(slotAttribute.getIdentifier(), attributes.get(attribute));
+            }
+        }
+
+        if (!slotModifiers.isEmpty()) {
+            curiosHandler.addTransientSlotModifiers(slotModifiers);
+        }
+    }
+
+    private static CurioSlotData.SlotInfo parseSlotKey(String key) {
+        if (key == null || key.isEmpty()) {
+            return null;
+        }
+
+        String[] parts = key.split("/");
+
+        try {
+            if (parts.length == 2) {
+                return new CurioSlotData.SlotInfo(parts[0], Integer.parseInt(parts[1]), true, false);
+            }
+
+            if (parts.length == 3 && "cosmetic".equals(parts[1])) {
+                return new CurioSlotData.SlotInfo(parts[0], Integer.parseInt(parts[2]), true, true);
+            }
+        } catch (NumberFormatException ignored) {}
+
+        return null;
     }
 
     private static ItemStack withoutSlotData(ItemStack stack) {

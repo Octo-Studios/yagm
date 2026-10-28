@@ -130,7 +130,7 @@ public class GraveSaveManager {
         return Math.max(deathTime, 0L);
     }
 
-    private static class GraveSavesData extends SavedData {
+    static class GraveSavesData extends SavedData {
 
         private final Map<UUID, List<CompoundTag>> savesByPlayer = new HashMap<>();
         private final Map<UUID, String> LATEST_MARK = new HashMap<>();
@@ -138,7 +138,7 @@ public class GraveSaveManager {
 
         public void addSave(UUID playerId, CompoundTag saveData) {
             List<CompoundTag> saves = savesByPlayer.computeIfAbsent(playerId, ignored -> new ArrayList<>());
-            saves.add(saveData);
+            saves.add(saveData.copy());
             saves.sort(SAVE_ASCENDING);
         }
 

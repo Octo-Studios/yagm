@@ -16,8 +16,8 @@ public class GraveStoneEvent {
         GraveDeathService.handle(player, Collections.emptyList());
     }
 
-    public static boolean handlePlayerDeathDrops(ServerPlayer player, Collection<ItemEntity> drops) {
-        return GraveDeathService.handle(player, drops);
+    public static boolean handlePlayerDeathDrops(ServerPlayer player, Collection<ItemEntity> drops, CompoundTag inventory) {
+        return GraveDeathService.handle(player, drops, inventory);
     }
 
     public static void onPlayerDeath(ServerPlayer player, CompoundTag graveData) {

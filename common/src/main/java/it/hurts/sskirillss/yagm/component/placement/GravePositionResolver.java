@@ -29,7 +29,7 @@ public final class GravePositionResolver {
         Vec3 velocity = recovery ? Vec3.ZERO : FallingGraveMotionConfig.DEFAULT.randomLaunchVelocity(level.random);
 
         if (mode == DeathPlacementMode.FALLING) {
-            return new GravePlacementPlan(reason, mode, spawnPos, velocity, null, true, recovery);
+            return new GravePlacementPlan(reason, mode, spawnPos, velocity, trackedPlacementPos, true, recovery);
         }
 
         boolean strictPlacement = level.dimension() != Level.END;
@@ -66,10 +66,6 @@ public final class GravePositionResolver {
         return player.level().dimension() == Level.END && isVoidDeath(player.level(), player.blockPosition());
     }
 
-    public static BlockPos resolveFallingLanding(ServerLevel level, Vec3 position, @Nullable BlockPos lastSafePos, boolean voidRecovery) {
-        return fallingLand(level, position, lastSafePos, voidRecovery);
-    }
-
     public static BlockPos fallingLand(ServerLevel level, Vec3 position, @Nullable BlockPos lastSafePos, boolean voidRecovery) {
         if (voidRecovery) {
             BlockPos base = lastSafePos != null ? lastSafePos : BlockPos.containing(position);
@@ -101,16 +97,6 @@ public final class GravePositionResolver {
                 if ((aboveState.isAir() || aboveState.canBeReplaced()) && below.isSolid()) {
                     return above;
                 }
-            }
-        }
-
-        for (int y = 0; y <= 10; y++) {
-            BlockPos below = blockPos.below(y);
-            BlockState belowState = level.getBlockState(below);
-            BlockState atPos = level.getBlockState(below.above());
-
-            if (belowState.isSolid() && (atPos.isAir() || atPos.canBeReplaced())) {
-                return below.above();
             }
         }
 

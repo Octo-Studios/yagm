@@ -12,18 +12,20 @@ import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import it.hurts.sskirillss.yagm.util.PlaceableUtils;
+import it.hurts.sskirillss.yagm.util.GravePayloadUtils;
 import it.hurts.sskirillss.yagm.util.VariantUtils;
 import it.hurts.sskirillss.yagm.vec3.FallingGraveMotionConfig;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
@@ -40,6 +42,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @SuppressWarnings("deprecation")
+@Slf4j
 public class FallingGraveEntity extends Entity {
     private static final EntityDataAccessor<Integer> DATA_LEVEL = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> DATA_ROTATION = SynchedEntityData.defineId(FallingGraveEntity.class, EntityDataSerializers.FLOAT);
@@ -58,16 +61,13 @@ public class FallingGraveEntity extends Entity {
 
     private static final NbtKeys KEYS = NbtKeys.INSTANCE;
 
-    private static final String[] INVENTORY_KEYS = {
-            KEYS.getMainInventory(), KEYS.getArmorInventory(), KEYS.getOffhandInventory(), KEYS.getAccessories(), KEYS.getTotalExperience()
-    };
-
     private static final FallingGraveMotionConfig MOTION = FallingGraveMotionConfig.DEFAULT;
 
     private float rotationSpeed;
     private float prevRotation;
     private int lifetime = 0;
     private boolean graveHandled = false;
+    private boolean ward = false;
     private BlockPos lastSafePos = null;
     private static final TicketType<Long> FALLING_GRAVE_TICKET = TicketType.create("yagm_falling_grave", Long::compareTo);
 
@@ -185,7 +185,7 @@ public class FallingGraveEntity extends Entity {
             }
 
             if (!shouldPlace && lifetime > 1200 && canPlace()) {
-                shouldPlace = true;
+                shouldPlace = PlaceableUtils.getNearFalling(level(), blockPosition(), 1, 2, PlaceableUtils.getGraveHeight(graveLevel)) != null;
             }
 
             if (shouldPlace) {
@@ -213,15 +213,25 @@ public class FallingGraveEntity extends Entity {
 
     @Override
     public void remove(@NotNull RemovalReason reason) {
-        if (!level().isClientSide() && !graveHandled && reason == RemovalReason.KILLED) {
-            graveHandled = true;
-            handleGravePlacement();
-        }
-        if (!level().isClientSide()) {
-            if (!(level() instanceof ServerLevel serverLevel) || ticket.isEmpty()) {
-                return;
-            }
+        if (!level().isClientSide() && !graveHandled && reason.shouldDestroy()) {
+            if (!ward) {
+                ward = true;
 
+                UUID graveId;
+
+                if (graveData != null && graveData.hasUUID(KEYS.getId())) {
+                    graveId = graveData.getUUID(KEYS.getId());
+                } else {
+                    graveId = null;
+                }
+
+                log.warn("Prevented removal of falling grave {} with reason {} before placement at {} in {}",
+                        graveId, reason, blockPosition(), level().dimension().location());
+            }
+            return;
+        }
+
+        if (!level().isClientSide() && level() instanceof ServerLevel serverLevel) {
             for (Long chunkId : ticket) {
                 ChunkPos chunk = new ChunkPos(chunkId);
                 serverLevel.getChunkSource().removeRegionTicket(FALLING_GRAVE_TICKET, chunk, 2, chunkId);
@@ -249,17 +259,26 @@ public class FallingGraveEntity extends Entity {
         }
 
         BlockPos landingPos = GravePositionResolver.fallingLand(serverLevel, position(), lastSafePos, voidRecovery);
-        BlockPos gravePos = voidRecovery ? landingPos : PlaceableUtils.getGraveStoneBlockPosition(serverLevel, landingPos, PlaceableUtils.getGraveHeight(graveLevel));
-
-        if (tryPlaceGrave(serverLevel, gravePos)) return;
+        if (tryPlaceGrave(serverLevel, landingPos)) return;
 
         if (!level().isClientSide()) {
             if (!voidRecovery) {
-                BlockPos altPos = PlaceableUtils.getNear(serverLevel, landingPos, 16, PlaceableUtils.getGraveHeight(graveLevel));
+                BlockPos altPos = PlaceableUtils.getNearFalling(serverLevel, landingPos, 16, 2, PlaceableUtils.getGraveHeight(graveLevel));
                 if (altPos != null && tryPlaceGrave(serverLevel, altPos)) return;
             }
 
             if (graveData == null) return;
+
+            UUID graveId;
+
+            if (graveData.hasUUID(KEYS.getId())) {
+                graveId = graveData.getUUID(KEYS.getId());
+            } else {
+                graveId = null;
+            }
+
+            log.warn("Unable to place falling grave {} near {} in {}; dropping its contents as a fallback", graveId, landingPos, serverLevel.dimension().location());
+
             GravePlacementService.dropUnplacedGrave(serverLevel, landingPos, graveData);
         }
     }
@@ -382,12 +401,14 @@ public class FallingGraveEntity extends Entity {
 
         UUID graveId = graveData.getUUID(KEYS.getId());
         GraveDataManager manager = GraveDataManager.get(serverLevel);
+
         BlockPos existingPos = manager.getGravePos(graveId);
         if (existingPos == null) {
             return false;
         }
 
         serverLevel.getChunk(existingPos.getX() >> 4, existingPos.getZ() >> 4);
+
         return serverLevel.getBlockEntity(existingPos) instanceof GraveStoneBlockEntity blockEntity && graveId.equals(blockEntity.getGraveData().getGraveId());
     }
 
@@ -414,32 +435,18 @@ public class FallingGraveEntity extends Entity {
 
 
     private CompoundTag resolvePlacementData() {
-        if (!(level() instanceof ServerLevel serverLevel) || graveData == null || !graveData.hasUUID(KEYS.getId()) || hasInventoryPayload(graveData)) {
+        if (!(level() instanceof ServerLevel serverLevel) || graveData == null || !graveData.hasUUID(KEYS.getId()) || GravePayloadUtils.hasRecoverablePayload(graveData)) {
             return graveData;
         }
 
         UUID graveId = graveData.getUUID(KEYS.getId());
         CompoundTag managerData = GraveDataManager.get(serverLevel).getGrave(graveId);
-        if (!hasInventoryPayload(managerData)) {
+        if (!GravePayloadUtils.hasRecoverablePayload(managerData)) {
             return graveData;
         }
 
         this.graveData = managerData;
         return managerData;
-    }
-
-    private static boolean hasInventoryPayload(CompoundTag data) {
-        if (data == null || data.isEmpty()) {
-            return false;
-        }
-
-        for (String key : INVENTORY_KEYS) {
-            if (data.contains(key)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     public void stopRotation() {
@@ -448,7 +455,13 @@ public class FallingGraveEntity extends Entity {
     }
 
     public float getGraveRotation(float partialTick) {
-        return Mth.rotLerp(partialTick, prevRotation, entityData.get(DATA_ROTATION));
+        float speed = entityData.get(DATA_ROT_SPEED);
+        if (speed == 0f) {
+            return entityData.get(DATA_ROTATION);
+        }
+
+        double renderAge = tickCount + (double) partialTick;
+        return (float) ((renderAge * speed) % 360.0);
     }
 
     public GraveStoneLevels getGraveLevel() {
@@ -493,6 +506,10 @@ public class FallingGraveEntity extends Entity {
         this.lifetime = tag.getInt(KEYS.getLifetime());
         this.voidRecovery = tag.getBoolean(KEYS.getVoidRecovery());
 
+        if (tag.contains(KEYS.getLastSafePos(), Tag.TAG_LONG)) {
+            this.lastSafePos = BlockPos.of(tag.getLong(KEYS.getLastSafePos()));
+        }
+
         if (tag.contains(KEYS.getVariantId())) {
             this.variantId = ResourceLocation.tryParse(tag.getString(KEYS.getVariantId()));
             entityData.set(DATA_VARIANT, tag.getString(KEYS.getVariantId()));
@@ -521,6 +538,10 @@ public class FallingGraveEntity extends Entity {
         tag.putInt(KEYS.getLifetime(), lifetime);
         tag.putBoolean(KEYS.getVoidRecovery(), voidRecovery);
         tag.putFloat(KEYS.getRotation(), entityData.get(DATA_ROTATION));
+
+        if (lastSafePos != null) {
+            tag.putLong(KEYS.getLastSafePos(), lastSafePos.asLong());
+        }
 
         if (variantId != null) {
             tag.putString(KEYS.getVariantId(), variantId.toString());

@@ -93,7 +93,7 @@ public class GraveDataManager extends SavedData {
     @Override
     public @NotNull CompoundTag save(CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         ListTag list = new ListTag();
-        list.addAll(graves.values());
+        graves.values().forEach(grave -> list.add(grave.copy()));
 
         tag.put(KEYS.getGraves(), list);
 
@@ -112,11 +112,11 @@ public class GraveDataManager extends SavedData {
             for (int i = 0; i < list.size(); i++) {
                 CompoundTag graveTag = list.getCompound(i);
                 if (graveTag.hasUUID(KEYS.getId())) {
-                    data.graves.put(graveTag.getUUID(KEYS.getId()), graveTag);
+                    data.graves.put(graveTag.getUUID(KEYS.getId()), graveTag.copy());
                 } else if (graveTag.hasUUID(KEYS.getPlayerId())) {
                     UUID id = UUID.randomUUID();
                     graveTag.putUUID(KEYS.getId(), id);
-                    data.graves.put(id, graveTag);
+                    data.graves.put(id, graveTag.copy());
                 }
             }
         }

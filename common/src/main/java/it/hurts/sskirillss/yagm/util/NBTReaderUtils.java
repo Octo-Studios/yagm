@@ -24,23 +24,15 @@ public final class NBTReaderUtils {
     };
 
     public static NonNullList<ItemStack> getAllItemsFromNBT(HolderLookup.Provider provider, CompoundTag nbt) {
-        NonNullList<ItemStack>[] lists = InventoryUtils.createLists();
+        NonNullList<ItemStack> items = NonNullList.create();
 
-        for (int i = 0; i < INVENTORY_KEYS.length; i++) {
-            ItemUtils.readInventory(provider, nbt, INVENTORY_KEYS[i], lists[i]);
+        for (String key : INVENTORY_KEYS) {
+            items.addAll(ItemUtils.readItemList(provider, nbt, key));
         }
 
-        NonNullList<ItemStack> result = NonNullList.create();
+        items.addAll(ItemUtils.readItemList(provider, nbt, KEYS.getDroppedItems()));
 
-        for (NonNullList<ItemStack> list : lists) {
-            for (ItemStack stack : list) {
-                if (!stack.isEmpty()) result.add(stack);
-            }
-        }
-
-        result.addAll(ItemUtils.readItemList(provider, nbt, KEYS.getDroppedItems()));
-
-        return result;
+        return items;
     }
 
     public static void restoreFromNBT(ServerPlayer player, CompoundTag data, boolean restoreAccessories, BlockPos dropPos) {
@@ -61,7 +53,7 @@ public final class NBTReaderUtils {
             ContainerUtils.giveOrDropItem(player, stack.copy(), dropPos);
         }
 
-        if (restoreAccessories && AccessoryLoader.hasAnyHandler() && data.contains(KEYS.getAccessories(), 10)) {
+        if (restoreAccessories && data.contains(KEYS.getAccessories(), Tag.TAG_COMPOUND)) {
             var accessories = AccessoryLoader.loadNBT(data.getCompound(KEYS.getAccessories()), reg);
             AccessoryLoader.restoreAccessories(player, accessories, true, dropPos, player.level());
         }

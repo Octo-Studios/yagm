@@ -10,6 +10,7 @@ import it.hurts.sskirillss.yagm.init.BlockEntityRegistry;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeterySavedData;
 import it.hurts.sskirillss.yagm.util.ContainerUtils;
+import it.hurts.sskirillss.yagm.util.GravePayloadUtils;
 import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import it.hurts.sskirillss.yagm.util.VariantUtils;
 import lombok.Getter;
@@ -40,11 +41,6 @@ public class GraveStoneBlockEntity extends BlockEntity {
     private boolean silkTouchPickup = false;
     private boolean voidRecovery = false;
     private boolean cleaned = false;
-
-    private static final String[] INVENTORY_KEYS = {
-            KEYS.getMainInventory(), KEYS.getArmorInventory(), KEYS.getOffhandInventory(),
-            KEYS.getAccessories(), KEYS.getBackpacks(), KEYS.getTotalExperience(), KEYS.getDroppedItems()
-    };
 
     private static final Map<String, GraveStoneLevels> LEVEL_PATTERNS = new LinkedHashMap<>();
 
@@ -167,7 +163,7 @@ public class GraveStoneBlockEntity extends BlockEntity {
             graveData.setVariantId(null);
         }
 
-        this.inventoryData = extractInventoryData(data);
+        this.inventoryData = GravePayloadUtils.copyRecoverablePayload(data);
         setChanged();
     }
 
@@ -261,7 +257,7 @@ public class GraveStoneBlockEntity extends BlockEntity {
         graveData.save(tag, registries);
 
         if (inventoryData != null) {
-            tag.put(KEYS.getInventoryData(), inventoryData);
+            tag.put(KEYS.getInventoryData(), inventoryData.copy());
         }
         tag.putBoolean(KEYS.getVoidRecovery(), voidRecovery);
     }
@@ -274,6 +270,8 @@ public class GraveStoneBlockEntity extends BlockEntity {
             this.graveData = GraveData.load(tag, registries);
             if (tag.contains(KEYS.getInventoryData())) {
                 this.inventoryData = tag.getCompound(KEYS.getInventoryData()).copy();
+            } else {
+                this.inventoryData = new CompoundTag();
             }
             return;
         }
@@ -367,18 +365,6 @@ public class GraveStoneBlockEntity extends BlockEntity {
         }
 
         return fromPath;
-    }
-
-    private CompoundTag extractInventoryData(CompoundTag source) {
-        CompoundTag result = new CompoundTag();
-
-        for (String key : INVENTORY_KEYS) {
-            if (source.contains(key)) {
-                result.put(key, source.get(key));
-            }
-        }
-
-        return result;
     }
 
     private void removeFromGraveManager() {

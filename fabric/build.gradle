@@ -36,7 +36,8 @@ def resourceTargets = ['fabric.mod.json']
 def replaceProperties = [
 
         mod_id     : mod_id, mod_name: mod_name,
-        mod_version: mod_version, mod_authors: mod_authors
+        mod_version: mod_version, mod_authors: mod_authors,
+        architectury_version: architectury_version
 ]
 
 processResources {
