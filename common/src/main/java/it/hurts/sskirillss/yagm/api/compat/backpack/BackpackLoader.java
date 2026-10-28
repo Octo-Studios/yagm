@@ -1,7 +1,6 @@
 package it.hurts.sskirillss.yagm.api.compat.backpack;
 
 import it.hurts.sskirillss.yagm.api.compat.backpack.handlers.IBackpackHandler;
-import it.hurts.sskirillss.yagm.api.compat.backpack.handlers.IBackpackItemHandler;
 import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.BlockPos;
@@ -25,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class BackpackLoader {
 
     private static final Map<String, IBackpackHandler> handlers = new ConcurrentHashMap<>();
-    private static final Map<String, IBackpackItemHandler> itemHandlers = new ConcurrentHashMap<>();
 
     public static void registerHandler(IBackpackHandler handler) {
         if (handler == null) return;
@@ -41,39 +39,6 @@ public final class BackpackLoader {
 
     public static boolean hasHandler() {
         return !handlers.isEmpty();
-    }
-
-    public static void registerItemHandler(IBackpackItemHandler handler) {
-        if (handler == null) return;
-
-        String modName = requireModName(handler.getModName(), "backpack item handler");
-        if (handler.isModLoaded()) {
-            itemHandlers.put(modName, handler);
-            log.info("[YAGM] Registered backpack item handler: {}", modName);
-        } else {
-            log.debug("[YAGM] Skipped unavailable backpack item handler: {}", modName);
-        }
-    }
-
-    public static ItemStack copyInventoryStack(ItemStack stack) {
-        Objects.requireNonNull(stack, "stack");
-
-        if (stack.isEmpty()) {
-            return ItemStack.EMPTY;
-        }
-
-        for (IBackpackItemHandler handler : itemHandlers.values()) {
-            if (handler.supports(stack)) {
-                ItemStack copy = handler.copyForGrave(stack);
-                if (copy == null || copy.isEmpty()) {
-                    throw new IllegalStateException("Backpack item handler '" + handler.getModName() + "' returned an empty copy for a non-empty stack");
-                }
-
-                return copy;
-            }
-        }
-
-        return stack.copy();
     }
 
     public static Map<String, List<BackpackEntry>> collectBackpacks(ServerPlayer player) {

@@ -26,7 +26,7 @@ public abstract class BaseBackpackCompat implements IBackpackHandler {
 
             CompoundTag entryTag = new CompoundTag();
             entryTag.putString("SlotKey", backpack.slotKey());
-            entryTag.put("Item", BackpackLoader.copyInventoryStack(backpack.stack()).save(registryAccess));
+            entryTag.put("Item", backpack.stack().copy().save(registryAccess));
 
             if (!backpack.metadata().isEmpty()) {
                 entryTag.put("Metadata", backpack.metadata().copy());

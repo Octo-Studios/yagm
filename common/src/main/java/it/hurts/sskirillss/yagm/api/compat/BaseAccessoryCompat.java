@@ -1,6 +1,5 @@
 package it.hurts.sskirillss.yagm.api.compat;
 
-import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackLoader;
 import it.hurts.sskirillss.yagm.api.compat.provider.IAccessoryHandler;
 import net.minecraft.core.BlockPos;
 import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
@@ -35,7 +34,7 @@ public abstract class BaseAccessoryCompat implements IAccessoryHandler {
 
             CompoundTag itemTag = new CompoundTag();
             itemTag.putString("SlotKey", entry.getKey());
-            itemTag.put("Item", BackpackLoader.copyInventoryStack(entry.getValue()).save(registryAccess));
+            itemTag.put("Item", entry.getValue().copy().save(registryAccess));
             itemsList.add(itemTag);
         }
 
