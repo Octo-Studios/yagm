@@ -120,18 +120,14 @@ public class RestoreKey extends Item {
             return stack;
         }
 
-        CompoundTag lastSave = GraveSaveManager.consumeLatestRestoreSave(serverPlayer.serverLevel(), serverPlayer.getUUID());
+        ContainerUtils.restoreFullGrave(serverPlayer, restorableSave);
 
-        if (lastSave == null) {
+        CompoundTag consumedSave = GraveSaveManager.consumeLatestRestoreSave(serverPlayer.serverLevel(), serverPlayer.getUUID());
+        if (consumedSave == null) {
             return stack;
         }
 
-        if (restorableSave.hasUUID(KEYS.getId()) && lastSave.hasUUID(KEYS.getId()) && !restorableSave.getUUID(KEYS.getId()).equals(lastSave.getUUID(KEYS.getId()))) {
-            return stack;
-        }
-
-        ContainerUtils.restoreFullGrave(serverPlayer, lastSave);
-        cleanupSourceGrave(serverPlayer, lastSave);
+        cleanupSourceGrave(serverPlayer, consumedSave);
 
         serverPlayer.getCooldowns().addCooldown(this, 60);
 

@@ -9,6 +9,7 @@ import it.hurts.sskirillss.yagm.neoforge.compat.backpack.NeoForgeBackPackedCompa
 import it.hurts.sskirillss.yagm.neoforge.compat.backpack.NeoForgeTravelersBackpackCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.cosmeticarmor.CosmeticArmorCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.curios.CuriosCompat;
+import it.hurts.sskirillss.yagm.neoforge.compat.curios.CuriosDropEvents;
 import it.hurts.sskirillss.yagm.neoforge.compat.curios.slot.CurioSlotData;
 import it.hurts.sskirillss.yagm.neoforge.compat.twilight.TwilightForestNeoForgeEvents;
 import it.hurts.sskirillss.yagm.neoforge.event.NeoForgeDeathEvents;
@@ -21,6 +22,14 @@ public class NeoForgeCompatImpl {
         TwilightForestNeoForgeEvents.register();
 
         NeoForgeDeathEvents.register();
+
+        CompatRunnable.runFirst(
+                CompatRunnable.getModId("accessories", () -> AccessoryLoader.registerHandler(new AccessoriesCompat())),
+                CompatRunnable.getModId("curios", () -> {
+                    AccessoryLoader.registerHandler(new CuriosCompat());
+                    CuriosDropEvents.register();
+                })
+        );
 
         CompatRunnable.run(
                 CompatRunnable.getModId("accessories", () -> AccessoryLoader.registerHandler(new AccessoriesCompat())),

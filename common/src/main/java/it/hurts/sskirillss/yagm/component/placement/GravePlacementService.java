@@ -76,13 +76,7 @@ public final class GravePlacementService {
 
         BlockState graveState = createState(VariantUtils.getVariantId(variantId != null ? variantId.toString() : null, graveLevel), level, pos, facing);
 
-        BlockPos placedPos;
-
-        if (voidRecovery) {
-            placedPos = PlaceableUtils.placeGraveExact(level, pos, graveState) ? pos.immutable() : null;
-        } else {
-            placedPos = PlaceableUtils.placeandGetPos(level, pos, graveState);
-        }
+        BlockPos placedPos = PlaceableUtils.placeFallingGraveExact(level, pos, graveState) ? pos.immutable() : null;
 
         if (placedPos == null) {
             return GravePlacementResult.failed();

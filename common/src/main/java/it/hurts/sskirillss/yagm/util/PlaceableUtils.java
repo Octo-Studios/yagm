@@ -3,6 +3,7 @@ package it.hurts.sskirillss.yagm.util;
 import it.hurts.sskirillss.yagm.block.GraveStoneBlock;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameRules;
@@ -325,6 +326,17 @@ public class PlaceableUtils {
         return (state.isAir() || state.canBeReplaced()) && below.isSolid() && level.getFluidState(pos).isEmpty() && hasEnoughSpace(level, pos, height);
     }
 
+    static boolean isSupportedFallingPosition(Level level, BlockPos pos, int height) {
+        for (int i = 0; i < height; i++) {
+            if (!canReplaceWithGrave(level, pos.above(i))) {
+                return false;
+            }
+        }
+
+        BlockPos supportPos = pos.below();
+        return level.getBlockState(supportPos).isFaceSturdy(level, supportPos, Direction.UP);
+    }
+
     private static boolean isFluidBelow(Level level, BlockPos pos) {
         return !level.getBlockState(pos).isAir() && !level.getFluidState(pos).isEmpty();
     }
@@ -381,9 +393,16 @@ public class PlaceableUtils {
         return placeAt(level, pos, graveState);
     }
 
+    public static boolean placeFallingGraveExact(Level level, BlockPos pos, BlockState graveState) {
+        if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
+            return false;
+        }
+
+        return isSupportedFallingPosition(level, pos, getGraveHeight(graveState)) && placeAt(level, pos, graveState);
+    }
+
     private static boolean placeAt(Level level, BlockPos pos, BlockState graveState) {
-        BlockState current = level.getBlockState(pos);
-        if (!(current.isAir() || current.canBeReplaced())) {
+        if (!canReplaceWithGrave(level, pos)) {
             return false;
         }
 
@@ -393,8 +412,7 @@ public class PlaceableUtils {
                 return false;
             }
 
-            BlockState upperCurrent = level.getBlockState(upperPos);
-            if (!(upperCurrent.isAir() || upperCurrent.canBeReplaced() || upperCurrent.is(Blocks.WATER))) {
+            if (!canReplaceWithGrave(level, upperPos)) {
                 return false;
             }
 
@@ -416,6 +434,11 @@ public class PlaceableUtils {
         return level.setBlock(pos, graveState, 3);
     }
 
+    private static boolean canReplaceWithGrave(Level level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        return state.isAir() || state.canBeReplaced() || !level.getFluidState(pos).isEmpty();
+    }
+
     @Nullable
     @Deprecated
     public static BlockPos findP2P(Level level, BlockPos center, int radius) {
@@ -430,6 +453,40 @@ public class PlaceableUtils {
     @Nullable
     public static BlockPos getNear(Level level, BlockPos center, int radius, int height) {
         return valid(level, center, radius, radius, height);
+    }
+
+    @Nullable
+    public static BlockPos getNearFalling(Level level, BlockPos center, int horizontalRadius, int verticalRange, int height) {
+        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
+        BlockPos best = null;
+        int bestHorizontalDistance = Integer.MAX_VALUE;
+        int bestVerticalDistance = Integer.MAX_VALUE;
+
+        for (int dx = -horizontalRadius; dx <= horizontalRadius; dx++) {
+            for (int dz = -horizontalRadius; dz <= horizontalRadius; dz++) {
+                int horizontalDistance = dx * dx + dz * dz;
+                if (horizontalDistance > horizontalRadius * horizontalRadius || horizontalDistance > bestHorizontalDistance) {
+                    continue;
+                }
+
+                for (int dy = -verticalRange; dy <= verticalRange; dy++) {
+                    int verticalDistance = Math.abs(dy);
+                    if (horizontalDistance == bestHorizontalDistance && verticalDistance >= bestVerticalDistance) {
+                        continue;
+                    }
+
+                    mutable.set(center.getX() + dx, center.getY() + dy, center.getZ() + dz);
+
+                    if (isSupportedFallingPosition(level, mutable, height)) {
+                        best = mutable.immutable();
+                        bestHorizontalDistance = horizontalDistance;
+                        bestVerticalDistance = verticalDistance;
+                    }
+                }
+            }
+        }
+
+        return best;
     }
 
 

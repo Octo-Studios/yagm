@@ -14,6 +14,7 @@ import net.minecraft.world.level.Level;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -66,12 +67,21 @@ public final class AccessoryLoader {
             Map<String, ItemStack> accessories = entry.getValue();
 
             IAccessoryHandler handler = handlers.get(handlerName);
-            if (handler != null) {
-                CompoundTag handlerData = handler.saveToNBT(accessories, registryAccess);
-                if (handlerData != null && !handlerData.isEmpty()) {
-                    root.put(handlerName, handlerData);
-                }
+            if (handler == null) {
+                throw new IllegalStateException("No accessory handler registered for '" + handlerName + "'");
             }
+
+            boolean hasItems = accessories.values().stream().anyMatch(stack -> stack != null && !stack.isEmpty());
+            if (!hasItems) {
+                continue;
+            }
+
+            CompoundTag handlerData = Objects.requireNonNull(handler.saveToNBT(accessories, registryAccess), "handlerData");
+            if (handlerData.isEmpty()) {
+                throw new IllegalStateException("Accessory handler '" + handlerName + "' serialized a non-empty snapshot into empty NBT");
+            }
+
+            root.put(handlerName, handlerData);
         }
         return root;
     }

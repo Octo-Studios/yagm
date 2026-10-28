@@ -28,6 +28,10 @@ public final class GraveDeathService {
     private static final NbtKeys KEYS = NbtKeys.INSTANCE;
 
     public static boolean handle(ServerPlayer player, Collection<ItemEntity> drops) {
+        return handle(player, drops, null);
+    }
+
+    public static boolean handle(ServerPlayer player, Collection<ItemEntity> drops, CompoundTag inventory) {
         if (player.serverLevel().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
             return false;
         }
@@ -37,7 +41,13 @@ public final class GraveDeathService {
         }
 
         try {
-            CompoundTag graveData = InventoryUtils.savePlayerInventory(player);
+            CompoundTag graveData;
+
+            if (inventory == null) {
+                graveData = InventoryUtils.savePlayerInventory(player);
+            } else {
+                graveData = inventory.copy();
+            }
 
             ContainerUtils.saveDroppedItems(graveData, drops, player.registryAccess());
 

@@ -6,8 +6,8 @@ import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
@@ -41,20 +41,38 @@ public final class ContainerUtils {
         }
     }
 
-    public static void saveDroppedItems(CompoundTag nbt, Collection<ItemEntity> drops, HolderLookup.Provider provider) {
+    public static void saveDroppedItems(CompoundTag nbt, Collection<ItemEntity> drops, RegistryAccess provider) {
         List<ItemStack> items = new ArrayList<>();
+        List<ItemStack> storedItems = collectStoredItems(provider, nbt);
 
         for (ItemEntity drop : drops) {
             if (drop == null || drop.getItem().isEmpty()) {
                 continue;
             }
 
-            items.add(drop.getItem().copy());
+            ItemStack remainder = BackpackLoader.copyInventoryStack(drop.getItem());
+
+            for (ItemStack stored : storedItems) {
+                if (remainder.isEmpty()) {
+                    break;
+                }
+                if (stored.isEmpty() || !ItemStack.isSameItemSameComponents(remainder, stored)) {
+                    continue;
+                }
+
+                int matched = Math.min(remainder.getCount(), stored.getCount());
+
+                remainder.shrink(matched);
+                stored.shrink(matched);
+            }
+
+            if (!remainder.isEmpty()) {
+                items.add(remainder);
+            }
         }
 
         ItemUtils.saveItemList(provider, nbt, KEYS.getDroppedItems(), items);
     }
-
 
     public static void giveOrDropItem(ServerPlayer player, ItemStack stack, BlockPos dropPos) {
         if (!stack.isEmpty() && !player.getInventory().add(stack)) {
@@ -89,7 +107,7 @@ public final class ContainerUtils {
             }
         }
 
-        if (AccessoryLoader.hasAnyHandler() && data.contains(KEYS.getAccessories(), Tag.TAG_COMPOUND)) {
+        if (data.contains(KEYS.getAccessories(), Tag.TAG_COMPOUND)) {
             AccessoryLoader.loadNBT(data.getCompound(KEYS.getAccessories()), level.registryAccess()).values()
                     .forEach(slots -> slots.values().forEach(item -> {
                         if (!item.isEmpty()) {
@@ -108,5 +126,28 @@ public final class ContainerUtils {
                 ExperienceOrb.award(serverLevel, new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5), (int) Math.min(Integer.MAX_VALUE, xp));
             }
         }
+    }
+
+    private static List<ItemStack> collectStoredItems(RegistryAccess registry, CompoundTag data) {
+        List<ItemStack> items = new ArrayList<>(NBTReaderUtils.getAllItemsFromNBT(registry, data));
+
+        if (data.contains(KEYS.getAccessories(), Tag.TAG_COMPOUND)) {
+            AccessoryLoader.loadNBT(data.getCompound(KEYS.getAccessories()), registry).values()
+                    .forEach(slots -> slots.values().stream()
+                            .filter(stack -> !stack.isEmpty())
+                            .map(ItemStack::copy)
+                            .forEach(items::add));
+        }
+
+        if (data.contains(KEYS.getBackpacks(), Tag.TAG_COMPOUND)) {
+            BackpackLoader.loadNBT(data.getCompound(KEYS.getBackpacks()), registry).values()
+                    .forEach(backpacks -> backpacks.stream()
+                            .map(backpack -> backpack.stack())
+                            .filter(stack -> !stack.isEmpty())
+                            .map(ItemStack::copy)
+                            .forEach(items::add));
+        }
+
+        return items;
     }
 }
