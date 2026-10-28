@@ -50,7 +50,7 @@ public final class ContainerUtils {
                 continue;
             }
 
-            ItemStack remainder = BackpackLoader.copyInventoryStack(drop.getItem());
+            ItemStack remainder = drop.getItem().copy();
 
             for (ItemStack stored : storedItems) {
                 if (remainder.isEmpty()) {

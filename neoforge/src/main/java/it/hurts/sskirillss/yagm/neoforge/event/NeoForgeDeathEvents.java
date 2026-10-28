@@ -4,6 +4,7 @@ import it.hurts.sskirillss.yagm.api.compat.twilight.TwilightForestCompat;
 import it.hurts.sskirillss.yagm.event.GraveStoneEvent;
 import it.hurts.sskirillss.yagm.event.death.tracker.GraveDeathTracker;
 import it.hurts.sskirillss.yagm.util.InventoryUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -21,6 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public final class NeoForgeDeathEvents {
 
     private static final Map<UUID, DInventory> SFD = new ConcurrentHashMap<>();
@@ -47,7 +49,11 @@ public final class NeoForgeDeathEvents {
             return;
         }
 
-        SFD.put(player.getUUID(), new DInventory(player.serverLevel().getGameTime(), InventoryUtils.savePlayerInventory(player)));
+        try {
+            SFD.put(player.getUUID(), new DInventory(player.serverLevel().getGameTime(), InventoryUtils.savePlayerInventory(player)));
+        } catch (Exception exception) {
+            log.error("Failed to snapshot inventory on death for {}", player.getGameProfile().getName(), exception);
+        }
     }
 
     private static void onLivingDrops(LivingDropsEvent event) {

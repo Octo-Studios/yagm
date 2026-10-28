@@ -23,17 +23,12 @@ public class NeoForgeCompatImpl {
 
         NeoForgeDeathEvents.register();
 
-        CompatRunnable.runFirst(
+        CompatRunnable.run(
                 CompatRunnable.getModId("accessories", () -> AccessoryLoader.registerHandler(new AccessoriesCompat())),
                 CompatRunnable.getModId("curios", () -> {
                     AccessoryLoader.registerHandler(new CuriosCompat());
                     CuriosDropEvents.register();
-                })
-        );
-
-        CompatRunnable.run(
-                CompatRunnable.getModId("accessories", () -> AccessoryLoader.registerHandler(new AccessoriesCompat())),
-                CompatRunnable.getModId("curios", () -> AccessoryLoader.registerHandler(new CuriosCompat())),
+                }),
                 CompatRunnable.getModId("cosmeticarmorreworked", () -> AccessoryLoader.registerHandler(new CosmeticArmorCompat())),
                 CompatRunnable.getModId("backpacked", () -> BackpackLoader.registerHandler(new NeoForgeBackPackedCompat())),
                 CompatRunnable.getModId("travelersbackpack", () -> BackpackLoader.registerHandler(new NeoForgeTravelersBackpackCompat()))
