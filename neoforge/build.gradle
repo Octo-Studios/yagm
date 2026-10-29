@@ -52,17 +52,20 @@ dependencies {
     compileOnly "curse.maven:cosmetic-armor-reworked-237307:${rootProject.cosmetic_armor_reworked_file_id}"
 }
 
-def resourceTargets = ['META-INF/mods.toml', 'pack.mcmeta']
+def resourceTargets = ['META-INF/neoforge.mods.toml', 'pack.mcmeta']
 def replaceProperties = [
         mod_id     : mod_id, mod_name: mod_name,
-        mod_version: mod_version, mod_authors: mod_authors
+        mod_version: mod_version, mod_authors: mod_authors,
+        architectury_version: architectury_version,
+        minecraft_version: minecraft_version,
+        mod_description: mod_description
 ]
 
 processResources {
-    inputs.property 'version', project.version
+    inputs.properties replaceProperties
 
-    filesMatching('META-INF/neoforge.mods.toml') {
-        expand version: project.version
+    filesMatching(resourceTargets) {
+        expand replaceProperties
     }
 }
 

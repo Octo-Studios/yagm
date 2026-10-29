@@ -1,45 +1,46 @@
 modLoader = "javafml"
 loaderVersion = "[4,)"
-license = "MIT"
+license = "All Rights Reserved"
 issueTrackerURL = "https://github.com/Octo-Studios/yagm/issues"
 
 
 [[mods]]
-modId = "yagm"
-version = "0.1"
-displayName = "Yet Another Gravestone Mod"
-authors = "SSKirillSS"
-logoFile = "logo.png"
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+authors = "${mod_authors}"
+displayURL = "https://www.curseforge.com/minecraft/mc-mods/yagm"
+description = "${mod_description}"
 
-[[dependencies.yagm]]
+[[dependencies.${mod_id}]]
 modId = "neoforge"
 type = "required"
 versionRange = "[21.0,)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.yagm]]
+[[dependencies.${mod_id}]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.21,)"
+versionRange = "[${minecraft_version}]"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.yagm]]
+[[dependencies.${mod_id}]]
 modId = "architectury"
 type = "required"
-versionRange = "[13.0.8,)"
+versionRange = "[${architectury_version},)"
 ordering = "AFTER"
 side = "BOTH"
 
-[[dependencies.yagm]]
+[[dependencies.${mod_id}]]
 modId = "curios"
 type = "optional"
 versionRange = "[9.5,)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.yagm]]
+[[dependencies.${mod_id}]]
 modId = "accessories"
 type = "optional"
 versionRange = "[1.0.0,)"
