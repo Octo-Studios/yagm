@@ -48,7 +48,6 @@ public class EventRegistry {
         });
 
         TickEvent.SERVER_POST.register(GhostSpawnHandler::tick);
-        TickEvent.SERVER_POST.register(GraveStoneEvent::trackLastSafePositions);
 
         EntityEvent.LIVING_DEATH.register((entity, source) -> {
             if (entity instanceof ServerPlayer player) {

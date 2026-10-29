@@ -19,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -68,7 +67,6 @@ public class FallingGraveEntity extends Entity {
     private int lifetime = 0;
     private boolean graveHandled = false;
     private boolean ward = false;
-    private BlockPos lastSafePos = null;
     private static final TicketType<Long> FALLING_GRAVE_TICKET = TicketType.create("yagm_falling_grave", Long::compareTo);
 
     private final Set<Long> ticket = new HashSet<>();
@@ -92,9 +90,6 @@ public class FallingGraveEntity extends Entity {
         entity.ownerName = ownerName;
         entity.voidRecovery = voidRecovery;
         entity.facing = facing;
-        if (voidRecovery) {
-            entity.lastSafePos = BlockPos.containing(position);
-        }
         entity.rotationSpeed = MOTION.randomRotSpeed(level.random);
 
         BlockPos blockPos = BlockPos.containing(position);
@@ -153,10 +148,6 @@ public class FallingGraveEntity extends Entity {
                 graveHandled = true;
                 discard();
                 return;
-            }
-
-            if (!voidRecovery && getY() > level().getMinBuildHeight() + 8) {
-                lastSafePos = blockPosition();
             }
 
             if (this.getY() < level().getMinBuildHeight() + 2) {
@@ -258,7 +249,7 @@ public class FallingGraveEntity extends Entity {
             return;
         }
 
-        BlockPos landingPos = GravePositionResolver.fallingLand(serverLevel, position(), lastSafePos, voidRecovery);
+        BlockPos landingPos = GravePositionResolver.fallingLand(serverLevel, position(), voidRecovery);
         if (tryPlaceGrave(serverLevel, landingPos)) return;
 
         if (!level().isClientSide()) {
@@ -268,6 +259,8 @@ public class FallingGraveEntity extends Entity {
             }
 
             if (graveData == null) return;
+
+            if (tryPlaceGrave(serverLevel, landingPos, true)) return;
 
             UUID graveId;
 
@@ -284,12 +277,18 @@ public class FallingGraveEntity extends Entity {
     }
 
     private boolean tryPlaceGrave(ServerLevel level, BlockPos pos) {
+        return tryPlaceGrave(level, pos, false);
+    }
+
+    private boolean tryPlaceGrave(ServerLevel level, BlockPos pos, boolean withSupport) {
         CompoundTag dataToLoad = resolvePlacementData();
         if (dataToLoad == null) {
             return false;
         }
 
-        GravePlacementResult result = GravePlacementService.placeFalling(level, pos, dataToLoad, graveLevel, ownerUUID, ownerName, facing, variantId, voidRecovery);
+        GravePlacementResult result = withSupport
+                ? GravePlacementService.placeFallingWithSupport(level, pos, dataToLoad, graveLevel, ownerUUID, ownerName, facing, variantId, voidRecovery)
+                : GravePlacementService.placeFalling(level, pos, dataToLoad, graveLevel, ownerUUID, ownerName, facing, variantId, voidRecovery);
         if (!result.placed()) {
             return false;
         }
@@ -506,10 +505,6 @@ public class FallingGraveEntity extends Entity {
         this.lifetime = tag.getInt(KEYS.getLifetime());
         this.voidRecovery = tag.getBoolean(KEYS.getVoidRecovery());
 
-        if (tag.contains(KEYS.getLastSafePos(), Tag.TAG_LONG)) {
-            this.lastSafePos = BlockPos.of(tag.getLong(KEYS.getLastSafePos()));
-        }
-
         if (tag.contains(KEYS.getVariantId())) {
             this.variantId = ResourceLocation.tryParse(tag.getString(KEYS.getVariantId()));
             entityData.set(DATA_VARIANT, tag.getString(KEYS.getVariantId()));
@@ -538,10 +533,6 @@ public class FallingGraveEntity extends Entity {
         tag.putInt(KEYS.getLifetime(), lifetime);
         tag.putBoolean(KEYS.getVoidRecovery(), voidRecovery);
         tag.putFloat(KEYS.getRotation(), entityData.get(DATA_ROTATION));
-
-        if (lastSafePos != null) {
-            tag.putLong(KEYS.getLastSafePos(), lastSafePos.asLong());
-        }
 
         if (variantId != null) {
             tag.putString(KEYS.getVariantId(), variantId.toString());

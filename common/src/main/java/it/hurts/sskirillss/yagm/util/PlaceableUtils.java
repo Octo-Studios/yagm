@@ -5,7 +5,6 @@ import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -15,7 +14,6 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.Fluids;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
 import java.util.UUID;
 
 import static net.minecraft.world.level.Level.NETHER;
@@ -25,25 +23,6 @@ public class PlaceableUtils {
 
     public static final UUID NULL_UUID = new UUID(0, 0);
     private static final int SEARCH_RADIUS = 16;
-
-    public static BlockPos getVoidRecovery(ServerLevel level, ServerPlayer player, @Nullable BlockPos trackedPos, GraveStoneLevels graveLevel) {
-        int height = getGraveHeight(graveLevel);
-
-        BlockPos origin = Objects.requireNonNullElseGet(trackedPos, player::blockPosition);
-        BlockPos can = getGraveStoneBlockPosition(level, origin, height);
-
-        if (isValidGravePosition(level, can, height)) {
-            return can;
-        }
-
-        BlockPos columnPos = getColumn(level, origin, height);
-        if (columnPos != null) {
-            return columnPos;
-        }
-
-        return top(level, origin);
-    }
-
 
     public static BlockPos getBedrockPlacement(ServerLevel level, BlockPos origin, int height) {
         BlockPos can = getColumn(level, origin, height);
@@ -198,10 +177,6 @@ public class PlaceableUtils {
         }
 
         return bestGrass != null ? bestGrass : bestSurface;
-    }
-
-    public static boolean isSafeStand(Level level, BlockPos pos) {
-        return isValidGravePosition(level, pos);
     }
 
     public static BlockPos getGraveStoneBlockPosition(Level level, BlockPos pos) {
@@ -399,6 +374,61 @@ public class PlaceableUtils {
         }
 
         return isSupportedFallingPosition(level, pos, getGraveHeight(graveState)) && placeAt(level, pos, graveState);
+    }
+
+    @Nullable
+    public static BlockPos placeGraveWithSupport(ServerLevel level, BlockPos center, BlockState graveState, int radius) {
+        if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
+            return null;
+        }
+
+        var height = getGraveHeight(graveState);
+        var y = Math.max(level.getMinBuildHeight() + 1, Math.min(center.getY(), level.getMaxBuildHeight() - height));
+
+        for (var distance = 0; distance <= radius; distance++) {
+            for (var dx = -distance; dx <= distance; dx++) {
+                for (var dz = -distance; dz <= distance; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != distance) {
+                        continue;
+                    }
+
+                    var pos = new BlockPos(center.getX() + dx, y, center.getZ() + dz);
+                    var supportPos = pos.below();
+                    var supported = level.getBlockState(supportPos).isFaceSturdy(level, supportPos, Direction.UP);
+
+                    if (!supported && !canReplaceWithGrave(level, supportPos)) {
+                        continue;
+                    }
+
+                    var free = true;
+
+                    for (var i = 0; i < height; i++) {
+                        if (!canReplaceWithGrave(level, pos.above(i))) {
+                            free = false;
+                            break;
+                        }
+                    }
+
+                    if (!free) {
+                        continue;
+                    }
+
+                    if (!supported) {
+                        level.setBlock(supportPos, getBlockForLevel(level), 3);
+                    }
+
+                    if (placeAt(level, pos, graveState)) {
+                        return pos;
+                    }
+
+                    if (!supported) {
+                        level.removeBlock(supportPos, false);
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     private static boolean placeAt(Level level, BlockPos pos, BlockState graveState) {

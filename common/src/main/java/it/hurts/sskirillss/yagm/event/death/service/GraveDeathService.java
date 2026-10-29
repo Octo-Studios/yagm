@@ -100,7 +100,7 @@ public final class GraveDeathService {
 
         GraveStoneLevels graveLevel = GraveLevelUtils.calculateGraveLevel(player);
 
-        GravePlacementPlan placement = GravePositionResolver.resolveDeath(player, graveLevel, GraveDeathTracker.trackedSpawnPos(level, player), GraveDeathTracker.trackedPlacementPos(level, player));
+        GravePlacementPlan placement = GravePositionResolver.resolveDeath(player, graveLevel);
 
         boolean placed = Placer.place(level, player, graveData, graveLevel, placement);
 

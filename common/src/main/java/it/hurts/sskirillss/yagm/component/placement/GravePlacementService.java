@@ -25,7 +25,7 @@ import java.util.UUID;
 
 public final class GravePlacementService {
     private static final NbtKeys KEYS = NbtKeys.INSTANCE;
-
+    private static final int SUPPORT_SEARCH_RADIUS = 16;
 
     public static boolean placeImmediate(ServerLevel level, BlockPos pos, CompoundTag graveData, GraveStoneLevels graveLevel, UUID ownerUUID, String ownerName, Direction facing, boolean strictPlacement, boolean recovery) {
         ResourceLocation variantId = getVariantId(level, pos, graveData);
@@ -44,12 +44,7 @@ public final class GravePlacementService {
             placedPos = PlaceableUtils.placeandGetPos(level, pos, graveState);
         }
 
-        if (placedPos == null) {
-            if (strictPlacement) {
-                dropUnplacedGrave(level, pos, graveData);
-                return false;
-            }
-
+        if (placedPos == null && !strictPlacement) {
             BlockPos supportTopPos = new BlockPos(pos.getX(), level.getMinBuildHeight() + 1, pos.getZ());
 
             if (!supportTopPos.equals( pos) && PlaceableUtils.placeGraveExact(level, supportTopPos, graveState)) {
@@ -57,11 +52,15 @@ public final class GravePlacementService {
             } else if (!supportTopPos.equals(pos)) {
                 placedPos = PlaceableUtils.placeandGetPos(level, supportTopPos, graveState);
             }
+        }
 
-            if (placedPos == null) {
-                dropUnplacedGrave(level, pos, graveData);
-                return false;
-            }
+        if (placedPos == null) {
+            placedPos = PlaceableUtils.placeGraveWithSupport(level, pos, graveState, SUPPORT_SEARCH_RADIUS);
+        }
+
+        if (placedPos == null) {
+            dropUnplacedGrave(level, pos, graveData);
+            return false;
         }
 
         finishPlacement(level, placedPos, graveData, graveLevel, ownerUUID, ownerName, variantId, recovery, false);
@@ -77,6 +76,20 @@ public final class GravePlacementService {
         BlockState graveState = createState(VariantUtils.getVariantId(variantId != null ? variantId.toString() : null, graveLevel), level, pos, facing);
 
         BlockPos placedPos = PlaceableUtils.placeFallingGraveExact(level, pos, graveState) ? pos.immutable() : null;
+
+        if (placedPos == null) {
+            return GravePlacementResult.failed();
+        }
+
+        finishPlacement(level, placedPos, graveData, graveLevel, ownerUUID, ownerName, variantId, voidRecovery, true);
+
+        return GravePlacementResult.placed(placedPos, graveState);
+    }
+
+    public static GravePlacementResult placeFallingWithSupport(ServerLevel level, BlockPos pos, CompoundTag graveData, GraveStoneLevels graveLevel, UUID ownerUUID, String ownerName, Direction facing, @Nullable ResourceLocation variantId, boolean voidRecovery) {
+        var graveState = createState(VariantUtils.getVariantId(variantId != null ? variantId.toString() : null, graveLevel), level, pos, facing);
+
+        var placedPos = PlaceableUtils.placeGraveWithSupport(level, pos, graveState, SUPPORT_SEARCH_RADIUS);
 
         if (placedPos == null) {
             return GravePlacementResult.failed();

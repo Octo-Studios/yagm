@@ -9,11 +9,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
 
 public final class GravePositionResolver {
 
-    public static GravePlacementPlan resolveDeath(ServerPlayer player, GraveStoneLevels graveLevel, @Nullable Vec3 trackedSpawnPos, @Nullable BlockPos trackedPlacementPos) {
+    public static GravePlacementPlan resolveDeath(ServerPlayer player, GraveStoneLevels graveLevel) {
         ServerLevel level = player.serverLevel();
         DeathPlacementMode mode = setDeathMode(player);
 
@@ -25,11 +24,11 @@ public final class GravePositionResolver {
 
         boolean recovery = isVoidRecovery(player);
 
-        Vec3 spawnPos = recovery && trackedSpawnPos != null ? trackedSpawnPos : player.position().add(0, 0.5, 0);
+        Vec3 spawnPos = player.position().add(0, 0.5, 0);
         Vec3 velocity = recovery ? Vec3.ZERO : FallingGraveMotionConfig.DEFAULT.randomLaunchVelocity(level.random);
 
         if (mode == DeathPlacementMode.FALLING) {
-            return new GravePlacementPlan(reason, mode, spawnPos, velocity, trackedPlacementPos, true, recovery);
+            return new GravePlacementPlan(reason, mode, spawnPos, velocity, null, true, recovery);
         }
 
         boolean strictPlacement = level.dimension() != Level.END;
@@ -43,7 +42,7 @@ public final class GravePositionResolver {
                 immediatePos = PlaceableUtils.getUnderBedrockPlacement(level, player.blockPosition(), graveLevel);
             }
         } else {
-            immediatePos = PlaceableUtils.getVoidRecovery(level, player, trackedPlacementPos, graveLevel);
+            immediatePos = PlaceableUtils.top(level, player.blockPosition());
         }
 
         setImmediate(level, immediatePos);
@@ -51,24 +50,13 @@ public final class GravePositionResolver {
         return new GravePlacementPlan(reason, mode, spawnPos, velocity, immediatePos, strictPlacement, true);
     }
 
-    public static boolean canTrackSafeStand(ServerPlayer player) {
-        if (!player.isAlive() || player.isSpectator()) {
-            return false;
-        }
-
-        Level level = player.level();
-        BlockPos pos = player.blockPosition();
-
-        return pos.getY() > level.getMinBuildHeight() + 2 && PlaceableUtils.isSafeStand(level, pos);
-    }
-
     public static boolean isVoidRecovery(ServerPlayer player) {
         return player.level().dimension() == Level.END && isVoidDeath(player.level(), player.blockPosition());
     }
 
-    public static BlockPos fallingLand(ServerLevel level, Vec3 position, @Nullable BlockPos lastSafePos, boolean voidRecovery) {
+    public static BlockPos fallingLand(ServerLevel level, Vec3 position, boolean voidRecovery) {
         if (voidRecovery) {
-            BlockPos base = lastSafePos != null ? lastSafePos : BlockPos.containing(position);
+            BlockPos base = BlockPos.containing(position);
 
             BlockPos supportPos = PlaceableUtils.top(level, base).below();
 
@@ -78,10 +66,6 @@ public final class GravePositionResolver {
         }
 
         BlockPos blockPos = BlockPos.containing(position);
-
-        if (blockPos.getY() <= level.getMinBuildHeight() + 4 && lastSafePos != null) {
-            blockPos = lastSafePos;
-        }
 
         if (blockPos.getY() <= level.getMinBuildHeight() + 2) {
             return new BlockPos(blockPos.getX(), level.getMinBuildHeight() + 1, blockPos.getZ());
@@ -132,7 +116,7 @@ public final class GravePositionResolver {
         int startY = Math.min(origin.getY(), level.getMaxBuildHeight() - 1);
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos(origin.getX(), startY, origin.getZ());
 
-        for (int y = startY; y >= minY; y--) {
+        for (int y = startY; y > minY + 2; y--) {
             cursor.setY(y);
             if (!level.getBlockState(cursor).isAir() || !level.getFluidState(cursor).isEmpty()) {
                 return false;
