@@ -16,6 +16,7 @@ import it.hurts.sskirillss.yagm.util.VariantUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -29,6 +30,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.*;
@@ -50,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, EntityBlock {
 
@@ -131,6 +134,14 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
             return InteractionResult.PASS;
         }
 
+        if (!be.canBeAccessedBy(player)) {
+            if (!level.isClientSide()) {
+                player.displayClientMessage(Component.translatable("message.yagm.grave_protected"), true);
+            }
+
+            return InteractionResult.FAIL;
+        }
+
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             be.giveInventoryToPlayer(serverPlayer);
             level.destroyBlock(gravePos, !serverPlayer.isCreative(), serverPlayer);
@@ -167,6 +178,28 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
     }
 
     @Override
+    protected void onExplosionHit(BlockState state, Level level, BlockPos pos, Explosion explosion, BiConsumer<ItemStack, BlockPos> dropConsumer) {
+        var gravePos = shape.isDouble() && state.getValue(HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
+
+        if (getBlockEntity(level, gravePos) instanceof GraveStoneBlockEntity be && !be.isDecorative()) {
+            return;
+        }
+
+        super.onExplosionHit(state, level, pos, explosion, dropConsumer);
+    }
+
+    @Override
+    public float getDestroyProgress(BlockState state, Player player, BlockGetter level, BlockPos pos) {
+        var gravePos = shape.isDouble() && state.getValue(HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
+
+        if (level.getBlockEntity(gravePos) instanceof GraveStoneBlockEntity be && !be.canBeAccessedBy(player)) {
+            return 0.0F;
+        }
+
+        return super.getDestroyProgress(state, player, level, pos);
+    }
+
+    @Override
     public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity te, ItemStack stack) {
         if (shape.isDouble() && state.getValue(HALF) == DoubleBlockHalf.UPPER) {
             Block.popResource(level, pos, new ItemStack(this));
@@ -183,7 +216,11 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
             GraveStoneBlockEntity grave = getBlockEntity(level, gravePos);
 
             if (grave != null && player instanceof ServerPlayer serverPlayer) {
-                grave.giveInventoryToPlayer(serverPlayer);
+                if (grave.canBeAccessedBy(serverPlayer)) {
+                    grave.giveInventoryToPlayer(serverPlayer);
+                } else {
+                    grave.setSuppressDropsOnRemove(true);
+                }
             }
         }
         super.playerWillDestroy(level, pos, state, player);

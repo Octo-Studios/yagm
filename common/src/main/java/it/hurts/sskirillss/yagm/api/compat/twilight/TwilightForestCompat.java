@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.api.compat.twilight;
 
 import dev.architectury.platform.Platform;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import lombok.Getter;
 
 public final class TwilightForestCompat {
@@ -11,6 +12,6 @@ public final class TwilightForestCompat {
     public static void init() {}
 
     public static void setdeathHandler() {
-        POST_DEATH = Platform.isModLoaded("twilightforest");
+        POST_DEATH = Platform.isModLoaded("twilightforest") && ConfigRegistry.isCompatEnabled("twilightforest");
     }
 }

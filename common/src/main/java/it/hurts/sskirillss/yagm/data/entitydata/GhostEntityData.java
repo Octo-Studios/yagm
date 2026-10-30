@@ -33,8 +33,6 @@ public class GhostEntityData {
     public static final double CEMETERY_AGGRO_RADIUS = 16.0;
     public static final double ATTACK_TICKS_INTERVAL = 20;
 
-    public static final int SPAWN_COOLDOWN_TICKS = 1200;
-    public static final int MAX_GHOSTS_PER_CEMETERY = 5;
     public static final int CHECK_INTERVAL = 100;
     public static final double GHOST_COUNT_SEARCH_RADIUS = 64.0;
 

@@ -3,6 +3,7 @@ package it.hurts.sskirillss.yagm.network.handler;
 import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.data.entitydata.GhostEntityData;
 import it.hurts.sskirillss.yagm.entity.GhostEntity;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeteryInfo;
@@ -39,7 +40,9 @@ public class GhostSpawnHandler {
             });
         }
 
-        if (tickCounter % GhostEntityData.CHECK_INTERVAL != 0) {
+        var checkInterval = Math.clamp(ConfigRegistry.CONFIG.getGhostSpawnCooldownSeconds() * 4, 1, GhostEntityData.CHECK_INTERVAL);
+
+        if (tickCounter % checkInterval != 0 || !ConfigRegistry.CONFIG.isGhostSpawnEnabled()) {
             return;
         }
 
@@ -71,7 +74,7 @@ public class GhostSpawnHandler {
 
         int existingGhosts = level.getEntitiesOfClass(GhostEntity.class, searchBox, ghost -> !ghost.isTame()).size();
 
-        if (existingGhosts >= GhostEntityData.MAX_GHOSTS_PER_CEMETERY) {
+        if (existingGhosts >= ConfigRegistry.CONFIG.getMaxGhostsPerCemetery()) {
             return;
         }
 
@@ -106,7 +109,7 @@ public class GhostSpawnHandler {
         ghost.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos), MobSpawnType.EVENT, null);
 
         level.addFreshEntity(ghost);
-        cooldowns.put(key, GhostEntityData.SPAWN_COOLDOWN_TICKS);
+        cooldowns.put(key, ConfigRegistry.CONFIG.getGhostSpawnCooldownSeconds() * 20);
     }
 
     public static void reset() {

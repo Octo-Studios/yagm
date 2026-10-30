@@ -2,6 +2,7 @@ package it.hurts.sskirillss.yagm.util;
 
 import it.hurts.sskirillss.yagm.block.GraveStoneBlock;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -22,7 +23,6 @@ import static net.minecraft.world.level.Level.NETHER;
 public class PlaceableUtils {
 
     public static final UUID NULL_UUID = new UUID(0, 0);
-    private static final int SEARCH_RADIUS = 16;
 
     public static BlockPos getBedrockPlacement(ServerLevel level, BlockPos origin, int height) {
         BlockPos can = getColumn(level, origin, height);
@@ -33,9 +33,9 @@ public class PlaceableUtils {
     public static BlockPos getUnderBedrockPlacement(ServerLevel level, BlockPos origin, GraveStoneLevels graveLevel) {
         int height = getGraveHeight(graveLevel);
 
-        BlockPos openBedrock = findNearestOpenBedrock(level, origin, height, SEARCH_RADIUS);
+        BlockPos openBedrock = findNearestOpenBedrock(level, origin, height, ConfigRegistry.CONFIG.getSupportSearchRadius());
 
-        if (openBedrock != null && level.setBlock(openBedrock, getBlockForLevel(level), 3)) {
+        if (openBedrock != null && ConfigRegistry.CONFIG.isCreateSupportBlock() && level.setBlock(openBedrock, getBlockForLevel(level), 3)) {
             BlockPos gravePos = openBedrock.above();
             if (isValidGravePosition(level, gravePos, height)) {
                 return gravePos;
@@ -43,12 +43,12 @@ public class PlaceableUtils {
         }
 
         if (level.dimension() == NETHER) {
-            BlockPos netherPos = findLowestNetherPosition(level, origin, height, SEARCH_RADIUS);
+            BlockPos netherPos = findLowestNetherPosition(level, origin, height, ConfigRegistry.CONFIG.getSupportSearchRadius());
 
             return netherPos != null ? netherPos : top(level, origin);
         }
 
-        BlockPos surfacePos = findVisibleSurface(level, origin, height, SEARCH_RADIUS);
+        BlockPos surfacePos = findVisibleSurface(level, origin, height, ConfigRegistry.CONFIG.getSupportSearchRadius());
 
         return surfacePos != null ? surfacePos : getBedrockPlacement(level, origin, height);
     }
@@ -301,7 +301,7 @@ public class PlaceableUtils {
         return (state.isAir() || state.canBeReplaced()) && below.isSolid() && level.getFluidState(pos).isEmpty() && hasEnoughSpace(level, pos, height);
     }
 
-    static boolean isSupportedFallingPosition(Level level, BlockPos pos, int height) {
+    public static boolean isSupportedFallingPosition(Level level, BlockPos pos, int height) {
         for (int i = 0; i < height; i++) {
             if (!canReplaceWithGrave(level, pos.above(i))) {
                 return false;
@@ -376,6 +376,19 @@ public class PlaceableUtils {
         return isSupportedFallingPosition(level, pos, getGraveHeight(graveState)) && placeAt(level, pos, graveState);
     }
 
+    public static BlockPos groundBelow(Level level, BlockPos origin, int height) {
+        for (var y = Math.min(origin.getY(), level.getMaxBuildHeight() - height); y > level.getMinBuildHeight(); y--) {
+            var pos = new BlockPos(origin.getX(), y, origin.getZ());
+            var supportPos = pos.below();
+
+            if (level.getBlockState(supportPos).isFaceSturdy(level, supportPos, Direction.UP) && isValidGravePosition(level, pos, height)) {
+                return pos;
+            }
+        }
+
+        return origin;
+    }
+
     @Nullable
     public static BlockPos placeGraveWithSupport(ServerLevel level, BlockPos center, BlockState graveState, int radius) {
         if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
@@ -396,7 +409,7 @@ public class PlaceableUtils {
                     var supportPos = pos.below();
                     var supported = level.getBlockState(supportPos).isFaceSturdy(level, supportPos, Direction.UP);
 
-                    if (!supported && !canReplaceWithGrave(level, supportPos)) {
+                    if (!supported && (!ConfigRegistry.CONFIG.isCreateSupportBlock() || !canReplaceWithGrave(level, supportPos))) {
                         continue;
                     }
 

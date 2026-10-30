@@ -18,6 +18,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 
 import java.util.Collection;
@@ -84,7 +85,14 @@ public final class GraveDeathService {
     private static void clearRecoveredData(ServerPlayer player) {
         AccessoryLoader.clearAccessories(player);
         BackpackLoader.clearBackpacks(player);
-        player.getInventory().clearContent();
+
+        var inventory = player.getInventory();
+
+        for (var slot = 0; slot < inventory.getContainerSize(); slot++) {
+            if (!BlacklistUtils.isBlacklisted(inventory.getItem(slot))) {
+                inventory.setItem(slot, ItemStack.EMPTY);
+            }
+        }
         TierUtils.clearExperience(player);
     }
 

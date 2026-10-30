@@ -4,6 +4,7 @@ import dev.architectury.networking.NetworkManager;
 import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveSaveManager;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.network.packet.RestoreKeyActivationPacket;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.util.ContainerUtils;
@@ -45,7 +46,7 @@ public class RestoreKey extends Item {
             return;
         }
 
-        boolean available = getLastRestorableSave(serverPlayer) != null && !serverPlayer.getCooldowns().isOnCooldown(this);
+        boolean available = ConfigRegistry.CONFIG.isRestoreKeyEnabled() && getLastRestorableSave(serverPlayer) != null && !serverPlayer.getCooldowns().isOnCooldown(this);
         boolean current = isRestoreReady(stack);
 
         if (current == available) {
@@ -70,7 +71,7 @@ public class RestoreKey extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand usedHand) {
         ItemStack itemStack = player.getItemInHand(usedHand);
 
-        if (player.getCooldowns().isOnCooldown(this)) {
+        if (!ConfigRegistry.CONFIG.isRestoreKeyEnabled() || player.getCooldowns().isOnCooldown(this)) {
             return InteractionResultHolder.fail(itemStack);
         }
 
@@ -111,7 +112,7 @@ public class RestoreKey extends Item {
             return stack;
         }
 
-        if (!(entity instanceof ServerPlayer serverPlayer)) {
+        if (!ConfigRegistry.CONFIG.isRestoreKeyEnabled() || !(entity instanceof ServerPlayer serverPlayer)) {
             return stack;
         }
 

@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.api.compat;
 
 import it.hurts.sskirillss.yagm.api.compat.provider.IAccessoryHandler;
+import it.hurts.sskirillss.yagm.util.BlacklistUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.RegistryAccess;
@@ -42,7 +43,8 @@ public final class AccessoryLoader {
         Map<String, Map<String, ItemStack>> allAccessories = new HashMap<>();
 
         for (IAccessoryHandler handler : handlers.values()) {
-            Map<String, ItemStack> accessories = handler.collectAccessories(player);
+            Map<String, ItemStack> accessories = new HashMap<>(handler.collectAccessories(player));
+            accessories.values().removeIf(BlacklistUtils::isBlacklisted);
             if (!accessories.isEmpty()) {
                 allAccessories.put(handler.getModName(), accessories);
             }
@@ -53,8 +55,26 @@ public final class AccessoryLoader {
 
 
     public static void clearAccessories(ServerPlayer player) {
+        Map<String, Map<String, ItemStack>> kept = new HashMap<>();
+
         for (IAccessoryHandler handler : handlers.values()) {
+            Map<String, ItemStack> blacklisted = new HashMap<>();
+
+            handler.collectAccessories(player).forEach((slot, stack) -> {
+                if (BlacklistUtils.isBlacklisted(stack)) {
+                    blacklisted.put(slot, stack.copy());
+                }
+            });
+
             handler.clearAccessories(player);
+
+            if (!blacklisted.isEmpty()) {
+                kept.put(handler.getModName(), blacklisted);
+            }
+        }
+
+        if (!kept.isEmpty()) {
+            restoreAccessories(player, kept, true, null, null);
         }
     }
 

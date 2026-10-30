@@ -3,6 +3,7 @@ package it.hurts.sskirillss.yagm.neoforge.event;
 import it.hurts.sskirillss.yagm.api.compat.twilight.TwilightForestCompat;
 import it.hurts.sskirillss.yagm.event.GraveStoneEvent;
 import it.hurts.sskirillss.yagm.event.death.tracker.GraveDeathTracker;
+import it.hurts.sskirillss.yagm.util.BlacklistUtils;
 import it.hurts.sskirillss.yagm.util.InventoryUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.nbt.CompoundTag;
@@ -88,7 +89,7 @@ public final class NeoForgeDeathEvents {
         }
 
         if (GraveStoneEvent.handlePlayerDeathDrops(player, graveDrops, inventory)) {
-            event.getDrops().clear();
+            event.getDrops().removeIf(drop -> !BlacklistUtils.isBlacklisted(drop.getItem()));
             player.skipDropExperience();
         }
     }

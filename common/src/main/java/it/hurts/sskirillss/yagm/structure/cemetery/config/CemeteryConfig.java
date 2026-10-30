@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.structure.cemetery.config;
 
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,11 +9,11 @@ import lombok.Getter;
 public class CemeteryConfig {
 
     public static int getDefaultRadius(){
-        return 48;
+        return ConfigRegistry.CONFIG.getCemeteryRadius();
     }
 
     public static int getDefaultMinGraves(){
-        return 10;
+        return ConfigRegistry.CONFIG.getCemeteryMinGraves();
     }
 
     public static int getCellSize(){

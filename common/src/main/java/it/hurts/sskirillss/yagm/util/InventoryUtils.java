@@ -2,29 +2,22 @@ package it.hurts.sskirillss.yagm.util;
 
 import it.hurts.sskirillss.yagm.api.compat.AccessoryLoader;
 import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackLoader;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.Containers;
-import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
 
-import java.util.*;
+import java.util.Map;
+import java.util.UUID;
 
 
 public class InventoryUtils {
@@ -49,7 +42,7 @@ public class InventoryUtils {
         NonNullList<ItemStack>[] lists = new NonNullList[]{inv.items, inv.armor, inv.offhand};
 
         for (int i = 0; i < KEY.length; i++) {
-            ItemUtils.saveInventory(reg, nbt, KEY[i], lists[i]);
+            ItemUtils.saveInventory(reg, nbt, KEY[i], withoutBlacklisted(lists[i]));
         }
 
         if (player instanceof ServerPlayer sp && AccessoryLoader.hasAnyHandler()) {
@@ -62,7 +55,13 @@ public class InventoryUtils {
             if (!backpacks.isEmpty()) nbt.put(KEYS.getBackpacks(), backpacks);
         }
 
-        nbt.putLong(KEYS.getTotalExperience(), TierUtils.getTotalXpFromLevelAndProgress(player.experienceLevel, player.experienceProgress));
+        var experience = TierUtils.getTotalXpFromLevelAndProgress(player.experienceLevel, player.experienceProgress);
+
+        if (ConfigRegistry.CONFIG.isStoreOnlyVanillaXp()) {
+            experience = Math.min(experience, Math.min(player.experienceLevel * 7L, 100L));
+        }
+
+        nbt.putLong(KEYS.getTotalExperience(), Math.round(experience * ConfigRegistry.CONFIG.getXpRetentionPercent() / 100D));
 
         nbt.putDouble(KEYS.getDeathPosX(), player.getX());
         nbt.putDouble(KEYS.getDeathPosY(), player.getY());
@@ -70,6 +69,18 @@ public class InventoryUtils {
         nbt.putString(KEYS.getDimension(), player.level().dimension().location().toString());
 
         return nbt;
+    }
+
+    private static NonNullList<ItemStack> withoutBlacklisted(NonNullList<ItemStack> source) {
+        var result = NonNullList.withSize(source.size(), ItemStack.EMPTY);
+
+        for (var i = 0; i < source.size(); i++) {
+            if (!BlacklistUtils.isBlacklisted(source.get(i))) {
+                result.set(i, source.get(i));
+            }
+        }
+
+        return result;
     }
 
     public static boolean hasRecoverableItems(ServerPlayer player) {
@@ -111,7 +122,7 @@ public class InventoryUtils {
 
 
     public static double getItemScore(ItemStack stack) {
-        for (Map.Entry<String, Double> entry : GraveLevelUtils.VALUABLE_ITEMS.entrySet()) {
+        for (Map.Entry<String, Double> entry : ConfigRegistry.CONFIG.getValuableItems().entrySet()) {
             String key = entry.getKey();
             if (key.startsWith("#")) {
                 TagKey<Item> tag = TagKey.create(Registries.ITEM, ResourceLocation.parse(key.substring(1)));

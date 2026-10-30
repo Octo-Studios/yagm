@@ -70,5 +70,7 @@
   "hud.yagm.experience_lvl": "Experience lvl: %d",
   "categorie.yagm.main": "YAGM",
   "hud.yagm.cosmetic_armor": "Cosmetic Armor:",
-  "hud.yagm.backpacked": "Backpacked:"
+  "hud.yagm.backpacked": "Backpacked:",
+
+  "message.yagm.grave_protected": "This gravestone belongs to someone else"
 }

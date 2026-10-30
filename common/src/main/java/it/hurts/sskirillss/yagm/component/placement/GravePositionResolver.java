@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.component.placement;
 
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.util.PlaceableUtils;
 import it.hurts.sskirillss.yagm.vec3.FallingGraveMotionConfig;
 import net.minecraft.core.BlockPos;
@@ -19,13 +20,19 @@ public final class GravePositionResolver {
         GravePlacementReason reason = switch (mode) {
             case VOID -> GravePlacementReason.VOID_RECOVERY;
             case UNDER_BEDROCK -> GravePlacementReason.UNDER_BEDROCK;
-            case FALLING -> GravePlacementReason.DEATH;
+            case FALLING, IMMEDIATE -> GravePlacementReason.DEATH;
         };
 
         boolean recovery = isVoidRecovery(player);
 
         Vec3 spawnPos = player.position().add(0, 0.5, 0);
         Vec3 velocity = recovery ? Vec3.ZERO : FallingGraveMotionConfig.DEFAULT.randomLaunchVelocity(level.random);
+
+        if (mode == DeathPlacementMode.FALLING && !ConfigRegistry.CONFIG.isFallingGraveEnabled()) {
+            var graveHeight = PlaceableUtils.getGraveHeight(graveLevel);
+
+            return new GravePlacementPlan(reason, DeathPlacementMode.IMMEDIATE, spawnPos, Vec3.ZERO, PlaceableUtils.groundBelow(level, player.blockPosition(), graveHeight), false, false);
+        }
 
         if (mode == DeathPlacementMode.FALLING) {
             return new GravePlacementPlan(reason, mode, spawnPos, velocity, null, true, recovery);
@@ -60,7 +67,9 @@ public final class GravePositionResolver {
 
             BlockPos supportPos = PlaceableUtils.top(level, base).below();
 
-            level.setBlock(supportPos, PlaceableUtils.getBlockForLevel(level), 3);
+            if (ConfigRegistry.CONFIG.isCreateSupportBlock()) {
+                level.setBlock(supportPos, PlaceableUtils.getBlockForLevel(level), 3);
+            }
 
             return supportPos.above();
         }
@@ -130,7 +139,7 @@ public final class GravePositionResolver {
         BlockPos supportPos = gravePos.below();
         BlockState supportState = level.getBlockState(supportPos);
 
-        if (supportState.isSolid() || supportPos.getY() != level.getMinBuildHeight()) {
+        if (!ConfigRegistry.CONFIG.isCreateSupportBlock() || supportState.isSolid() || supportPos.getY() != level.getMinBuildHeight()) {
             return;
         }
 

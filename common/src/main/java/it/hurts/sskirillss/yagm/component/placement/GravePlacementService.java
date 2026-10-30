@@ -5,6 +5,7 @@ import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
 import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.util.ContainerUtils;
 import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
@@ -25,13 +26,36 @@ import java.util.UUID;
 
 public final class GravePlacementService {
     private static final NbtKeys KEYS = NbtKeys.INSTANCE;
-    private static final int SUPPORT_SEARCH_RADIUS = 16;
 
     public static boolean placeImmediate(ServerLevel level, BlockPos pos, CompoundTag graveData, GraveStoneLevels graveLevel, UUID ownerUUID, String ownerName, Direction facing, boolean strictPlacement, boolean recovery) {
         ResourceLocation variantId = getVariantId(level, pos, graveData);
 
         BlockState graveState = createState(VariantUtils.getVariantId(variantId != null ? variantId.toString() : null, graveLevel), level, pos, facing);
 
+        BlockPos placedPos = null;
+
+        var supportRequired = recovery && !ConfigRegistry.CONFIG.isCreateSupportBlock() && !PlaceableUtils.isSupportedFallingPosition(level, pos, PlaceableUtils.getGraveHeight(graveLevel));
+
+        if (!supportRequired) {
+            placedPos = placeDirectly(level, pos, graveState, strictPlacement);
+        }
+
+        if (placedPos == null) {
+            placedPos = PlaceableUtils.placeGraveWithSupport(level, pos, graveState, ConfigRegistry.CONFIG.getSupportSearchRadius());
+        }
+
+        if (placedPos == null) {
+            dropUnplacedGrave(level, pos, graveData);
+            return false;
+        }
+
+        finishPlacement(level, placedPos, graveData, graveLevel, ownerUUID, ownerName, variantId, recovery, false);
+
+        return true;
+    }
+
+    @Nullable
+    private static BlockPos placeDirectly(ServerLevel level, BlockPos pos, BlockState graveState, boolean strictPlacement) {
         BlockPos placedPos = null;
 
         if (strictPlacement) {
@@ -44,7 +68,7 @@ public final class GravePlacementService {
             placedPos = PlaceableUtils.placeandGetPos(level, pos, graveState);
         }
 
-        if (placedPos == null && !strictPlacement) {
+        if (placedPos == null && !strictPlacement && ConfigRegistry.CONFIG.isCreateSupportBlock()) {
             BlockPos supportTopPos = new BlockPos(pos.getX(), level.getMinBuildHeight() + 1, pos.getZ());
 
             if (!supportTopPos.equals( pos) && PlaceableUtils.placeGraveExact(level, supportTopPos, graveState)) {
@@ -54,18 +78,7 @@ public final class GravePlacementService {
             }
         }
 
-        if (placedPos == null) {
-            placedPos = PlaceableUtils.placeGraveWithSupport(level, pos, graveState, SUPPORT_SEARCH_RADIUS);
-        }
-
-        if (placedPos == null) {
-            dropUnplacedGrave(level, pos, graveData);
-            return false;
-        }
-
-        finishPlacement(level, placedPos, graveData, graveLevel, ownerUUID, ownerName, variantId, recovery, false);
-
-        return true;
+        return placedPos;
     }
 
     public static GravePlacementResult placeFalling(ServerLevel level, BlockPos pos, CompoundTag graveData, GraveStoneLevels graveLevel, UUID ownerUUID, String ownerName, Direction facing, @Nullable ResourceLocation variantId, boolean voidRecovery) {
@@ -89,7 +102,7 @@ public final class GravePlacementService {
     public static GravePlacementResult placeFallingWithSupport(ServerLevel level, BlockPos pos, CompoundTag graveData, GraveStoneLevels graveLevel, UUID ownerUUID, String ownerName, Direction facing, @Nullable ResourceLocation variantId, boolean voidRecovery) {
         var graveState = createState(VariantUtils.getVariantId(variantId != null ? variantId.toString() : null, graveLevel), level, pos, facing);
 
-        var placedPos = PlaceableUtils.placeGraveWithSupport(level, pos, graveState, SUPPORT_SEARCH_RADIUS);
+        var placedPos = PlaceableUtils.placeGraveWithSupport(level, pos, graveState, ConfigRegistry.CONFIG.getSupportSearchRadius());
 
         if (placedPos == null) {
             return GravePlacementResult.failed();

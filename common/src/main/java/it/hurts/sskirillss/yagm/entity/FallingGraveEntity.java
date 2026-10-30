@@ -9,6 +9,7 @@ import it.hurts.sskirillss.yagm.component.placement.GravePlacementResult;
 import it.hurts.sskirillss.yagm.component.placement.GravePlacementService;
 import it.hurts.sskirillss.yagm.component.placement.GravePositionResolver;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.init.EntityRegistry;
 import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import it.hurts.sskirillss.yagm.util.PlaceableUtils;
@@ -254,7 +255,7 @@ public class FallingGraveEntity extends Entity {
 
         if (!level().isClientSide()) {
             if (!voidRecovery) {
-                BlockPos altPos = PlaceableUtils.getNearFalling(serverLevel, landingPos, 16, 2, PlaceableUtils.getGraveHeight(graveLevel));
+                BlockPos altPos = PlaceableUtils.getNearFalling(serverLevel, landingPos, ConfigRegistry.CONFIG.getSupportSearchRadius(), 2, PlaceableUtils.getGraveHeight(graveLevel));
                 if (altPos != null && tryPlaceGrave(serverLevel, altPos)) return;
             }
 

@@ -2,6 +2,7 @@ package it.hurts.sskirillss.yagm.api.compat.runnable;
 
 import dev.architectury.platform.Platform;
 import it.hurts.sskirillss.yagm.api.compat.runnable.hook.CompatHook;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 
 import java.util.Objects;
 
@@ -41,7 +42,7 @@ public final class CompatRunnable {
         Objects.requireNonNull(modId, "modId");
         Objects.requireNonNull(action, "action");
 
-        if (!Platform.isModLoaded(modId)) {
+        if (!Platform.isModLoaded(modId) || !ConfigRegistry.isCompatEnabled(modId)) {
             return false;
         }
 

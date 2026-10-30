@@ -39,6 +39,7 @@ subprojects {
         maven { url 'https://maven.wispforest.io/releases' }
         maven { url 'https://maven.su5ed.dev/releases' }
         maven { url 'https://jitpack.io' }
+        maven { url "https://maven.shatterbyte.com/releases" }
         maven {
             url "https://www.cursemaven.com"
             content {

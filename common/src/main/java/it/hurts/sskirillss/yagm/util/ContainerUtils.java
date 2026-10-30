@@ -46,7 +46,7 @@ public final class ContainerUtils {
         List<ItemStack> storedItems = collectStoredItems(provider, nbt);
 
         for (ItemEntity drop : drops) {
-            if (drop == null || drop.getItem().isEmpty()) {
+            if (drop == null || drop.getItem().isEmpty() || BlacklistUtils.isBlacklisted(drop.getItem())) {
                 continue;
             }
 

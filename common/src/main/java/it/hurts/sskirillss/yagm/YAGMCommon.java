@@ -12,6 +12,7 @@ public class YAGMCommon {
     public static Logger LOGGER = LoggerFactory.getLogger(MODID);
 
     public static void init(){
+        ConfigRegistry.init();
         BlockRegistry.init();
         BlockEntityRegistry.init();
         EntityRegistry.init();

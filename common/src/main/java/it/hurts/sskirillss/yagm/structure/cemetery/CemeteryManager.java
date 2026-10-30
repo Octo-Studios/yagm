@@ -2,6 +2,7 @@ package it.hurts.sskirillss.yagm.structure.cemetery;
 
 import it.hurts.sskirillss.yagm.block.GraveStoneBlock;
 import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.structure.cemetery.config.CemeteryConfig;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeteryInfo;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeterySavedData;
@@ -43,6 +44,10 @@ public class CemeteryManager {
 
 
     public void addGrave(ResourceKey<Level> dimension, BlockPos pos) {
+        if (!ConfigRegistry.CONFIG.isCemeteriesEnabled()) {
+            return;
+        }
+
         Level level = levelChecker != null ? levelChecker.getLevel(dimension) : null;
         if (level != null && !isCemeteryGravePos(level, pos)) {
             return;
@@ -82,7 +87,7 @@ public class CemeteryManager {
 
 
     public boolean isCemetery(ResourceKey<Level> dimension, BlockPos pos) {
-        return getData(dimension).isCemetery(pos);
+        return ConfigRegistry.CONFIG.isCemeteriesEnabled() && getData(dimension).isCemetery(pos);
     }
 
 
@@ -113,6 +118,10 @@ public class CemeteryManager {
 
 
     public List<CemeteryInfo> getAllCemeteries(ResourceKey<Level> dimension) {
+        if (!ConfigRegistry.CONFIG.isCemeteriesEnabled()) {
+            return List.of();
+        }
+
         return getData(dimension).getAllCemeteries();
     }
 

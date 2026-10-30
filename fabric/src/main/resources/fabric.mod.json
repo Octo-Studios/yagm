@@ -29,6 +29,7 @@
   "depends": {
     "fabric": "*",
     "architectury": ">=${architectury_version}",
+    "octolib": ">=0.6.2",
     "minecraft": "${minecraft_version}"
   },
   "suggests": {

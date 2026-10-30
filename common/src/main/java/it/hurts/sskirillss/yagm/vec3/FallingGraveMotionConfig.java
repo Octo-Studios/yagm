@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.vec3;
 
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import lombok.Value;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
@@ -11,13 +12,11 @@ public class FallingGraveMotionConfig {
     double gravity;
     float rotSpeedMin;
     float rotSpeedMax;
-    float minDistance;
-    float maxDistance;
     float launchUpMin;
     float launchUpMax;
     int maxLifetime;
 
-    public static final FallingGraveMotionConfig DEFAULT = new FallingGraveMotionConfig(new Vec3(0.98, 1.0, 0.98), -0.04, 15f,25f, 3f, 6f, 0.55f, 0.65f, 200);
+    public static final FallingGraveMotionConfig DEFAULT = new FallingGraveMotionConfig(new Vec3(0.98, 1.0, 0.98), -0.04, 15f,25f, 0.55f, 0.65f, 200);
 
     public Vec3 applyPhysics(Vec3 motion) {
         return new Vec3(motion.x * drag.x, motion.y * drag.y + gravity, motion.z * drag.z);
@@ -30,7 +29,8 @@ public class FallingGraveMotionConfig {
     public Vec3 randomLaunchVelocity(RandomSource random) {
         double angle = random.nextDouble() * Math.PI * 2;
         double up = launchUpMin + random.nextDouble() * (launchUpMax - launchUpMin);
-        double target = minDistance  + random.nextDouble() * (maxDistance  - minDistance);
+        double minDistance = ConfigRegistry.CONFIG.getFallingMinDistance();
+        double target = minDistance + random.nextDouble() * (ConfigRegistry.CONFIG.getFallingMaxDistance() - minDistance);
 
         double speed = horizontalSpeedForDistance(target, up);
 

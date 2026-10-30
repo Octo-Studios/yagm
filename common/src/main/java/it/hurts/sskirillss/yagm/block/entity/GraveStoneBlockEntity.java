@@ -7,6 +7,7 @@ import it.hurts.sskirillss.yagm.component.type.GraveVariantTypes;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveData;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.init.BlockEntityRegistry;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
 import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeterySavedData;
 import it.hurts.sskirillss.yagm.util.ContainerUtils;
@@ -25,6 +26,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -165,6 +167,18 @@ public class GraveStoneBlockEntity extends BlockEntity {
 
         this.inventoryData = GravePayloadUtils.copyRecoverablePayload(data);
         setChanged();
+    }
+
+    public boolean canBeAccessedBy(Player player) {
+        var config = ConfigRegistry.CONFIG;
+
+        if (!config.isOwnerOnlyAccess() || isDecorative() || player.isCreative() || player.hasPermissions(2) || player.getUUID().equals(graveData.getOwnerUUID())) {
+            return true;
+        }
+
+        var duration = config.getOwnerOnlyDurationSeconds();
+
+        return duration > 0 && System.currentTimeMillis() - graveData.getDeathTime() >= duration * 1000L;
     }
 
     public void giveInventoryToPlayer(ServerPlayer player) {

@@ -2,6 +2,7 @@ package it.hurts.sskirillss.yagm.neoforge.compat.twilight;
 
 import dev.architectury.platform.Platform;
 import it.hurts.sskirillss.yagm.event.GraveStoneEvent;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.util.InventoryUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -20,7 +21,7 @@ public final class TwilightForestNeoForgeEvents {
     private static boolean registered;
 
     public static void register() {
-        if (registered || !Platform.isModLoaded("twilightforest")) return;
+        if (registered || !Platform.isModLoaded("twilightforest") || !ConfigRegistry.isCompatEnabled("twilightforest")) return;
         registered = true;
 
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, TwilightForestNeoForgeEvents::onLivingDeath);

@@ -70,5 +70,7 @@
   "hud.yagm.experience_lvl": "Уровень опыта: %d",
   "categorie.yagm.main": "YAGM",
   "hud.yagm.cosmetic_armor": "Косметическая броня:",
-  "hud.yagm.backpacked": "Рюкзак Backpacked:"
+  "hud.yagm.backpacked": "Рюкзак Backpacked:",
+
+  "message.yagm.grave_protected": "Эта могила принадлежит другому игроку"
 }
