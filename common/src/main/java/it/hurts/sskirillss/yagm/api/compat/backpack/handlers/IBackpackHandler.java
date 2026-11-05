@@ -6,8 +6,10 @@ import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackRestoreResult;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
+import java.util.Map;
 
 
 public interface IBackpackHandler {
@@ -17,6 +19,10 @@ public interface IBackpackHandler {
     boolean isModLoaded();
 
     List<BackpackEntry> collectBackpacks(ServerPlayer player);
+
+    default Map<ItemStack, BackpackEntry> collectBackpackReferences(ServerPlayer player) {
+        return Map.of();
+    }
 
     void clearBackpacks(ServerPlayer player);
 

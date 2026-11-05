@@ -12,17 +12,17 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public interface IServerEvent {
 
-    /**
-     * Called when a player dies and a grave needs to be created.
-     * Inventory data is already collected in graveData.
-     */
+    Event<BeforeDeathCapture> BEFORE_DEATH_CAPTURE = EventFactory.createEventResult();
+
     Event<OnPlayerDeath> ON_PLAYER_DEATH = EventFactory.createEventResult();
 
-    /**
-     *Called AFTER successfully placing a grave.
-     */
     Event<OnGravePlaced> ON_GRAVE_PLACED = EventFactory.createLoop();
 
+
+    @FunctionalInterface
+    public interface BeforeDeathCapture {
+        EventResult beforeDeathCapture(ServerPlayer player);
+    }
 
     @FunctionalInterface
     public interface OnPlayerDeath {

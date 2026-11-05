@@ -42,32 +42,32 @@ public class CuriosCompat extends BaseAccessoryCompat {
     }
 
     @Override
-    public Map<String, ItemStack> collectAccessories(ServerPlayer player) {
-        Map<String, ItemStack> accessories = new HashMap<>();
+    public Map<String, ItemStack> collectAccessoryReferences(ServerPlayer player) {
+        var accessories = new HashMap<String, ItemStack>();
 
-        Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosInventory(player);
+        var curiosOpt = CuriosApi.getCuriosInventory(player);
         if (curiosOpt.isEmpty()) return accessories;
 
-        for (Map.Entry<String, ICurioStacksHandler> entry : curiosOpt.get().getCurios().entrySet()) {
-            String slotType = entry.getKey();
-            ICurioStacksHandler stacksHandler = entry.getValue();
+        for (var entry : curiosOpt.get().getCurios().entrySet()) {
+            var slotType = entry.getKey();
+            var stacksHandler = entry.getValue();
 
-            IDynamicStackHandler stacks = stacksHandler.getStacks();
+            var stacks = stacksHandler.getStacks();
 
-            for (int i = 0; i < stacks.getSlots(); i++) {
+            for (var i = 0; i < stacks.getSlots(); i++) {
 
-                ItemStack stack = stacks.getStackInSlot(i);
+                var stack = stacks.getStackInSlot(i);
 
                 if (!stack.isEmpty()) {
-                    accessories.put(slotType + "/" + i, stack.copy());
+                    accessories.put(slotType + "/" + i, stack);
                 }
             }
 
-            IDynamicStackHandler cosmeticStacks = stacksHandler.getCosmeticStacks();
-            for (int i = 0; i < cosmeticStacks.getSlots(); i++) {
-                ItemStack stack = cosmeticStacks.getStackInSlot(i);
+            var cosmeticStacks = stacksHandler.getCosmeticStacks();
+            for (var i = 0; i < cosmeticStacks.getSlots(); i++) {
+                var stack = cosmeticStacks.getStackInSlot(i);
                 if (!stack.isEmpty()) {
-                    accessories.put(slotType + "/cosmetic/" + i, stack.copy());
+                    accessories.put(slotType + "/cosmetic/" + i, stack);
                 }
             }
         }

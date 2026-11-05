@@ -31,7 +31,7 @@ public class ToolBeltCompat extends BaseAccessoryCompat {
     }
 
     @Override
-    public Map<String, ItemStack> collectAccessories(ServerPlayer player) {
+    public Map<String, ItemStack> collectAccessoryReferences(ServerPlayer player) {
         if (!ConfigData.customBeltSlotEnabled) {
             return Map.of();
         }
@@ -46,7 +46,7 @@ public class ToolBeltCompat extends BaseAccessoryCompat {
             return Map.of();
         }
 
-        return Map.of("belt", stack.copy());
+        return Map.of("belt", stack);
     }
 
     @Override

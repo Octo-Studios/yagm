@@ -33,25 +33,25 @@ public class CosmeticArmorCompat extends BaseAccessoryCompat {
     }
 
     @Override
-    public Map<String, ItemStack> collectAccessories(ServerPlayer player) {
+    public Map<String, ItemStack> collectAccessoryReferences(ServerPlayer player) {
         if (isKeepThroughDeathEnabled()) {
             return Map.of();
         }
 
-        Map<String, ItemStack> accessories = new HashMap<>();
+        var accessories = new HashMap<String, ItemStack>();
 
-        CAStacksBase stacks = CosArmorAPI.getCAStacks(player.getUUID());
+        var stacks = CosArmorAPI.getCAStacks(player.getUUID());
 
-        for (CosmeticArmorSlot slot : CosmeticArmorSlot.values()) {
+        for (var slot : CosmeticArmorSlot.values()) {
 
             if (slot.index() >= stacks.getSlots()) {
                 continue;
             }
 
-            ItemStack stack = stacks.getStackInSlot(slot.index());
+            var stack = stacks.getStackInSlot(slot.index());
 
             if (!stack.isEmpty()) {
-                accessories.put(new SlotKey(slot, stacks.isSkinArmor(slot.index())).serializedName(), stack.copy());
+                accessories.put(new SlotKey(slot, stacks.isSkinArmor(slot.index())).serializedName(), stack);
             }
         }
 

@@ -54,6 +54,19 @@ public final class AccessoryLoader {
     }
 
 
+    public static Map<String, Map<String, ItemStack>> collectAccessoryReferences(ServerPlayer player) {
+        var accessories = new HashMap<String, Map<String, ItemStack>>();
+
+        for (var handler : handlers.values()) {
+            var slots = handler.collectAccessoryReferences(player);
+            if (!slots.isEmpty()) {
+                accessories.put(handler.getModName(), slots);
+            }
+        }
+
+        return accessories;
+    }
+
     public static void clearAccessories(ServerPlayer player, Map<String, Map<String, ItemStack>> captured) {
         var kept = new HashMap<String, Map<String, ItemStack>>();
 

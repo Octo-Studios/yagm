@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
+import java.util.Map;
 
 public class FabricTravelersBackpackCompat extends BaseBackpackCompat {
 
@@ -35,6 +36,12 @@ public class FabricTravelersBackpackCompat extends BaseBackpackCompat {
         }
 
         return List.of(new BackpackEntry("wearable", backpack.copy()));
+    }
+
+    @Override
+    public Map<ItemStack, BackpackEntry> collectBackpackReferences(ServerPlayer player) {
+        var backpack = ComponentUtils.getWearingBackpack(player);
+        return backpack.isEmpty() ? Map.of() : Map.of(backpack, new BackpackEntry("wearable", backpack));
     }
 
     @Override

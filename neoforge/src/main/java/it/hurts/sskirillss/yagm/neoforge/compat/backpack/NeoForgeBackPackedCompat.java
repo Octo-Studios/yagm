@@ -12,7 +12,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class NeoForgeBackPackedCompat extends BaseBackpackCompat {
 
@@ -42,6 +44,21 @@ public class NeoForgeBackPackedCompat extends BaseBackpackCompat {
         }
 
         return entries;
+    }
+
+    @Override
+    public Map<ItemStack, BackpackEntry> collectBackpackReferences(ServerPlayer player) {
+        var backpacks = BackpackHelper.getBackpacks(player);
+        var slots = new IdentityHashMap<ItemStack, BackpackEntry>();
+
+        for (var i = 0; i < backpacks.size(); i++) {
+            var backpack = backpacks.get(i);
+            if (!backpack.isEmpty()) {
+                slots.put(backpack, new BackpackEntry(Integer.toString(i), backpack));
+            }
+        }
+
+        return slots;
     }
 
     @Override

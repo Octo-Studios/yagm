@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.util;
 
 import it.hurts.sskirillss.yagm.api.compat.AccessoryLoader;
+import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackEntry;
 import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackLoader;
 import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
@@ -17,6 +18,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,31 +33,34 @@ public class InventoryUtils {
 
     @SuppressWarnings("unchecked")
     public static CompoundTag savePlayerInventory(Player player) {
-        var nbt = saveDeathData(player);
         var inv = player.getInventory();
-        var reg = player.registryAccess();
-
-        NonNullList<ItemStack>[] lists = new NonNullList[]{inv.items, inv.armor, inv.offhand};
-
-        for (int i = 0; i < KEY.length; i++) {
-            ItemUtils.saveInventory(reg, nbt, KEY[i], withoutBlacklisted(lists[i]));
-        }
-
-        if (player instanceof ServerPlayer sp && AccessoryLoader.hasAnyHandler()) {
-            CompoundTag acc = AccessoryLoader.saveNBT(AccessoryLoader.collectAccessories(sp), reg);
-            if (!acc.isEmpty()) nbt.put(KEYS.getAccessories(), acc);
-        }
-
-        if (player instanceof ServerPlayer sp && BackpackLoader.hasHandler()) {
-            CompoundTag backpacks = BackpackLoader.saveNBT(BackpackLoader.collectBackpacks(sp), reg);
-            if (!backpacks.isEmpty()) nbt.put(KEYS.getBackpacks(), backpacks);
-        }
-
+        var lists = new NonNullList[]{inv.items, inv.armor, inv.offhand};
         var experience = TierUtils.getTotalXpFromLevelAndProgress(player.experienceLevel, player.experienceProgress);
 
         if (ConfigRegistry.CONFIG.isStoreOnlyVanillaXp()) {
             experience = Math.min(experience, Math.min(player.experienceLevel * 7L, 100L));
         }
+
+        return saveInventory(player, lists,
+                player instanceof ServerPlayer sp ? AccessoryLoader.collectAccessories(sp) : Map.of(),
+                player instanceof ServerPlayer sp ? BackpackLoader.collectBackpacks(sp) : Map.of(), experience);
+    }
+
+    static CompoundTag saveInventory(Player player, NonNullList<ItemStack>[] inventory,
+                                    Map<String, Map<String, ItemStack>> accessories,
+                                    Map<String, List<BackpackEntry>> backpacks, long experience) {
+        var nbt = saveDeathData(player);
+        var reg = player.registryAccess();
+
+        for (var i = 0; i < KEY.length; i++) {
+            ItemUtils.saveInventory(reg, nbt, KEY[i], withoutBlacklisted(inventory[i]));
+        }
+
+        var accessoryData = AccessoryLoader.saveNBT(accessories, reg);
+        if (!accessoryData.isEmpty()) nbt.put(KEYS.getAccessories(), accessoryData);
+
+        var backpackData = BackpackLoader.saveNBT(backpacks, reg);
+        if (!backpackData.isEmpty()) nbt.put(KEYS.getBackpacks(), backpackData);
 
         nbt.putLong(KEYS.getTotalExperience(), Math.round(experience * ConfigRegistry.CONFIG.getXpRetentionPercent() / 100D));
 

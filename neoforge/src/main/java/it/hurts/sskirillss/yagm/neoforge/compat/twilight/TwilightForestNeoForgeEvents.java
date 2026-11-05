@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.neoforge.compat.twilight;
 
 import dev.architectury.platform.Platform;
+import it.hurts.sskirillss.yagm.api.event.IServerEvent;
 import it.hurts.sskirillss.yagm.event.GraveStoneEvent;
 import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.util.InventoryUtils;
@@ -34,6 +35,7 @@ public final class TwilightForestNeoForgeEvents {
                 || player instanceof FakePlayer
                 || player.isSpectator()
                 || player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)
+                || IServerEvent.BEFORE_DEATH_CAPTURE.invoker().beforeDeathCapture(player).interruptsFurtherEvaluation()
                 || SuppressGrave(player)
                 || !InventoryUtils.hasRecoverableItems(player)) {
             return;

@@ -61,6 +61,19 @@ public final class BackpackLoader {
         return allBackpacks;
     }
 
+    public static Map<String, Map<ItemStack, BackpackEntry>> collectBackpackReferences(ServerPlayer player) {
+        var backpacks = new HashMap<String, Map<ItemStack, BackpackEntry>>();
+
+        for (var handler : handlers.values()) {
+            var slots = handler.collectBackpackReferences(player);
+            if (!slots.isEmpty()) {
+                backpacks.put(handler.getModName(), slots);
+            }
+        }
+
+        return backpacks;
+    }
+
     public static void clearBackpacks(ServerPlayer player, Map<String, List<BackpackEntry>> captured) {
         var kept = new HashMap<String, List<BackpackEntry>>();
 

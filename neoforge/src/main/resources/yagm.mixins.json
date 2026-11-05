@@ -6,7 +6,8 @@
   "client": [],
   "mixins": [
     "LivingEntityExperienceMixin",
-    "TwilightCharmEventsMixin"
+    "TwilightCharmEventsMixin",
+    "compat.requiem.RequiemLivingDropsMixin"
   ],
   "injectors": {
     "defaultRequire": 1

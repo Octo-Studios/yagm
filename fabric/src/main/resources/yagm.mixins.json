@@ -6,7 +6,9 @@
   "client": [
   ],
   "mixins": [
-    "LivingEntityDeathDropsMixin"
+    "LivingEntityDeathDropsMixin",
+    "compat.requiem.RequiemPlayerDropsMixin",
+    "compat.requiem.RequiemEntityDropsMixin"
   ],
   "injectors": {
     "defaultRequire": 1

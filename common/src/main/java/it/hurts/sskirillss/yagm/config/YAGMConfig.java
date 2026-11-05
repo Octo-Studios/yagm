@@ -138,9 +138,10 @@ public class YAGMConfig implements OctoConfig {
             - trinkets - Trinkets (Fabric only)
             - cosmeticarmorreworked - Cosmetic Armor Reworked
             - toolbelt - Tool Belt
+            - reliable_requiem - Reliable Requiem
             - sable - Sable / Create: Aeronautics
             - backpacked - Backpacked
             - travelersbackpack - Traveler's Backpack
             - twilightforest - The Twilight Forest""")
-    private List<String> enabledCompats = new ArrayList<>(List.of("accessories", "curios", "trinkets", "cosmeticarmorreworked", "toolbelt", "sable", "backpacked", "travelersbackpack", "twilightforest"));
+    private List<String> enabledCompats = new ArrayList<>(List.of("accessories", "curios", "trinkets", "cosmeticarmorreworked", "toolbelt", "sable", "backpacked", "travelersbackpack", "twilightforest", "reliable_requiem"));
 }

@@ -1,6 +1,5 @@
 package it.hurts.sskirillss.yagm.event.death.service;
 
-import dev.architectury.event.EventResult;
 import it.hurts.sskirillss.yagm.api.compat.AccessoryLoader;
 import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackLoader;
 import it.hurts.sskirillss.yagm.api.event.IServerEvent;
@@ -39,7 +38,7 @@ public final class GraveDeathService {
             return false;
         }
 
-        if (!GraveDeathTracker.begin(player)) {
+        if (IServerEvent.BEFORE_DEATH_CAPTURE.invoker().beforeDeathCapture(player).interruptsFurtherEvaluation()) {
             return false;
         }
 
@@ -62,18 +61,34 @@ public final class GraveDeathService {
                 }
             }
 
-            EventResult result = IServerEvent.ON_PLAYER_DEATH.invoker().onPlayerDeath(player, graveData);
+            if (!handlePrepared(player, graveData)) {
+                return false;
+            }
+
+            if (!keepInventory) {
+                clearRecoveredData(player, graveData);
+            }
+
+            return true;
+        } catch (Exception exception) {
+            log.error("Failed to handle death grave for {}", player.getGameProfile().getName(), exception);
+            return false;
+        }
+    }
+
+    public static boolean handlePrepared(ServerPlayer player, CompoundTag graveData) {
+        if (!GraveDeathTracker.begin(player)) {
+            return false;
+        }
+
+        try {
+            var result = IServerEvent.ON_PLAYER_DEATH.invoker().onPlayerDeath(player, graveData);
 
             if (result.interruptsFurtherEvaluation() || graveData.getBoolean(KEYS.interrupted())) {
                 return false;
             }
 
             GraveDeathTracker.set(player);
-
-            if (!keepInventory) {
-                clearRecoveredData(player, graveData);
-            }
-
             return true;
         } catch (Exception exception) {
             log.error("Failed to handle death grave for {}", player.getGameProfile().getName(), exception);

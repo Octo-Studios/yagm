@@ -7,7 +7,9 @@
     "ParticleEngineMixin",
     "AbstractClientPlayerMixin"
   ],
-  "mixins": [],
+  "mixins": [
+    "compat.requiem.ReliableRequiemDeathDropsMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

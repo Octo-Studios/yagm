@@ -31,23 +31,22 @@ public class TrinketsCompat extends BaseAccessoryCompat {
     }
 
     @Override
-    public Map<String, ItemStack> collectAccessories(ServerPlayer player) {
-        Map<String, ItemStack> accessories = new HashMap<>();
+    public Map<String, ItemStack> collectAccessoryReferences(ServerPlayer player) {
+        var accessories = new HashMap<String, ItemStack>();
 
-        Optional<TrinketComponent> componentOpt = TrinketsApi.getTrinketComponent(player);
+        var componentOpt = TrinketsApi.getTrinketComponent(player);
         if (componentOpt.isEmpty()) return accessories;
 
         for (var groupEntry : componentOpt.get().getInventory().entrySet()) {
-            String groupName = groupEntry.getKey();
+            var groupName = groupEntry.getKey();
             for (var slotEntry : groupEntry.getValue().entrySet()) {
-                String slotName = slotEntry.getKey();
-                TrinketInventory inv = slotEntry.getValue();
+                var slotName = slotEntry.getKey();
+                var inv = slotEntry.getValue();
 
-                for (int i = 0; i < inv.getContainerSize(); i++) {
-                    ItemStack stack = inv.getItem(i);
+                for (var i = 0; i < inv.getContainerSize(); i++) {
+                    var stack = inv.getItem(i);
                     if (!stack.isEmpty()) {
-                        // "chest/necklace/0"
-                        accessories.put(groupName + "/" + slotName + "/" + i, stack.copy());
+                        accessories.put(groupName + "/" + slotName + "/" + i, stack);
                     }
                 }
             }

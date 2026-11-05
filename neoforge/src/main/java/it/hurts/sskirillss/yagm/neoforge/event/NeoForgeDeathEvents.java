@@ -1,6 +1,7 @@
 package it.hurts.sskirillss.yagm.neoforge.event;
 
 import it.hurts.sskirillss.yagm.api.compat.twilight.TwilightForestCompat;
+import it.hurts.sskirillss.yagm.api.event.IServerEvent;
 import it.hurts.sskirillss.yagm.event.GraveStoneEvent;
 import it.hurts.sskirillss.yagm.event.death.tracker.GraveDeathTracker;
 import it.hurts.sskirillss.yagm.util.BlacklistUtils;
@@ -51,6 +52,10 @@ public final class NeoForgeDeathEvents {
         }
 
         try {
+            if (IServerEvent.BEFORE_DEATH_CAPTURE.invoker().beforeDeathCapture(player).interruptsFurtherEvaluation()) {
+                return;
+            }
+
             SFD.put(player.getUUID(), new DInventory(player.serverLevel().getGameTime(), InventoryUtils.savePlayerInventory(player)));
         } catch (Exception exception) {
             log.error("Failed to snapshot inventory on death for {}", player.getGameProfile().getName(), exception);

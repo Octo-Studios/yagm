@@ -31,28 +31,28 @@ public abstract class AccessoriesCompatImpl extends BaseAccessoryCompat {
     }
 
     @Override
-    public Map<String, ItemStack> collectAccessories(ServerPlayer player) {
-        Map<String, ItemStack> accessories = new HashMap<>();
+    public Map<String, ItemStack> collectAccessoryReferences(ServerPlayer player) {
+        var accessories = new HashMap<String, ItemStack>();
 
-        Optional<Map<String, AccessoryContainer>> containersOpt = getContainers(player);
+        var containersOpt = getContainers(player);
         if (containersOpt.isEmpty()) return accessories;
 
-        for (AccessoryContainer container : containersOpt.get().values()) {
-            String slotName = container.slotName();
-            int size = container.size();
+        for (var container : containersOpt.get().values()) {
+            var slotName = container.slotName();
+            var size = container.size();
 
-            for (int i = 0; i < size; i++) {
-                ItemStack stack = container.getMain(i);
+            for (var i = 0; i < size; i++) {
+                var stack = container.getMain(i);
                 if (!stack.isEmpty()) {
-                    accessories.put(slotName + "/" + i, stack.copy());
+                    accessories.put(slotName + "/" + i, stack);
                 }
             }
 
             if (container.hasCosmetic()) {
-                for (int i = 0; i < size; i++) {
-                    ItemStack stack = container.getCosmetic(i);
+                for (var i = 0; i < size; i++) {
+                    var stack = container.getCosmetic(i);
                     if (!stack.isEmpty()) {
-                        accessories.put(slotName + "/cosmetic/" + i, stack.copy());
+                        accessories.put(slotName + "/cosmetic/" + i, stack);
                     }
                 }
             }
