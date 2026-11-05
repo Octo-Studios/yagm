@@ -1,9 +1,11 @@
 package it.hurts.sskirillss.yagm.neoforge.compat;
 
+import dev.architectury.platform.Platform;
 import it.hurts.sskirillss.yagm.api.compat.AccessoryLoader;
 import it.hurts.sskirillss.yagm.api.compat.runnable.CompatRunnable;
 import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackLoader;
 import it.hurts.sskirillss.yagm.api.compat.twilight.TwilightForestCompat;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.neoforge.compat.accessories.AccessoriesCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.backpack.NeoForgeBackPackedCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.backpack.NeoForgeTravelersBackpackCompat;
@@ -26,7 +28,9 @@ public class NeoForgeCompatImpl {
         CompatRunnable.run(
                 CompatRunnable.getModId("accessories", () -> AccessoryLoader.registerHandler(new AccessoriesCompat())),
                 CompatRunnable.getModId("curios", () -> {
-                    AccessoryLoader.registerHandler(new CuriosCompat());
+                    if (!Platform.isModLoaded("accessories_compat_layer") || !ConfigRegistry.isCompatEnabled("accessories"))
+                        AccessoryLoader.registerHandler(new CuriosCompat());
+
                     CuriosDropEvents.register();
                 }),
                 CompatRunnable.getModId("cosmeticarmorreworked", () -> AccessoryLoader.registerHandler(new CosmeticArmorCompat())),
