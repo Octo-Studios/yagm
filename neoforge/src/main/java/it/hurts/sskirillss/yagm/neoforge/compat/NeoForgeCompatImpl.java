@@ -13,6 +13,7 @@ import it.hurts.sskirillss.yagm.neoforge.compat.cosmeticarmor.CosmeticArmorCompa
 import it.hurts.sskirillss.yagm.neoforge.compat.curios.CuriosCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.curios.CuriosDropEvents;
 import it.hurts.sskirillss.yagm.neoforge.compat.curios.slot.CurioSlotData;
+import it.hurts.sskirillss.yagm.neoforge.compat.toolbelt.ToolBeltCompat;
 import it.hurts.sskirillss.yagm.neoforge.compat.twilight.TwilightForestNeoForgeEvents;
 import it.hurts.sskirillss.yagm.neoforge.event.NeoForgeDeathEvents;
 import net.neoforged.bus.api.IEventBus;
@@ -34,6 +35,7 @@ public class NeoForgeCompatImpl {
                     CuriosDropEvents.register();
                 }),
                 CompatRunnable.getModId("cosmeticarmorreworked", () -> AccessoryLoader.registerHandler(new CosmeticArmorCompat())),
+                CompatRunnable.getModId("toolbelt", () -> AccessoryLoader.registerHandler(new ToolBeltCompat())),
                 CompatRunnable.getModId("backpacked", () -> BackpackLoader.registerHandler(new NeoForgeBackPackedCompat())),
                 CompatRunnable.getModId("travelersbackpack", () -> BackpackLoader.registerHandler(new NeoForgeTravelersBackpackCompat()))
         );

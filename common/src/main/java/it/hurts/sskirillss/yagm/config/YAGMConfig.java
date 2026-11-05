@@ -134,8 +134,9 @@ public class YAGMConfig implements OctoConfig {
             - curios - Curios API
             - trinkets - Trinkets (Fabric only)
             - cosmeticarmorreworked - Cosmetic Armor Reworked
+            - toolbelt - Tool Belt
             - backpacked - Backpacked
             - travelersbackpack - Traveler's Backpack
             - twilightforest - The Twilight Forest""")
-    private List<String> enabledCompats = new ArrayList<>(List.of("accessories", "curios", "trinkets", "cosmeticarmorreworked", "backpacked", "travelersbackpack", "twilightforest"));
+    private List<String> enabledCompats = new ArrayList<>(List.of("accessories", "curios", "trinkets", "cosmeticarmorreworked", "toolbelt", "backpacked", "travelersbackpack", "twilightforest"));
 }

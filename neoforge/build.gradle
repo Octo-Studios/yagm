@@ -51,6 +51,7 @@ dependencies {
     compileOnly "curse.maven:sophisticated-core-618298:${rootProject.sophisticated_core_file_id}"
     compileOnly "curse.maven:sophisticated-backpacks-422301:${rootProject.sophisticated_backpacks_file_id}"
     compileOnly "curse.maven:cosmetic-armor-reworked-237307:${rootProject.cosmetic_armor_reworked_file_id}"
+    compileOnly "curse.maven:tool-belt-260262:${rootProject.tool_belt_file_id}"
 }
 
 def resourceTargets = ['META-INF/neoforge.mods.toml', 'pack.mcmeta']
