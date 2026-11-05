@@ -18,7 +18,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 
 import java.util.Collection;
@@ -63,7 +62,7 @@ public final class GraveDeathService {
             }
 
             GraveDeathTracker.set(player);
-            clearRecoveredData(player);
+            clearRecoveredData(player, graveData);
 
             return true;
         } catch (Exception exception) {
@@ -82,17 +81,10 @@ public final class GraveDeathService {
         return isInventory || extradata || player.totalExperience > 0;
     }
 
-    private static void clearRecoveredData(ServerPlayer player) {
-        AccessoryLoader.clearAccessories(player);
-        BackpackLoader.clearBackpacks(player);
-
-        var inventory = player.getInventory();
-
-        for (var slot = 0; slot < inventory.getContainerSize(); slot++) {
-            if (!BlacklistUtils.isBlacklisted(inventory.getItem(slot))) {
-                inventory.setItem(slot, ItemStack.EMPTY);
-            }
-        }
+    private static void clearRecoveredData(ServerPlayer player, CompoundTag graveData) {
+        InventoryUtils.clearPlayerInventory(player, graveData);
+        AccessoryLoader.clearAccessories(player, AccessoryLoader.loadNBT(graveData.getCompound(KEYS.getAccessories()), player.registryAccess()));
+        BackpackLoader.clearBackpacks(player, BackpackLoader.loadNBT(graveData.getCompound(KEYS.getBackpacks()), player.registryAccess()));
         TierUtils.clearExperience(player);
     }
 

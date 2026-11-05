@@ -54,22 +54,25 @@ public final class AccessoryLoader {
     }
 
 
-    public static void clearAccessories(ServerPlayer player) {
-        Map<String, Map<String, ItemStack>> kept = new HashMap<>();
+    public static void clearAccessories(ServerPlayer player, Map<String, Map<String, ItemStack>> captured) {
+        var kept = new HashMap<String, Map<String, ItemStack>>();
 
-        for (IAccessoryHandler handler : handlers.values()) {
-            Map<String, ItemStack> blacklisted = new HashMap<>();
+        for (var handler : handlers.values()) {
+            var slots = captured.getOrDefault(handler.getModName(), Map.of());
+            if (slots.isEmpty()) continue;
+
+            var retained = new HashMap<String, ItemStack>();
 
             handler.collectAccessories(player).forEach((slot, stack) -> {
-                if (BlacklistUtils.isBlacklisted(stack)) {
-                    blacklisted.put(slot, stack.copy());
+                if (!slots.containsKey(slot)) {
+                    retained.put(slot, stack.copy());
                 }
             });
 
             handler.clearAccessories(player);
 
-            if (!blacklisted.isEmpty()) {
-                kept.put(handler.getModName(), blacklisted);
+            if (!retained.isEmpty()) {
+                kept.put(handler.getModName(), retained);
             }
         }
 

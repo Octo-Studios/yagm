@@ -1,0 +1,19 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "#minecraft:keeps_items_on_death", "required": false },
+    { "id": "soulbound:soulbound", "required": false },
+    { "id": "soulbound_enchantment:soulbound", "required": false },
+    { "id": "cyclic:soulbound", "required": false },
+    { "id": "ars_elemental:soulbound", "required": false },
+    { "id": "sortilege:soulbound", "required": false },
+    { "id": "tombstone:soulbound", "required": false },
+    { "id": "yigd:soulbound", "required": false },
+    { "id": "endrise:soulbound", "required": false },
+    { "id": "few_more_enchantments:soulbound", "required": false },
+    { "id": "enchanty:soulbound", "required": false },
+    { "id": "time_enchants:soulbound", "required": false },
+    { "id": "ultimateenchants:soulbound", "required": false },
+    { "id": "lord:soulbound", "required": false }
+  ]
+}

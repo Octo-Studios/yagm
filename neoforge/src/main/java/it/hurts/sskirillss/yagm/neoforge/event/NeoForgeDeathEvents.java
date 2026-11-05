@@ -88,6 +88,10 @@ public final class NeoForgeDeathEvents {
             graveDrops.removeIf(accessoryDrops::contains);
         }
 
+        if (inventory != null) {
+            InventoryUtils.excludeRetainedInventory(player, inventory);
+        }
+
         if (GraveStoneEvent.handlePlayerDeathDrops(player, graveDrops, inventory)) {
             event.getDrops().removeIf(drop -> !BlacklistUtils.isBlacklisted(drop.getItem()));
             player.skipDropExperience();

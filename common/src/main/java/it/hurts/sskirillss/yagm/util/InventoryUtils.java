@@ -8,6 +8,7 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
@@ -81,6 +82,40 @@ public class InventoryUtils {
         }
 
         return result;
+    }
+
+    public static void excludeRetainedInventory(Player player, CompoundTag nbt) {
+        var offset = 0;
+
+        for (var i = 0; i < KEY.length; i++) {
+            var items = nbt.getList(KEY[i], Tag.TAG_COMPOUND);
+
+            for (var j = items.size() - 1; j >= 0; j--) {
+                if (!player.getInventory().getItem(offset + (items.getCompound(j).getByte("Slot") & 255)).isEmpty()) {
+                    items.remove(j);
+                }
+            }
+
+            if (items.isEmpty()) {
+                nbt.remove(KEY[i]);
+            }
+
+            offset += SIZES[i];
+        }
+    }
+
+    public static void clearPlayerInventory(Player player, CompoundTag nbt) {
+        var offset = 0;
+
+        for (var i = 0; i < KEY.length; i++) {
+            var items = nbt.getList(KEY[i], Tag.TAG_COMPOUND);
+
+            for (var j = 0; j < items.size(); j++) {
+                player.getInventory().setItem(offset + (items.getCompound(j).getByte("Slot") & 255), ItemStack.EMPTY);
+            }
+
+            offset += SIZES[i];
+        }
     }
 
     public static boolean hasRecoverableItems(ServerPlayer player) {

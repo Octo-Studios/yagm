@@ -2,6 +2,7 @@ package it.hurts.sskirillss.yagm.api.compat.backpack;
 
 import it.hurts.sskirillss.yagm.api.compat.backpack.handlers.IBackpackHandler;
 import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
+import it.hurts.sskirillss.yagm.util.BlacklistUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.RegistryAccess;
@@ -48,7 +49,9 @@ public final class BackpackLoader {
             String modName = registeredHandler.getKey();
 
             IBackpackHandler handler = registeredHandler.getValue();
-            List<BackpackEntry> backpacks = copyEntries(modName, handler.collectBackpacks(player));
+            var backpacks = copyEntries(modName, handler.collectBackpacks(player)).stream()
+                    .filter(backpack -> !BlacklistUtils.isBlacklisted(backpack.stack()))
+                    .toList();
 
             if (!backpacks.isEmpty()) {
                 allBackpacks.put(modName, backpacks);
@@ -58,9 +61,26 @@ public final class BackpackLoader {
         return allBackpacks;
     }
 
-    public static void clearBackpacks(ServerPlayer player) {
-        for (IBackpackHandler handler : handlers.values()) {
+    public static void clearBackpacks(ServerPlayer player, Map<String, List<BackpackEntry>> captured) {
+        var kept = new HashMap<String, List<BackpackEntry>>();
+
+        for (var handler : handlers.values()) {
+            var slots = captured.getOrDefault(handler.getModName(), List.of());
+            if (slots.isEmpty()) continue;
+
+            var retained = handler.collectBackpacks(player).stream()
+                    .filter(backpack -> slots.stream().noneMatch(slot -> slot.slotKey().equals(backpack.slotKey())))
+                    .toList();
+
             handler.clearBackpacks(player);
+
+            if (!retained.isEmpty()) {
+                kept.put(handler.getModName(), retained);
+            }
+        }
+
+        if (!kept.isEmpty()) {
+            restoreBackpacks(player, kept, true, null, null);
         }
     }
 

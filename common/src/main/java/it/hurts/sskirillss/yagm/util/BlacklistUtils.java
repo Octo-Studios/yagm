@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.util;
 
+import it.hurts.sskirillss.yagm.YAGMCommon;
 import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -8,6 +9,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,18 +18,21 @@ import java.util.regex.PatternSyntaxException;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class BlacklistUtils {
+    private static final TagKey<Enchantment> SOULBOUND = TagKey.create(Registries.ENCHANTMENT, ResourceLocation.fromNamespaceAndPath(YAGMCommon.MODID, "soulbound"));
     private static final Map<String, Pattern> PATTERNS = new ConcurrentHashMap<>();
 
     public static boolean isBlacklisted(ItemStack stack) {
-        var blacklist = ConfigRegistry.CONFIG.getItemBlacklist();
-
-        if (stack == null || stack.isEmpty() || blacklist.isEmpty()) {
+        if (stack == null || stack.isEmpty()) {
             return false;
+        }
+
+        if (stack.getEnchantments().keySet().stream().anyMatch(enchantment -> enchantment.is(SOULBOUND))) {
+            return true;
         }
 
         var id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
 
-        for (var entry : blacklist) {
+        for (var entry : ConfigRegistry.CONFIG.getItemBlacklist()) {
             var value = entry.trim();
 
             if (value.isEmpty()) {
