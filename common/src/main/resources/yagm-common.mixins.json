@@ -8,7 +8,8 @@
     "AbstractClientPlayerMixin"
   ],
   "mixins": [
-    "compat.requiem.ReliableRequiemDeathDropsMixin"
+    "compat.requiem.ReliableRequiemDeathDropsMixin",
+    "compat.sable.SubLevelAssemblyHelperMixin"
   ],
   "injectors": {
     "defaultRequire": 1

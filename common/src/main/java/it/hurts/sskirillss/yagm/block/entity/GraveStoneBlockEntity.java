@@ -182,6 +182,11 @@ public class GraveStoneBlockEntity extends BlockEntity {
     }
 
     public void giveInventoryToPlayer(ServerPlayer player) {
+        if (wasRestoredByKey()) {
+            consumeByRestoreKey();
+            return;
+        }
+
         if (player == null || inventoryData == null || inventoryData.isEmpty()) {
             removeFromGraveManager();
             return;
@@ -196,12 +201,21 @@ public class GraveStoneBlockEntity extends BlockEntity {
 
     public void dropItems(Level level, BlockPos pos) {
         if (suppressDropsOnRemove) return;
+        if (wasRestoredByKey()) {
+            consumeByRestoreKey();
+            return;
+        }
+
         if (inventoryData != null && !inventoryData.isEmpty()) {
             ContainerUtils.dropFullGrave(level, pos, inventoryData);
             this.inventoryData = new CompoundTag();
         }
 
         removeFromGraveManager();
+    }
+
+    private boolean wasRestoredByKey() {
+        return level instanceof ServerLevel serverLevel && GraveDataManager.get(serverLevel).isRestoreKeyConsumed(graveData.getGraveId());
     }
 
     public void consumeByRestoreKey() {

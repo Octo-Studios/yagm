@@ -1,15 +1,41 @@
 package it.hurts.sskirillss.yagm.api.compat.sable;
 
+import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
 import dev.ryanhcode.sable.companion.SableCompanion;
 import dev.ryanhcode.sable.mixinterface.entity.entity_sublevel_collision.EntityMovementExtension;
 import it.hurts.sskirillss.yagm.api.compat.placement.IGravePlacementHandler;
+import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
+import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
+import it.hurts.sskirillss.yagm.structure.cemetery.CemeteryManager;
+import it.hurts.sskirillss.yagm.structure.cemetery.data.CemeterySavedData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 public final class SableCompat implements IGravePlacementHandler {
+    public static void onBlocksMoved(ServerLevel level, SubLevelAssemblyHelper.AssemblyTransform transform, Iterable<BlockPos> blocks) {
+        if (!ConfigRegistry.isCompatEnabled("sable"))
+            return;
+
+        var destination = transform.getLevel();
+        var cemeteries = CemeteryManager.getInstance();
+
+        for (var pos : blocks) {
+            var newPos = transform.apply(pos);
+            if (!(destination.getBlockEntity(newPos) instanceof GraveStoneBlockEntity grave) || grave.isDecorative())
+                continue;
+
+            GraveDataManager.get(level).setGravePos(grave.getGraveData().getGraveId(), newPos);
+            cemeteries.removeGrave(level.dimension(), pos);
+            cemeteries.addGrave(destination.dimension(), newPos);
+            CemeterySavedData.markDirty(level);
+        }
+    }
+
     @Override
     public boolean handleFallingCollision(Entity entity, Vec3 previousVelocity, double gravity) {
         var subLevel = SableCompanion.INSTANCE.getTrackingSubLevel(entity);

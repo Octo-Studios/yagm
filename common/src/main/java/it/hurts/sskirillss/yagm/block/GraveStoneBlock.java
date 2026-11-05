@@ -395,29 +395,29 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        boolean handledTwilightRelocation = false;
+        var handledTwilightRelocation = false;
 
-        if (!state.is(newState.getBlock()) && !level.isClientSide()) {
+        if (!state.is(newState.getBlock()) && !level.isClientSide() && !isMoving) {
             if (!shape.isDouble() || state.getValue(HALF) == DoubleBlockHalf.LOWER) {
                 if (isTwilightPortal(newState) || isTwilightPortalCleanup(level, pos, newState)) {
                     handledTwilightRelocation = relocateTwilightPortalGrave(level, pos, state);
                 }
 
                 if (!handledTwilightRelocation && shape.isDouble()) {
-                    BlockPos upperPos = pos.above();
+                    var upperPos = pos.above();
                     if (level.getBlockState(upperPos).is(this)) {
                         level.removeBlock(upperPos, false);
                     }
                 }
                 if (!handledTwilightRelocation) {
-                    GraveStoneBlockEntity be = getBlockEntity(level, pos);
+                    var be = getBlockEntity(level, pos);
                     if (be != null) {
                         be.dropItems(level, pos);
                     }
                     CemeteryManager.getInstance().removeGrave(level.dimension(), pos);
                 }
             } else {
-                BlockPos lowerPos = pos.below();
+                var lowerPos = pos.below();
                 if (level.getBlockState(lowerPos).is(this)) {
                     level.removeBlock(lowerPos, false);
                 }
