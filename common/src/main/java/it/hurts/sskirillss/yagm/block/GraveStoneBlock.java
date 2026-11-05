@@ -46,6 +46,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -152,8 +153,20 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        Direction facing = state.getValue(FACING);
-        boolean ew = facing == Direction.EAST || facing == Direction.WEST;
+        var collisionShape = getCollisionShape(state, level, pos, context);
+
+        if (!shape.isDouble())
+            return collisionShape;
+
+        var offset = state.getValue(HALF) == DoubleBlockHalf.UPPER ? -1 : 1;
+
+        return Shapes.or(collisionShape, getCollisionShape(state.cycle(HALF), level, pos, context).move(0, offset, 0));
+    }
+
+    @Override
+    public @NotNull VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        var facing = state.getValue(FACING);
+        var ew = facing == Direction.EAST || facing == Direction.WEST;
 
         if (shape.isDouble()) {
             if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
@@ -170,11 +183,6 @@ public class GraveStoneBlock extends Block implements SimpleWaterloggedBlock, En
         } else {
             return shape.getNorthSouth();
         }
-    }
-
-    @Override
-    public @NotNull VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return getShape(state, level, pos, context);
     }
 
     @Override
