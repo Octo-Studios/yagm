@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.component.placement;
 
+import it.hurts.sskirillss.yagm.api.compat.placement.GravePlacementLoader;
 import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
 import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
@@ -142,7 +143,7 @@ public final class GravePlacementService {
     }
 
     private static BlockState createState(Block graveBlock, ServerLevel level, BlockPos pos, Direction facing) {
-        return graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing).setValue(BlockStateProperties.WATERLOGGED, level.getFluidState(pos).isSourceOfType(Fluids.WATER));
+        return graveBlock.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, GravePlacementLoader.getPlacementFacing(level, pos, facing)).setValue(BlockStateProperties.WATERLOGGED, level.getFluidState(pos).isSourceOfType(Fluids.WATER));
     }
 
     private static void finishPlacement(ServerLevel level, BlockPos pos, CompoundTag graveData, GraveStoneLevels graveLevel, UUID ownerUUID, String ownerName, @Nullable ResourceLocation variantId, boolean recovery, boolean addCemetery) {

@@ -2,7 +2,9 @@ package it.hurts.sskirillss.yagm.neoforge.compat;
 
 import dev.architectury.platform.Platform;
 import it.hurts.sskirillss.yagm.api.compat.AccessoryLoader;
+import it.hurts.sskirillss.yagm.api.compat.placement.GravePlacementLoader;
 import it.hurts.sskirillss.yagm.api.compat.runnable.CompatRunnable;
+import it.hurts.sskirillss.yagm.api.compat.sable.SableCompat;
 import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackLoader;
 import it.hurts.sskirillss.yagm.api.compat.twilight.TwilightForestCompat;
 import it.hurts.sskirillss.yagm.init.ConfigRegistry;
@@ -27,6 +29,7 @@ public class NeoForgeCompatImpl {
         NeoForgeDeathEvents.register();
 
         CompatRunnable.run(
+                CompatRunnable.getModId("sable", () -> GravePlacementLoader.registerHandler(new SableCompat())),
                 CompatRunnable.getModId("accessories", () -> AccessoryLoader.registerHandler(new AccessoriesCompat())),
                 CompatRunnable.getModId("curios", () -> {
                     if (!Platform.isModLoaded("accessories_compat_layer") || !ConfigRegistry.isCompatEnabled("accessories"))

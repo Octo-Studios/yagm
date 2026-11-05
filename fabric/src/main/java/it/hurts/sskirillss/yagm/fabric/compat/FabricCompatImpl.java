@@ -1,7 +1,9 @@
 package it.hurts.sskirillss.yagm.fabric.compat;
 
 import it.hurts.sskirillss.yagm.api.compat.AccessoryLoader;
+import it.hurts.sskirillss.yagm.api.compat.placement.GravePlacementLoader;
 import it.hurts.sskirillss.yagm.api.compat.runnable.CompatRunnable;
+import it.hurts.sskirillss.yagm.api.compat.sable.SableCompat;
 import it.hurts.sskirillss.yagm.api.compat.backpack.BackpackLoader;
 import it.hurts.sskirillss.yagm.event.death.tracker.GraveDeathTracker;
 import it.hurts.sskirillss.yagm.fabric.compat.accessories.AccessoriesCompat;
@@ -20,6 +22,7 @@ public class FabricCompatImpl {
         );
 
         CompatRunnable.run(
+                CompatRunnable.getModId("sable", () -> GravePlacementLoader.registerHandler(new SableCompat())),
                 CompatRunnable.getModId("backpacked", () -> BackpackLoader.registerHandler(new FabricBackPackedCompat())),
                 CompatRunnable.getModId("travelersbackpack", () -> BackpackLoader.registerHandler(new FabricTravelersBackpackCompat()))
         );

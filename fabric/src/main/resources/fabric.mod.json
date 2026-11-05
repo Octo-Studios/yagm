@@ -34,6 +34,10 @@
   },
   "suggests": {
     "trinkets": "*",
-    "accessories": "*"
+    "accessories": "*",
+    "sable": ">=2.0.0"
+  },
+  "breaks": {
+    "sable": "<2.0.0"
   }
 }

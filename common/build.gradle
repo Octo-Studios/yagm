@@ -11,4 +11,6 @@ dependencies {
     modApi "dev.architectury:architectury:${rootProject.architectury_version}"
     modImplementation "it.hurts.octostudios.octolib:octolib-common:${rootProject.octo_lib_version}"
     modImplementation("io.wispforest:accessories-common:${rootProject.accessories_version}")
+    compileOnly "dev.ryanhcode.sable-companion:sable-companion-common-${rootProject.minecraft_version}:${rootProject.sable_companion_version}"
+    compileOnly("dev.ryanhcode.sable:sable-common-${rootProject.minecraft_version}:${rootProject.sable_version}") { transitive = false }
 }

@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.entity;
 
+import it.hurts.sskirillss.yagm.api.compat.placement.GravePlacementLoader;
 import it.hurts.sskirillss.yagm.api.variant.IGraveVariant;
 import it.hurts.sskirillss.yagm.api.variant.registry.GraveVariantRegistry;
 import it.hurts.sskirillss.yagm.block.entity.GraveStoneBlockEntity;
@@ -160,15 +161,18 @@ public class FallingGraveEntity extends Entity {
             setDeltaMovement(MOTION.applyPhysics(motion));
             move(MoverType.SELF, getDeltaMovement());
 
+            if (GravePlacementLoader.handleFallingCollision(this, motion, MOTION.getGravity()))
+                return;
+
+            var placementPos = BlockPos.containing(GravePlacementLoader.getPlacementPosition(this));
             boolean shouldPlace = onGround();
 
             if (!shouldPlace && motion.y < 0) {
-                BlockPos belowPos = blockPosition().below();
+                var belowPos = placementPos.below();
                 BlockState belowState = level().getBlockState(belowPos);
 
                 if (belowState.isSuffocating(level(), belowPos) || belowState.isSolid()) {
-                    BlockPos pos = blockPosition();
-                    BlockState state = level().getBlockState(pos);
+                    var state = level().getBlockState(placementPos);
 
                     if (!state.isAir() && !state.canBeReplaced()) {
                         shouldPlace = true;
@@ -176,8 +180,8 @@ public class FallingGraveEntity extends Entity {
                 }
             }
 
-            if (!shouldPlace && lifetime > 1200 && canPlace()) {
-                shouldPlace = PlaceableUtils.getNearFalling(level(), blockPosition(), 1, 2, PlaceableUtils.getGraveHeight(graveLevel)) != null;
+            if (!shouldPlace && lifetime > 1200 && canPlace(placementPos)) {
+                shouldPlace = PlaceableUtils.getNearFalling(level(), placementPos, 1, 2, PlaceableUtils.getGraveHeight(graveLevel)) != null;
             }
 
             if (shouldPlace) {
@@ -185,8 +189,10 @@ public class FallingGraveEntity extends Entity {
             }
         } else {
             if (!onGround()) {
-                setDeltaMovement(MOTION.applyPhysics(getDeltaMovement()));
+                var motion = getDeltaMovement();
+                setDeltaMovement(MOTION.applyPhysics(motion));
                 move(MoverType.SELF, getDeltaMovement());
+                GravePlacementLoader.handleFallingCollision(this, motion, MOTION.getGravity());
             }
         }
     }
@@ -250,7 +256,7 @@ public class FallingGraveEntity extends Entity {
             return;
         }
 
-        BlockPos landingPos = GravePositionResolver.fallingLand(serverLevel, position(), voidRecovery);
+        var landingPos = GravePositionResolver.fallingLand(serverLevel, GravePlacementLoader.getPlacementPosition(this), voidRecovery);
         if (tryPlaceGrave(serverLevel, landingPos)) return;
 
         if (!level().isClientSide()) {
@@ -412,8 +418,7 @@ public class FallingGraveEntity extends Entity {
         return serverLevel.getBlockEntity(existingPos) instanceof GraveStoneBlockEntity blockEntity && graveId.equals(blockEntity.getGraveData().getGraveId());
     }
 
-    private boolean canPlace() {
-        BlockPos current = blockPosition();
+    private boolean canPlace(BlockPos current) {
         BlockState atCurrent = level().getBlockState(current);
         if (!atCurrent.isAir() && !atCurrent.canBeReplaced()) {
             return true;

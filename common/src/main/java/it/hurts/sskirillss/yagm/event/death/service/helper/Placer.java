@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.event.death.service.helper;
 
+import it.hurts.sskirillss.yagm.api.compat.placement.GravePlacementLoader;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.component.placement.GravePlacementPlan;
 import it.hurts.sskirillss.yagm.component.placement.GravePlacementService;
@@ -40,7 +41,7 @@ public final class Placer {
             log.warn("Unable to spawn falling grave for {} at {} in {}; attempting immediate placement",
                     player.getGameProfile().getName(), plan.spawnPos(), level.dimension().location());
 
-            BlockPos fallbackAnchor = plan.immediatePos() != null ? plan.immediatePos() : player.blockPosition();
+            var fallbackAnchor = plan.immediatePos() != null ? plan.immediatePos() : BlockPos.containing(GravePlacementLoader.getPlacementPosition(player));
             BlockPos fallbackPos = PlaceableUtils.getNear(level, fallbackAnchor, 4, PlaceableUtils.getGraveHeight(graveLevel));
             if (fallbackPos == null) {
                 fallbackPos = fallbackAnchor;

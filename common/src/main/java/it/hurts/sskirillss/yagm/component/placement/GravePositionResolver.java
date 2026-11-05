@@ -1,5 +1,6 @@
 package it.hurts.sskirillss.yagm.component.placement;
 
+import it.hurts.sskirillss.yagm.api.compat.placement.GravePlacementLoader;
 import it.hurts.sskirillss.yagm.component.level.GraveStoneLevels;
 import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.util.PlaceableUtils;
@@ -15,7 +16,8 @@ public final class GravePositionResolver {
 
     public static GravePlacementPlan resolveDeath(ServerPlayer player, GraveStoneLevels graveLevel) {
         ServerLevel level = player.serverLevel();
-        DeathPlacementMode mode = setDeathMode(player);
+        var origin = BlockPos.containing(GravePlacementLoader.getPlacementPosition(player));
+        var mode = getDeathMode(level, origin);
 
         GravePlacementReason reason = switch (mode) {
             case VOID -> GravePlacementReason.VOID_RECOVERY;
@@ -26,12 +28,12 @@ public final class GravePositionResolver {
         boolean recovery = isVoidRecovery(player);
 
         Vec3 spawnPos = player.position().add(0, 0.5, 0);
-        Vec3 velocity = recovery ? Vec3.ZERO : FallingGraveMotionConfig.DEFAULT.randomLaunchVelocity(level.random);
+        var velocity = recovery ? Vec3.ZERO : GravePlacementLoader.getLaunchVelocity(player, FallingGraveMotionConfig.DEFAULT.randomLaunchVelocity(level.random));
 
         if (mode == DeathPlacementMode.FALLING && !ConfigRegistry.CONFIG.isFallingGraveEnabled()) {
             var graveHeight = PlaceableUtils.getGraveHeight(graveLevel);
 
-            return new GravePlacementPlan(reason, DeathPlacementMode.IMMEDIATE, spawnPos, Vec3.ZERO, PlaceableUtils.groundBelow(level, player.blockPosition(), graveHeight), false, false);
+            return new GravePlacementPlan(reason, DeathPlacementMode.IMMEDIATE, spawnPos, Vec3.ZERO, PlaceableUtils.groundBelow(level, origin, graveHeight), false, false);
         }
 
         if (mode == DeathPlacementMode.FALLING) {
@@ -44,12 +46,12 @@ public final class GravePositionResolver {
 
         if (mode == DeathPlacementMode.UNDER_BEDROCK) {
             if (level.dimension() == Level.END) {
-                immediatePos = PlaceableUtils.getBedrockPlacement(level, player.blockPosition(), PlaceableUtils.getGraveHeight(graveLevel));
+                immediatePos = PlaceableUtils.getBedrockPlacement(level, origin, PlaceableUtils.getGraveHeight(graveLevel));
             } else {
-                immediatePos = PlaceableUtils.getUnderBedrockPlacement(level, player.blockPosition(), graveLevel);
+                immediatePos = PlaceableUtils.getUnderBedrockPlacement(level, origin, graveLevel);
             }
         } else {
-            immediatePos = PlaceableUtils.top(level, player.blockPosition());
+            immediatePos = PlaceableUtils.top(level, origin);
         }
 
         setImmediate(level, immediatePos);
@@ -58,7 +60,7 @@ public final class GravePositionResolver {
     }
 
     public static boolean isVoidRecovery(ServerPlayer player) {
-        return player.level().dimension() == Level.END && isVoidDeath(player.level(), player.blockPosition());
+        return player.level().dimension() == Level.END && isVoidDeath(player.level(), BlockPos.containing(GravePlacementLoader.getPlacementPosition(player)));
     }
 
     public static BlockPos fallingLand(ServerLevel level, Vec3 position, boolean voidRecovery) {
@@ -94,10 +96,6 @@ public final class GravePositionResolver {
         }
 
         return blockPos;
-    }
-
-    private static DeathPlacementMode setDeathMode(ServerPlayer player) {
-        return getDeathMode(player.level(), player.blockPosition());
     }
 
     static DeathPlacementMode getDeathMode(Level level, BlockPos pos) {

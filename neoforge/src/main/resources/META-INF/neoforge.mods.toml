@@ -54,6 +54,13 @@ versionRange = "[1.0.0,)"
 ordering = "NONE"
 side = "BOTH"
 
+[[dependencies.${mod_id}]]
+modId = "sable"
+type = "optional"
+versionRange = "[2.0.0,)"
+ordering = "NONE"
+side = "BOTH"
+
 [[mixins]]
 config = "yagm.mixins.json"
 [[mixins]]
