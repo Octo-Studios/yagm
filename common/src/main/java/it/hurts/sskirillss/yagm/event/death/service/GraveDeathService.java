@@ -11,6 +11,7 @@ import it.hurts.sskirillss.yagm.data.gravedata.GraveDataManager;
 import it.hurts.sskirillss.yagm.data.gravedata.GraveSaveManager;
 import it.hurts.sskirillss.yagm.event.death.service.helper.Placer;
 import it.hurts.sskirillss.yagm.event.death.tracker.GraveDeathTracker;
+import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import it.hurts.sskirillss.yagm.util.*;
 import it.hurts.sskirillss.yagm.nbt.keys.NbtKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,9 @@ public final class GraveDeathService {
     }
 
     public static boolean handle(ServerPlayer player, Collection<ItemEntity> drops, CompoundTag inventory) {
-        if (player.serverLevel().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
+        var keepInventory = player.serverLevel().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY);
+
+        if (keepInventory && !ConfigRegistry.CONFIG.isSpawnGravesWithKeepInventory()) {
             return false;
         }
 
@@ -43,16 +46,20 @@ public final class GraveDeathService {
         try {
             CompoundTag graveData;
 
-            if (inventory == null) {
+            if (keepInventory) {
+                graveData = InventoryUtils.saveDeathData(player);
+            } else if (inventory == null) {
                 graveData = InventoryUtils.savePlayerInventory(player);
             } else {
                 graveData = inventory.copy();
             }
 
-            ContainerUtils.saveDroppedItems(graveData, drops, player.registryAccess());
+            if (!keepInventory) {
+                ContainerUtils.saveDroppedItems(graveData, drops, player.registryAccess());
 
-            if (!hasRecoverableData(player, graveData)) {
-                return false;
+                if (!hasRecoverableData(player, graveData)) {
+                    return false;
+                }
             }
 
             EventResult result = IServerEvent.ON_PLAYER_DEATH.invoker().onPlayerDeath(player, graveData);
@@ -62,7 +69,10 @@ public final class GraveDeathService {
             }
 
             GraveDeathTracker.set(player);
-            clearRecoveredData(player, graveData);
+
+            if (!keepInventory) {
+                clearRecoveredData(player, graveData);
+            }
 
             return true;
         } catch (Exception exception) {
@@ -96,7 +106,9 @@ public final class GraveDeathService {
 
         UUID graveId = getrootId(graveData);
 
-        save(level, player, graveId, graveData);
+        if (!level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
+            save(level, player, graveId, graveData);
+        }
 
         GraveStoneLevels graveLevel = GraveLevelUtils.calculateGraveLevel(player);
 

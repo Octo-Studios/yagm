@@ -67,8 +67,10 @@ public class EventRegistry {
     }
 
     private static boolean shouldCreateGrave(ServerPlayer player, DamageSource source) {
-        return !player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)
-                && !TwilightForestCompat.isPOST_DEATH()
-                && !GraveDeathTracker.isPostDeath();
+        if (player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
+            return ConfigRegistry.CONFIG.isSpawnGravesWithKeepInventory();
+        }
+
+        return !TwilightForestCompat.isPOST_DEATH() && !GraveDeathTracker.isPostDeath();
     }
 }

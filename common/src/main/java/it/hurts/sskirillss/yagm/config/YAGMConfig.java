@@ -11,6 +11,9 @@ import java.util.Map;
 
 @Data
 public class YAGMConfig implements OctoConfig {
+    @Prop(comment = "If enabled, an empty gravestone is created on death even when keepInventory is enabled. The player keeps all items and experience")
+    private boolean spawnGravesWithKeepInventory = true;
+
     @Prop(comment = "The percentage of the player's experience that is stored in the gravestone. The rest is lost on death. Allowed values: 0 - 100")
     private double xpRetentionPercent = 100D;
 

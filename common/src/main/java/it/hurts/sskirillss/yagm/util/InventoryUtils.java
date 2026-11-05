@@ -31,14 +31,9 @@ public class InventoryUtils {
 
     @SuppressWarnings("unchecked")
     public static CompoundTag savePlayerInventory(Player player) {
-        CompoundTag nbt = new CompoundTag();
-        Inventory inv = player.getInventory();
+        var nbt = saveDeathData(player);
+        var inv = player.getInventory();
         var reg = player.registryAccess();
-
-        nbt.putUUID(KEYS.getId(), UUID.randomUUID());
-        nbt.putUUID(KEYS.getPlayerId(), player.getUUID());
-        nbt.putString(KEYS.getPlayerName(), player.getName().getString());
-        nbt.putString(KEYS.getDeathCause(), player.getLastDamageSource() != null ? player.getLastDamageSource().getLocalizedDeathMessage(player).getString() : "Unknown");
 
         NonNullList<ItemStack>[] lists = new NonNullList[]{inv.items, inv.armor, inv.offhand};
 
@@ -64,6 +59,16 @@ public class InventoryUtils {
 
         nbt.putLong(KEYS.getTotalExperience(), Math.round(experience * ConfigRegistry.CONFIG.getXpRetentionPercent() / 100D));
 
+        return nbt;
+    }
+
+    public static CompoundTag saveDeathData(Player player) {
+        var nbt = new CompoundTag();
+
+        nbt.putUUID(KEYS.getId(), UUID.randomUUID());
+        nbt.putUUID(KEYS.getPlayerId(), player.getUUID());
+        nbt.putString(KEYS.getPlayerName(), player.getName().getString());
+        nbt.putString(KEYS.getDeathCause(), player.getLastDamageSource() != null ? player.getLastDamageSource().getLocalizedDeathMessage(player).getString() : "Unknown");
         nbt.putDouble(KEYS.getDeathPosX(), player.getX());
         nbt.putDouble(KEYS.getDeathPosY(), player.getY());
         nbt.putDouble(KEYS.getDeathPosZ(), player.getZ());

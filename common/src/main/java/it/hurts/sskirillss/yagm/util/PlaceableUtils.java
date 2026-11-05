@@ -6,7 +6,6 @@ import it.hurts.sskirillss.yagm.init.ConfigRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -331,10 +330,6 @@ public class PlaceableUtils {
 
     @Nullable
     public static BlockPos placeandGetPos(Level level, BlockPos pos, BlockState graveState) {
-        if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
-            return null;
-        }
-
         if (placeAt(level, pos, graveState)) {
             return pos.immutable();
         }
@@ -361,18 +356,10 @@ public class PlaceableUtils {
 
 
     public static boolean placeGraveExact(Level level, BlockPos pos, BlockState graveState) {
-        if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
-            return false;
-        }
-
         return placeAt(level, pos, graveState);
     }
 
     public static boolean placeFallingGraveExact(Level level, BlockPos pos, BlockState graveState) {
-        if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
-            return false;
-        }
-
         return isSupportedFallingPosition(level, pos, getGraveHeight(graveState)) && placeAt(level, pos, graveState);
     }
 
@@ -391,10 +378,6 @@ public class PlaceableUtils {
 
     @Nullable
     public static BlockPos placeGraveWithSupport(ServerLevel level, BlockPos center, BlockState graveState, int radius) {
-        if (level.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
-            return null;
-        }
-
         var height = getGraveHeight(graveState);
         var y = Math.max(level.getMinBuildHeight() + 1, Math.min(center.getY(), level.getMaxBuildHeight() - height));
 
