@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     { "id": "#minecraft:keeps_items_on_death", "required": false },
+    { "id": "#c:soulbound", "required": false },
     { "id": "soulbound:soulbound", "required": false },
     { "id": "soulbound_enchantment:soulbound", "required": false },
     { "id": "cyclic:soulbound", "required": false },
