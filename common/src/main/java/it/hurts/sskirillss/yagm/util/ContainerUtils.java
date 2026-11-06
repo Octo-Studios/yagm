@@ -21,6 +21,7 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -42,29 +43,25 @@ public final class ContainerUtils {
     }
 
     public static void saveDroppedItems(CompoundTag nbt, Collection<ItemEntity> drops, RegistryAccess provider) {
-        List<ItemStack> items = new ArrayList<>();
-        List<ItemStack> storedItems = collectStoredItems(provider, nbt);
+        var items = new ArrayList<ItemStack>();
+        var storedItems = new HashMap<Tag, Integer>();
 
-        for (ItemEntity drop : drops) {
+        for (var stored : collectStoredItems(provider, nbt)) {
+            storedItems.merge(stored.copyWithCount(1).save(provider), stored.getCount(), Integer::sum);
+        }
+
+        for (var drop : drops) {
             if (drop == null || drop.getItem().isEmpty() || BlacklistUtils.isBlacklisted(drop.getItem())) {
                 continue;
             }
 
-            ItemStack remainder = drop.getItem().copy();
+            var remainder = drop.getItem().copy();
+            var itemData = remainder.copyWithCount(1).save(provider);
+            var storedCount = storedItems.getOrDefault(itemData, 0);
+            var matched = Math.min(remainder.getCount(), storedCount);
 
-            for (ItemStack stored : storedItems) {
-                if (remainder.isEmpty()) {
-                    break;
-                }
-                if (stored.isEmpty() || !ItemStack.isSameItemSameComponents(remainder, stored)) {
-                    continue;
-                }
-
-                int matched = Math.min(remainder.getCount(), stored.getCount());
-
-                remainder.shrink(matched);
-                stored.shrink(matched);
-            }
+            remainder.shrink(matched);
+            storedItems.put(itemData, storedCount - matched);
 
             if (!remainder.isEmpty()) {
                 items.add(remainder);
