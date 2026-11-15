@@ -371,6 +371,10 @@ public class PlaceableUtils {
             if (level.getBlockState(supportPos).isFaceSturdy(level, supportPos, Direction.UP) && isValidGravePosition(level, pos, height)) {
                 return pos;
             }
+
+            if (!level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) {
+                break;
+            }
         }
 
         return origin;

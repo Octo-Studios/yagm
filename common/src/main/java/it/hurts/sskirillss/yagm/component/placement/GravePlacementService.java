@@ -38,7 +38,7 @@ public final class GravePlacementService {
         var supportRequired = recovery && !ConfigRegistry.CONFIG.isCreateSupportBlock() && !PlaceableUtils.isSupportedFallingPosition(level, pos, PlaceableUtils.getGraveHeight(graveLevel));
 
         if (!supportRequired) {
-            placedPos = placeDirectly(level, pos, graveState, strictPlacement);
+            placedPos = placeDirectly(level, pos, graveState, strictPlacement, recovery);
         }
 
         if (placedPos == null) {
@@ -56,7 +56,7 @@ public final class GravePlacementService {
     }
 
     @Nullable
-    private static BlockPos placeDirectly(ServerLevel level, BlockPos pos, BlockState graveState, boolean strictPlacement) {
+    private static BlockPos placeDirectly(ServerLevel level, BlockPos pos, BlockState graveState, boolean strictPlacement, boolean recovery) {
         BlockPos placedPos = null;
 
         if (strictPlacement) {
@@ -69,8 +69,8 @@ public final class GravePlacementService {
             placedPos = PlaceableUtils.placeandGetPos(level, pos, graveState);
         }
 
-        if (placedPos == null && !strictPlacement && ConfigRegistry.CONFIG.isCreateSupportBlock()) {
-            BlockPos supportTopPos = new BlockPos(pos.getX(), level.getMinBuildHeight() + 1, pos.getZ());
+        if (placedPos == null && !strictPlacement && recovery && ConfigRegistry.CONFIG.isCreateSupportBlock()) {
+            var supportTopPos = new BlockPos(pos.getX(), level.getMinBuildHeight() + 1, pos.getZ());
 
             if (!supportTopPos.equals( pos) && PlaceableUtils.placeGraveExact(level, supportTopPos, graveState)) {
                 placedPos = supportTopPos.immutable();
